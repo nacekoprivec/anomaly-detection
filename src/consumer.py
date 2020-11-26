@@ -37,13 +37,13 @@ class ConsumerKafka(ConsumerAbstract):
 		if(config != None):
 			c = KafkaConsumer(config)
 			c.assign([TopicPartition(self.topic, 0)])
-			c.seek_to_end(TopicPartition(self.topic, 0))
 		self.consumer = c
 	
 	def _read_next_(self):
+		c.seek_to_end(TopicPartition(self.topic, 0))
 		last_message = self.consumer.message[-1]
-		return last_message.value
+		if(last_message.value != None):
+			self.last_message = last_message.value
 	
-
 
 	
