@@ -1,5 +1,7 @@
-from ABC import abstractmethod
 from abc import ABC
+from abc import abstractmethod
+
+
 from typing import Any, Dict
 
 from anomalyDetection import AnomalyDetectionAbstract
@@ -19,15 +21,15 @@ class ConsumerAbstract(ABC):
     def __init__(self) -> None:
         pass
 
-    @abstractmethod
-    def _stopping_condition_(self) -> bool:
+    #@abstractmethod
+    def stopping_condition(self) -> bool:
         pass
 
-    @abstractmethod
-    def _read_next_(self) -> None:
+    #@abstractmethod
+    def read_next(self) -> None:
         pass
 
-    @abstractmethod
+    #@abstractmethod
     def configure(self) -> None:
         pass
 
@@ -41,34 +43,65 @@ class ConsumerKafka(ConsumerAbstract):
     consumer: KafkaConsumer
 
     def __init__(self, conf: Dict[Any, Any] = None, 
-                 configuration_location: str = None) -> None:
+                 configuration_location: str = None, topics = None) -> None:
         super().__init__()
         if(conf is not None):
-            self.configure(conf)
+            self.configure(conf, topics = topics)
         elif(configuration_location is not None):
             self.configure(configuration_location = configuration_location)
         else:
             # TODO: make up default configuration and call configure
             conf = {}
-            self.configure(config = conf)
+            self.configure(con = conf, topics = topics)
         
-        # TODO: move this to config
-        self.consumer.assign([TopicPartition(self.topic, 0)])
 
-    def configure(con: Dict[Any, Any] = None, 
-                  configuration_location: str = None) -> None:
+    def configure(self, con: Dict[Any, Any] = None, 
+                  configuration_location: str = None, topics = None) -> None:
+        if(con is not None):
+            self.topics = topics
+            self.consumer = KafkaConsumer(
+                            bootstrap_servers=con['bootstrap_servers'],
+                            auto_offset_reset=con['auto_offset_reset'],
+                            enable_auto_commit=con['enable_auto_commit'],
+                            group_id=con['group_id'],
+                            value_deserializer=con['value_deserializer'])
+            self.consumer.subscribe(topics)
+        elif(configuration_location is not none):
+            pass
+        else:
+            pass
+            # TODO
         # TODO finish configuration
         # TODO from here config of anomaly detection is called also
         pass
 
-    def _read_next_(self) -> None:
-        self.c.seek_to_end(TopicPartition(self.topic, 0))
-        last_message = self.consumer.message[-1]
-        if(last_message.value is not None):
-            self.last_message = [last_message.value]
+    def read_next(self) -> None:
+        msg = self.consumer.poll(1.0)
+        return msg
 
 
 class ConsumerJSON(ConsumerAbstract):
 
     def __init__(self) -> None:
         super().__init__()
+
+
+
+# Main
+#check_list = {'topic_one': check_for_topic_one,
+#             'topic_two': check_for_topic_two}
+
+#c = ConsumerKafka(config, topics = check_list.keys())	
+
+
+#while True:
+#    msg = c._read_next()
+#    if msg is None:
+#        continue
+#    if msg.error():
+#        print("Consumer error: {}".format(msg.error()))
+#        continue
+
+    #send message to specified anomaly detection method
+#    check_list[msg.topic()](msg)
+
