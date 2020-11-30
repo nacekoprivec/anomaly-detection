@@ -3,7 +3,8 @@ from abc import ABC
 from typing import Any, Dict, List
 import numpy as np
 
-from output import OutputAbstract, TerminalOutput, GraphOutput
+from src.output import OutputAbstract, TerminalOutput, GraphOutput, HistogramOutput
+
 
 
 class AnomalyDetectionAbstract(ABC):
@@ -14,19 +15,18 @@ class AnomalyDetectionAbstract(ABC):
     def __init__(self) -> None:
         self.memory = []
 
-    #@abstractmethod
-    def check(self) -> None:
+    @abstractmethod
+    def message_insert(self, message_value: Dict[Any, Any]) -> None:
         pass
 
-    #@abstractmethod
-    def configure(self) -> None:
+    @abstractmethod
+    def configure(self, conf: Dict[Any, Any]) -> None:
         pass
 
 
 class BorderCheck(AnomalyDetectionAbstract):
     UL: float
     LL: float
-    value_index: int
     warning_stages: List[float]
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -34,43 +34,34 @@ class BorderCheck(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
         else:
-            default={
-                "memory_size": 5,
+            default = {
                 "UL": 5,
                 "LL": 0,
                 "warning_stages": [0.9],
-                "value_index": 0,
-                "output": [TerminalOutput()],
+                "output": ["TerminalOutput()"],
                 "output_conf": [
                     {}
                 ]
             }
             self.configure(default)
-        
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
-        self.memory_size = conf["memory_size"]
         self.LL = conf["LL"]
         self.UL = conf["UL"]
-        self.value_index = conf["value_index"]
 
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
 
-        self.outputs = conf["output"]
+        # initialize all outputs
+        self.outputs = [eval(o) for o in conf["output"]]
 
         # configure all outputs
         output_configurations = conf["output_conf"]
         for o in range(len(self.outputs)):
             self.outputs[o].configure(output_configurations[o])
 
-    def check(self, new: List[Any]) -> None:
-        # TODO: warning for runnig average
-        # inserts new element and deletes old
-        self.memory.insert(0, new)
-        self.memory = self.memory[:self.memory_size]
-
-        value = new[self.value_index]
+    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        value = float(message_value['test_value'])
 
         value_normalized = 2*(value - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
@@ -83,10 +74,10 @@ class BorderCheck(AnomalyDetectionAbstract):
         else:
             for stage in range(len(self.warning_stages)):
                 if(value_normalized > self.warning_stages[stage]):
-                    status = "Warning" + stage + \
+                    status = "Warning" + str(stage) + \
                         ": measurement close to upper limit."
                 elif(value_normalized < -self.warning_stages[stage]):
-                    status = "Warning" + stage + \
+                    status = "Warning" + str(stage) + \
                         ": measurement close to lower limit."
                 else:
                     break
@@ -94,30 +85,29 @@ class BorderCheck(AnomalyDetectionAbstract):
         for output in self.outputs:
             output.send_out(status=status, value=value)
 
+
 class EMA(AnomalyDetectionAbstract):
     UL: float
     LL: float
     value_index: int
-    warning_stages: List[float]
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
         if(conf is not None):
             self.configure(conf)
         else:
-            default={
+            default = {
                 "N": 5,
                 "num_of_points": 50,
                 "UL": 10,
                 "LL": 0,
                 "title": "Title",
-                "output": [TerminalOutput()],
+                "output": ["TerminalOutput()"],
                 "output_conf": [
                     {}
                 ]
             }
             self.configure(default)
-        
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.N = conf['N']
@@ -131,22 +121,30 @@ class EMA(AnomalyDetectionAbstract):
         self.numbers = []
         self.timestamps = []
 
-    #def check(self, new: List[Any]) -> None:
+        self.outputs = [eval(o) for o in conf["output"]]
 
-    def message_insert(self, message):
-        self.numbers.append(float(message.value['test_value']))
-        self.timestamps.append(float(message.value['timestamp']))
+        # configure all outputs
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+
+    def message_insert(self, message_value: Dict[Any, Any]):
+        self.numbers.append(float(message_value['test_value']))
+        self.timestamps.append(float(message_value['timestamp']))
         if(len(self.EMA) == 0):
             self.EMA.append(self.numbers[-1])
         else:
-            self.EMA.append(self.numbers[-1] * self.smoothing + self.EMA[-1]*(1-self.smoothing))
+            new = self.numbers[-1] * self.smoothing + self.EMA[-1] *\
+                (1-self.smoothing)
+            self.EMA.append(new)
 
         if(len(self.numbers) == 1):
             self.sigma.append(0)
-        elif(len(self.numbers)<self.N):
+        elif(len(self.numbers) < self.N):
             self.sigma.append(np.std(self.numbers))
         else:
             self.sigma.append(np.std(self.numbers[-self.N:]))
-        return (self.EMA[-1], self.sigma[-1])
-        
 
+        for output in self.outputs:
+            output.send_out(timestamp=float(message_value['timestamp']), value=message_value["test_value"])
+        return (self.EMA[-1], self.sigma[-1])

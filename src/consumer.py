@@ -1,10 +1,9 @@
-from abc import ABC
-from abc import abstractmethod
-
+from abc import ABC, abstractmethod
+import json
 
 from typing import Any, Dict
 
-from anomalyDetection import AnomalyDetectionAbstract
+from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck
 
 from kafka import KafkaConsumer, TopicPartition
 from pymongo import MongoClient
@@ -21,18 +20,11 @@ class ConsumerAbstract(ABC):
     def __init__(self) -> None:
         pass
 
-    #@abstractmethod
-    def stopping_condition(self) -> bool:
+    @abstractmethod
+    def configure(self,con: Dict[Any, Any], configuration_location: str) -> None:
         pass
 
-    #@abstractmethod
-    def read_next(self) -> None:
-        pass
-
-    #@abstractmethod
-    def configure(self) -> None:
-        pass
-
+    @abstractmethod
     def read(self) -> None:
         while(self._stopping_condition_):
             self._read_next_()
@@ -42,59 +34,81 @@ class ConsumerAbstract(ABC):
 class ConsumerKafka(ConsumerAbstract):
     consumer: KafkaConsumer
 
-    def __init__(self, conf: Dict[Any, Any] = None, 
-                 configuration_location: str = None, topics = None) -> None:
+    def __init__(self, conf: Dict[Any, Any] = None,
+                 configuration_location: str = None) -> None:
         super().__init__()
         if(conf is not None):
-            self.configure(conf, topics = topics)
+            self.configure(con=conf)
         elif(configuration_location is not None):
-            self.configure(configuration_location = configuration_location)
+            #Read config file
+            with open("configuration/" + configuration_location) as data_file:
+                conf = json.load(data_file)
+            self.configure(con=conf)
         else:
-            # TODO: make up default configuration and call configure
-            conf = {}
-            self.configure(con = conf, topics = topics)
-        
+            print("No configuration was given")
 
-    def configure(self, con: Dict[Any, Any] = None, 
-                  configuration_location: str = None, topics = None) -> None:
+    def configure(self, con: Dict[Any, Any] = None, configuration_location: str = None) -> None:
         if(con is not None):
-            self.topics = topics
+            self.topics = con['topics']
             self.consumer = KafkaConsumer(
                             bootstrap_servers=con['bootstrap_servers'],
                             auto_offset_reset=con['auto_offset_reset'],
                             enable_auto_commit=con['enable_auto_commit'],
                             group_id=con['group_id'],
-                            value_deserializer=con['value_deserializer'])
-            self.consumer.subscribe(topics)
-        elif(configuration_location is not none):
-            pass
+                            value_deserializer=eval(con['value_deserializer']))
+            self.consumer.subscribe(self.topics)
+        elif(configuration_location is not None):
+            #Read config file
+            with open("configuration/" + configuration_location) as data_file:
+                conf = json.load(data_file)
+            self.configure(con=conf)
         else:
-            pass
-            # TODO
-        # TODO finish configuration
-        # TODO from here config of anomaly detection is called also
+            print("No configuration was given")
+            return
+
+        self.anomaly=eval(con["anomaly_detection_alg"])
+        anomaly_configuration = con["anomaly_detection_conf"]
+        self.anomaly.configure(anomaly_configuration)
+
+    def read(self) -> None:
+        for message in self.consumer:
+            value = message.value
+            self.anomaly.message_insert(value)
+
+
+class ConsumerFile(ConsumerAbstract):
+    file_type: str
+    file_location: str
+
+    def __init__(self, conf: Dict[Any, Any] = None,
+                 configuration_location: str = None,
+                 file_type="json") -> None:
+        super().__init__()
+        self.file_type = file_type
+        if(conf is not None):
+            self.configure(con=conf)
+        elif(configuration_location is not None):
+            #Read config file
+            with open("configuration/" + configuration_location) as data_file:
+                conf = json.load(data_file)
+            self.configure(con=conf)
+        else:
+            print("No configuration was given")
+
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
         pass
 
-    def read_next(self) -> None:
-        msg = self.consumer.poll(1.0)
-        return msg
-
-
-class ConsumerJSON(ConsumerAbstract):
-
-    def __init__(self) -> None:
-        super().__init__()
-
-
+    def read(self) -> None:
+        pass
 
 # Main
-#check_list = {'topic_one': check_for_topic_one,
+# check_list = {'topic_one': check_for_topic_one,
 #             'topic_two': check_for_topic_two}
 
-#c = ConsumerKafka(config, topics = check_list.keys())	
+# c = ConsumerKafka(config, topics = check_list.keys())
 
 
-#while True:
+# while True:
 #    msg = c._read_next()
 #    if msg is None:
 #        continue
@@ -102,6 +116,5 @@ class ConsumerJSON(ConsumerAbstract):
 #        print("Consumer error: {}".format(msg.error()))
 #        continue
 
-    #send message to specified anomaly detection method
+    # send message to specified anomaly detection method
 #    check_list[msg.topic()](msg)
-
