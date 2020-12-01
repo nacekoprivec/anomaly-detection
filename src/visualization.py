@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('dark_background')
+
 
 class VisualizationAbstract(ABC):
     @abstractmethod
@@ -10,7 +11,7 @@ class VisualizationAbstract(ABC):
         pass
 
     @abstractmethod
-    def update(self, timestamp: Any, value: Any) -> None:
+    def update(self, timestamp: Any, value: List[Any]) -> None:
         pass
 
 
@@ -34,10 +35,13 @@ class GraphVisualization(VisualizationAbstract):
         self.lines = [[] for _ in range(self.num_of_lines)]
         pass
 
-    def update(self, timestamp: Any, value: Any) -> None:
-        # TODO: uredi argumente
+    def update(self, value: List[Any], timestamp: Any = 0) -> None:
+        # value is an array
+        # [lastvalue, current_moving_average, current_moving_average+sigma,
+        # current_moving_average-sigma] how many of those you actually need
+        # depends on num of lines
         x_data = []
-        y_data = [value].copy()
+        y_data = value.copy()
 
         # define or update lines
         if self.lines[0] == []:
@@ -47,9 +51,10 @@ class GraphVisualization(VisualizationAbstract):
             for i in range(self.num_of_lines):
                 ax[i] = fig.add_subplot(111)
             x_data = [timestamp]
-            y_data = [value].copy()
+            y_data = value.copy()
             for i in range(self.num_of_lines):
-                self.lines[i], = ax[i].plot(x_data, y_data[i], self.linestyles[i], alpha=0.8)
+                self.lines[i], = ax[i].plot(x_data, y_data[i],
+                                            self.linestyles[i], alpha=0.8)
                 plt.show()
 
         if (len(self.lines[0].get_data()[0]) < self.num_of_points):
@@ -73,11 +78,12 @@ class GraphVisualization(VisualizationAbstract):
 
         for i in range(self.num_of_lines):
             self.lines[i].set_ydata(y_data[i])
-            self.lines[i].set_xdata(x_data)     
+            self.lines[i].set_xdata(x_data)
 
         # plot limits correction
         if(value is not None):
             if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
+                print("hi")
                 plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_data()[1])) - 1,
                                           max(filter(lambda x: x is not None, self.lines[0].get_data()[1])) + 1])
 
@@ -86,6 +92,12 @@ class GraphVisualization(VisualizationAbstract):
 
 
 class HistogramVisualization(VisualizationAbstract):
+    num_of_bins: int
+    range: List[int]
+    bins: Any
+    bin_vals: List[Any]
+    line: List[Any]
+
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
         if(conf is not None):
@@ -102,7 +114,7 @@ class HistogramVisualization(VisualizationAbstract):
         self.bin_vals = np.zeros(len(self.bins))
         self.line = []
 
-    def send_out(self, value: Any, timestamp: Any = 0) -> None:
+    def update(self, value: List[Any], timestamp: Any = 0) -> None:
         if (self.line == []):
             fig = plt.figure(figsize=(13, 6))
             ax = fig.add_subplot(111)
@@ -112,8 +124,8 @@ class HistogramVisualization(VisualizationAbstract):
         else:
             self.bin_vals[np.digitize(value[0], self.bins)] += 1
             self.line.set_ydata(self.bin_vals)
-        
-        if(value is not None):
+
+        if(value[0] is not None):
             if (max(self.bin_vals) >= self.line.axes.get_ylim()[1]):
                 plt.subplot(111).set_ylim([0, max(self.bin_vals)+1])
 

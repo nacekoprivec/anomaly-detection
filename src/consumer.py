@@ -21,7 +21,8 @@ class ConsumerAbstract(ABC):
         pass
 
     @abstractmethod
-    def configure(self,con: Dict[Any, Any], configuration_location: str) -> None:
+    def configure(self, con: Dict[Any, Any],
+                  configuration_location: str) -> None:
         pass
 
     @abstractmethod
@@ -40,14 +41,15 @@ class ConsumerKafka(ConsumerAbstract):
         if(conf is not None):
             self.configure(con=conf)
         elif(configuration_location is not None):
-            #Read config file
+            # Read config file
             with open("configuration/" + configuration_location) as data_file:
                 conf = json.load(data_file)
             self.configure(con=conf)
         else:
             print("No configuration was given")
 
-    def configure(self, con: Dict[Any, Any] = None, configuration_location: str = None) -> None:
+    def configure(self, con: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
         if(con is not None):
             self.topics = con['topics']
             self.consumer = KafkaConsumer(
@@ -58,7 +60,7 @@ class ConsumerKafka(ConsumerAbstract):
                             value_deserializer=eval(con['value_deserializer']))
             self.consumer.subscribe(self.topics)
         elif(configuration_location is not None):
-            #Read config file
+            # Read config file
             with open("configuration/" + configuration_location) as data_file:
                 conf = json.load(data_file)
             self.configure(con=conf)
@@ -66,7 +68,7 @@ class ConsumerKafka(ConsumerAbstract):
             print("No configuration was given")
             return
 
-        self.anomaly=eval(con["anomaly_detection_alg"])
+        self.anomaly = eval(con["anomaly_detection_alg"])
         anomaly_configuration = con["anomaly_detection_conf"]
         self.anomaly.configure(anomaly_configuration)
 
@@ -88,7 +90,7 @@ class ConsumerFile(ConsumerAbstract):
         if(conf is not None):
             self.configure(con=conf)
         elif(configuration_location is not None):
-            #Read config file
+            # Read config file
             with open("configuration/" + configuration_location) as data_file:
                 conf = json.load(data_file)
             self.configure(con=conf)

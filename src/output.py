@@ -26,7 +26,7 @@ class TerminalOutput(OutputAbstract):
         # Nothing to configure
         pass
 
-    def send_out(self,  value: Any, status: str = "", timestamp: Any = 0) -> None:
+    def send_out(self,  value: Any, status: str = "",
+                 timestamp: Any = 0) -> None:
         o = status + "(value: " + str(value) + ")"
         print(o)
- 

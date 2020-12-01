@@ -9,17 +9,21 @@
     "anomaly_detection_conf": {
         "N": 5,
         "num_of_points": 50,
-        "UL": 4,
-        "LL": 2,
-        "title": "Title",
-        "output": ["GraphOutput()"],
+        "output": ["TerminalOutput()"],
         "output_conf": [
+            {}
+        ],
+        "visualization": ["GraphVisualization()", "HistogramVisualization()"],
+        "visualization_conf":[
             {
                 "num_of_points": 50,
                 "num_of_lines": 4,
                 "linestyles":["wo", "r-", "b--", "b--"]
+            },
+            {
+                "num_of_bins": 50,
+                "range": [0, 10]
             }
-        ],
-        "visualization": ["GraphVisualization()", "HistogramVisualization()"]
+        ]
     }
 }

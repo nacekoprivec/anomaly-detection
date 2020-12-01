@@ -5,26 +5,25 @@
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": ["anomaly_detection"],
-    "anomaly_detection_alg": "BorderCheck()",
+    "anomaly_detection_alg": "EMA()",
     "anomaly_detection_conf": {
-        "warning_stages": [0.7, 0.9],
-        "UL": 4,
-        "LL": 2,
+        "N": 5,
+        "num_of_points": 50,
         "output": ["TerminalOutput()"],
         "output_conf": [
             {}
         ],
-        "visualization": [ "HistogramVisualization()"],
+        "visualization": ["GraphVisualization()"],
         "visualization_conf":[
+            {
+                "num_of_points": 50,
+                "num_of_lines": 4,
+                "linestyles":["wo", "r-", "b--", "b--"]
+            },
             {
                 "num_of_bins": 50,
                 "range": [0, 10]
-            },
-            {
-                "num_of_points": 50,
-                "num_of_lines": 1,
-                "linestyles":["wo"]
-            }            
+            }
         ]
     }
 }
