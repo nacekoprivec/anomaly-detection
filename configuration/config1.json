@@ -10,11 +10,15 @@
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,
-        "output": ["TerminalOutput()"],
+        "output": ["TerminalOutput()", "FileOutput()"],
         "output_conf": [
-            {}
+            {},
+            {
+                "file_name": "output.csv",
+                "mode": "a"
+            }
         ],
-        "visualization": [ "HistogramVisualization()"],
+        "visualization": [],
         "visualization_conf":[
             {
                 "num_of_bins": 50,

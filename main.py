@@ -57,7 +57,7 @@ def main():
         elif(args.data_to_process[-4:] == "json"):
             file_type = "json"
         else:
-            print("Unknown file type.")
+            print("Unknown data file type.")
             sys.exit(1)
         consumer = ConsumerFile(configuration_location=args.config,
                                 file_type=file_type)

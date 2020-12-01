@@ -3,7 +3,7 @@ from abc import ABC
 from typing import Any, Dict, List
 import numpy as np
 
-from src.output import OutputAbstract, TerminalOutput
+from src.output import OutputAbstract, TerminalOutput, FileOutput
 from src.visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization
 

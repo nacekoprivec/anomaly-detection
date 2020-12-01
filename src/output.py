@@ -1,5 +1,8 @@
 from abc import abstractmethod
 from abc import ABC
+import json
+import csv
+import os
 from typing import Any, Dict
 
 
@@ -21,6 +24,11 @@ class TerminalOutput(OutputAbstract):
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
+        if(conf is not None):
+            self.configure(conf=conf)
+        else:
+            default = {}
+            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         # Nothing to configure
@@ -30,3 +38,99 @@ class TerminalOutput(OutputAbstract):
                  timestamp: Any = 0) -> None:
         o = status + "(value: " + str(value) + ")"
         print(o)
+
+
+class FileOutput(OutputAbstract):
+    file_name: str
+    file_path: str
+    mode: str
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf=conf)
+        else:
+            default = {
+                "file_name": "output.json",
+                "mode": "a"}
+            self.configure(conf=default)
+
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        self.file_name = conf["file_name"]
+        self.mode = conf["mode"]
+        self.file_path = "log/" + self.file_name
+
+        # make log folder if one does not exist
+        dir = "./log"
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+
+        # If mode is write clear the file
+        if(self.mode == "w"):
+            if(self.file_name[-4:] == "json"):
+                print("here")
+                with open(self.file_path, "w") as f:
+                    d={
+                        "data": []
+                    }
+                    json.dump(d, f)
+            elif(self.file_name[-3:] == "txt"):
+                open(self.file_path, "w").close()
+            elif(self.file_name[-3:] == "csv"):
+                with open(self.file_path, "w", newline="") as csvfile:
+                    fieldnames = ["timestamp", "status", "value"]
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+
+    def send_out(self,  value: Any = None, status: str = "",
+                 timestamp: Any = None) -> None:
+        if(self.file_name[-4:] == "json"):
+            self.write_JSON(value=value, status=status,
+                           timestamp=timestamp)
+        elif(self.file_name[-3:] == "txt"):
+            self.write_txt(value=value, status=status,
+                           timestamp=timestamp)
+        elif(self.file_name[-3:] == "csv"):
+            self.write_csv(value=value, status=status,
+                           timestamp=timestamp)
+        else:
+            print("Output file type not supported.")
+
+    def write_JSON(self,  value: Any, timestamp: Any,
+                   status: str = "") -> None:
+        # Construct the object to write
+        to_write = {}
+        if (value is not None):
+            to_write["value"] = value
+        if (status != ""):
+            to_write["status"] = status
+        if (timestamp is not None):
+            to_write["timestamp"] = timestamp
+
+        with open(self.file_path) as json_file:
+            data = json.load(json_file)
+            temp = data["data"]
+            temp.append(to_write)
+        with open(self.file_path, "w") as f:
+            json.dump(data, f)
+
+    def write_txt(self,  value: Any, status: str = "",
+                 timestamp: Any = 0) -> None:
+        with open(self.file_path, "a") as txt_file:
+            o = status + "(value: " + str(value) + ")\n"
+            txt_file.write(o)
+
+    def write_csv(self,  value: Any, status: str = "",
+                 timestamp: Any = 0) -> None:
+        # Construct the object to write
+        to_write = {}
+        if (value is not None):
+            to_write["value"] = value
+        if (status != ""):
+            to_write["status"] = status
+        if (timestamp is not None):
+            to_write["timestamp"] = timestamp    
+        with open(self.file_path, 'a', newline='') as csv_file:
+            fieldnames = ["timestamp", "status", "value"]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writerow(to_write)

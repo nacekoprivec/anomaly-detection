@@ -83,10 +83,8 @@ class ConsumerFile(ConsumerAbstract):
     file_location: str
 
     def __init__(self, conf: Dict[Any, Any] = None,
-                 configuration_location: str = None,
-                 file_type="json") -> None:
+                 configuration_location: str = None) -> None:
         super().__init__()
-        self.file_type = file_type
         if(conf is not None):
             self.configure(con=conf)
         elif(configuration_location is not None):
