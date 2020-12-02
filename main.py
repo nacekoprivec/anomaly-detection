@@ -38,6 +38,7 @@ def main():
     )"""
 
     parser.add_argument(
+        "-f",
         "--file",
         dest="data_to_process",
         action="store_true",
