@@ -70,7 +70,7 @@ class FileOutput(OutputAbstract):
             if(self.file_name[-4:] == "json"):
                 print("here")
                 with open(self.file_path, "w") as f:
-                    d={
+                    d = {
                         "data": []
                     }
                     json.dump(d, f)
@@ -86,7 +86,7 @@ class FileOutput(OutputAbstract):
                  timestamp: Any = None) -> None:
         if(self.file_name[-4:] == "json"):
             self.write_JSON(value=value, status=status,
-                           timestamp=timestamp)
+                            timestamp=timestamp)
         elif(self.file_name[-3:] == "txt"):
             self.write_txt(value=value, status=status,
                            timestamp=timestamp)
@@ -115,13 +115,13 @@ class FileOutput(OutputAbstract):
             json.dump(data, f)
 
     def write_txt(self,  value: Any, status: str = "",
-                 timestamp: Any = 0) -> None:
+                  timestamp: Any = 0) -> None:
         with open(self.file_path, "a") as txt_file:
             o = status + "(value: " + str(value) + ")\n"
             txt_file.write(o)
 
     def write_csv(self,  value: Any, status: str = "",
-                 timestamp: Any = 0) -> None:
+                  timestamp: Any = 0) -> None:
         # Construct the object to write
         to_write = {}
         if (value is not None):
@@ -129,7 +129,7 @@ class FileOutput(OutputAbstract):
         if (status != ""):
             to_write["status"] = status
         if (timestamp is not None):
-            to_write["timestamp"] = timestamp    
+            to_write["timestamp"] = timestamp
         with open(self.file_path, 'a', newline='') as csv_file:
             fieldnames = ["timestamp", "status", "value"]
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)

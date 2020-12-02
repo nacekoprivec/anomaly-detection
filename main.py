@@ -40,6 +40,7 @@ def main():
     parser.add_argument(
         "--file",
         dest="data_to_process",
+        action="store_true",
         help=u"Read data from a specified file on specified location."
     )
 
@@ -51,16 +52,9 @@ def main():
     # Parse input arguments
     args = parser.parse_args()
 
-    if(args.data_to_process is not None):
-        if(args.data_to_process[-3:] == "csv"):
-            file_type = "csv"
-        elif(args.data_to_process[-4:] == "json"):
-            file_type = "json"
-        else:
-            print("Unknown data file type.")
-            sys.exit(1)
-        consumer = ConsumerFile(configuration_location=args.config,
-                                file_type=file_type)
+    if(args.data_to_process):
+        
+        consumer = ConsumerFile(configuration_location=args.config)
     else:
         consumer = ConsumerKafka(configuration_location=args.config)
 

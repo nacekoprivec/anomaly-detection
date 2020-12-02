@@ -36,6 +36,7 @@ class GraphVisualization(VisualizationAbstract):
         pass
 
     def update(self, value: List[Any], timestamp: Any = 0) -> None:
+        assert self.num_of_lines <= len(value), "Configuration specifies more lines that were given."
         # value is an array
         # [lastvalue, current_moving_average, current_moving_average+sigma,
         # current_moving_average-sigma] how many of those you actually need
@@ -50,7 +51,7 @@ class GraphVisualization(VisualizationAbstract):
             ax = [None] * self.num_of_lines
             for i in range(self.num_of_lines):
                 ax[i] = fig.add_subplot(111)
-            x_data = [timestamp]
+            x_data = [float(timestamp)]
             y_data = value.copy()
             for i in range(self.num_of_lines):
                 self.lines[i], = ax[i].plot(x_data, y_data[i],
@@ -60,7 +61,7 @@ class GraphVisualization(VisualizationAbstract):
         if (len(self.lines[0].get_data()[0]) < self.num_of_points):
             x_data = [None] * self.num_of_points
             x_data = np.append(x_data, self.lines[0].get_data()[0])
-            x_data = np.append(x_data, timestamp)
+            x_data = np.append(x_data, float(timestamp))
             x_data = x_data[-self.num_of_points:]
             for i in range(self.num_of_lines):
                 y_data[i] = [None]*self.num_of_points
@@ -69,7 +70,7 @@ class GraphVisualization(VisualizationAbstract):
                 y_data[i] = y_data[i][-self.num_of_points:]
         else:
             x_data = self.lines[0].get_data()[0]
-            x_data = np.append(x_data, timestamp)
+            x_data = np.append(x_data, float(timestamp))
             x_data = x_data[-self.num_of_points:]
             for i in range(self.num_of_lines):
                 y_data[i] = self.lines[i].get_data()[1]
@@ -83,7 +84,6 @@ class GraphVisualization(VisualizationAbstract):
         # plot limits correction
         if(value is not None):
             if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
-                print("hi")
                 plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_data()[1])) - 1,
                                           max(filter(lambda x: x is not None, self.lines[0].get_data()[1])) + 1])
 

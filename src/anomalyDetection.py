@@ -97,7 +97,7 @@ class BorderCheck(AnomalyDetectionAbstract):
 
         for output in self.outputs:
             output.send_out(status=status, value=value)
-        
+
         lines = [value]
         for visualization in self.visualizations:
             visualization.update(value=lines, timestamp=timestamp)

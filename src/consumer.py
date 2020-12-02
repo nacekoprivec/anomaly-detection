@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+import csv
 import json
+import sys
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck
 
@@ -79,8 +81,8 @@ class ConsumerKafka(ConsumerAbstract):
 
 
 class ConsumerFile(ConsumerAbstract):
-    file_type: str
-    file_location: str
+    file_name: str
+    file_path: str
 
     def __init__(self, conf: Dict[Any, Any] = None,
                  configuration_location: str = None) -> None:
@@ -95,26 +97,57 @@ class ConsumerFile(ConsumerAbstract):
         else:
             print("No configuration was given")
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        pass
+    def configure(self, con: Dict[Any, Any] = None) -> None:
+        self.file_name = con["file_name"]
+        self.file_path = "./data/consumer/" + self.file_name
+
+        self.anomaly = eval(con["anomaly_detection_alg"])
+        anomaly_configuration = con["anomaly_detection_conf"]
+        self.anomaly.configure(anomaly_configuration)
 
     def read(self) -> None:
-        pass
+        if(self.file_name[-4:] == "json"):
+            self.read_JSON()
+        elif(self.file_name[-3:] == "csv"):
+            self.read_csv()
+        else:
+            print("Consumer file type not supported.")
+            sys.exit(1)
 
-# Main
-# check_list = {'topic_one': check_for_topic_one,
-#             'topic_two': check_for_topic_two}
+    def read_JSON(self):
+        with open(self.file_path) as json_file:
+            data = json.load(json_file)
+            tab = data["data"]
+        for d in tab:
+            self.anomaly.message_insert(d)
 
-# c = ConsumerKafka(config, topics = check_list.keys())
+    def read_csv(self):
+        with open(self.file_path, 'r') as read_obj:
+            csv_reader = csv.reader(read_obj)
 
+            header = next(csv_reader)
 
-# while True:
-#    msg = c._read_next()
-#    if msg is None:
-#        continue
-#    if msg.error():
-#        print("Consumer error: {}".format(msg.error()))
-#        continue
+            try:
+                timestamp_index = header.index("timestamp")
+            except ValueError:
+                timestamp_index = None
+            test_value_index = header.index("test_value")
+            other_indicies = [i for i, x in enumerate(header) if (x != "timestamp" and x != "test_value")]
 
-    # send message to specified anomaly detection method
-#    check_list[msg.topic()](msg)
+            # Iterate over each row in the csv using reader object
+            for row in csv_reader:
+                d = {}
+                if(timestamp_index is not None):
+                    timestamp = row[timestamp_index]
+                    try:
+                        timestamp = float(timestamp)
+                    except ValueError:
+                        pass
+                    d["timestamp"] = timestamp
+                test_value = float(row[test_value_index])
+                other_values = [float(row[i]) for i in other_indicies]
+
+                d["test_value"] = test_value
+                d["other_values"] = other_values
+
+                self.anomaly.message_insert(d)
