@@ -47,14 +47,14 @@ class GraphVisualization(VisualizationAbstract):
         # define or update lines
         if self.lines[0] == []:
             plt.ion()
-            fig = plt.figure(figsize=(13, 6))
-            ax = [None] * self.num_of_lines
+            fig_graph = plt.figure(figsize=(13, 6))
+            ax_graph = [None] * self.num_of_lines
             for i in range(self.num_of_lines):
-                ax[i] = fig.add_subplot(111)
+                ax_graph[i] = fig_graph.add_subplot(111)
             x_data = [float(timestamp)]
             y_data = value.copy()
             for i in range(self.num_of_lines):
-                self.lines[i], = ax[i].plot(x_data, y_data[i],
+                self.lines[i], = ax_graph[i].plot(x_data, y_data[i],
                                             self.linestyles[i], alpha=0.8)
                 plt.show()
 
@@ -116,11 +116,11 @@ class HistogramVisualization(VisualizationAbstract):
 
     def update(self, value: List[Any], timestamp: Any = 0) -> None:
         if (self.line == []):
-            fig = plt.figure(figsize=(13, 6))
-            ax = fig.add_subplot(111)
+            fig_hist = plt.figure(figsize=(13, 6))
+            ax_hist = fig_hist.add_subplot(111)
 
             self.bin_vals[np.digitize([value[0]], self.bins)] = 1
-            self.line, = ax.step(self.bins, self.bin_vals)
+            self.line, = ax_hist.step(self.bins, self.bin_vals)
         else:
             self.bin_vals[np.digitize(value[0], self.bins)] += 1
             self.line.set_ydata(self.bin_vals)
