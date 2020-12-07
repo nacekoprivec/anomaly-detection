@@ -1,0 +1,22 @@
+{
+    "bootstrap_servers": ["localhost:9092"],
+    "auto_offset_reset": "latest",
+    "enable_auto_commit": "True",
+    "group_id": "my-group",
+    "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
+    "topics": ["anomaly_detection"],
+    "anomaly_detection_alg": "EMA()",
+    "anomaly_detection_conf": {
+        "N": 5,
+        "num_of_points": 50,
+        "output": ["KafkaOutput()"],
+        "output_conf": [
+            {"output_topic": "anomaly_detection_EMA", "output_metric": "EMA"}
+        ],
+        "visualization": [],
+        "visualization_conf":[
+            {
+            }
+        ]
+    }
+}
