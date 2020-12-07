@@ -58,7 +58,7 @@ Output component differs in where the data is outputted to. more than one output
 
 2. **Kafka output:** Value is outputed to separate kafka topic. It requires the following argments in the config file:
     * output_topic: Name of the topic where the data will be stored (example: "anomaly_detection_EMA")
-    * output_metric: Name of the stored metric. The data will be stored in the output topic under this key. (example: "EMA")
+    * output_metric: Name of the stored metric. The data will be stored in the output topic under this key. (example: "EMA")\
     Example of use: config4.json in config folder.
 
 3. **File output:** Data is outputed to a csv, JSON or txt file. It requires the following arguments in the config file:
@@ -85,6 +85,6 @@ The component that does the actual anomaly detection. It recieves data from a co
 
 2. **EMA:** Calculates the exponential moving average of test values. It recieves data from a consumer component and sends output to output components. 
 EMA is calculated using past EMA values and the newest test value, giving more weigth to newer data. It is calculated in the following way:
-EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing)
+EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing).\
 It requires the following arguments in the config file:
    * N : Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
