@@ -2,9 +2,10 @@ from abc import abstractclassmethod, abstractmethod
 from abc import ABC
 from typing import Any, Dict, List
 import numpy as np
-
-from src.output import OutputAbstract, TerminalOutput, FileOutput
-from src.visualization import VisualizationAbstract, GraphVisualization,\
+import sys
+sys.path.insert(0,'./src')
+from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
+from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization
 
 

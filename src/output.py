@@ -2,8 +2,11 @@ from abc import abstractmethod
 from abc import ABC
 import json
 import csv
+from json import dumps
 import os
 from typing import Any, Dict
+from kafka import KafkaProducer
+#from kafka.admin import KafkaAdminClient, NewTopic
 
 
 class OutputAbstract(ABC):
@@ -134,3 +137,26 @@ class FileOutput(OutputAbstract):
             fieldnames = ["timestamp", "status", "value"]
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writerow(to_write)
+
+class KafkaOutput(OutputAbstract):
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        print(conf)
+        if(conf is not None):
+            self.configure(conf=conf)
+        else:
+            default = {"output_topic": "anomaly_detection_EMA", "output_metric": "EMA"}
+            self.configure(conf=default)
+
+    def configure(self, conf: Dict[Any, Any]) -> None:
+        self.output_topic = conf['output_topic']
+        self.output_metric = conf['output_metric']
+
+        self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
+                         value_serializer=lambda x: 
+                         dumps(x).encode('utf-8'))
+
+    def send_out(self, value: Any = None, status: str = "", timestamp: Any = None) -> None:
+        data = {self.output_metric: value}
+        self.producer.send(self.output_topic, value=data)
