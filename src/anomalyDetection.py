@@ -3,6 +3,8 @@ from abc import ABC
 from typing import Any, Dict, List
 import numpy as np
 import sys
+from statistics import mean
+
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
@@ -11,7 +13,7 @@ from visualization import VisualizationAbstract, GraphVisualization,\
 
 class AnomalyDetectionAbstract(ABC):
     memory_size: int
-    memory: List[Any]
+    memory: List[List[Any]]
     averages: List[List[int]]
     shifts: List[List[int]]
     time_features: List[str]
@@ -24,7 +26,8 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        pass
+        assert len(message_value['test_value']) == self.input_vector_size, \
+            "Given test value does not sattisfy input vector size"
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
@@ -44,9 +47,63 @@ class AnomalyDetectionAbstract(ABC):
             self.time_features = conf["time_features"]
         else:
             self.time_features = []
+    
+    def feature_construction(self, value: List[Any], timestamp: str) -> None:
+        # Add new value to memory and slice it
+        self.memory.append(value)
+        self.memory = self.memory[-self.memory_size:]
+
+        # create new value to be returned
+        new_value = value.copy()
+
+        # Create average features
+        new_value.append(self.average_construction(value))
+
+        # Create shifted features
+        new_value.append(self.shift_construction(value))
+
+        # Create time features
+        new_value.append(self.time_features_construction(timestamp))
+
+        return new_value
+
+    def average_construction(self) -> None:
+        averages = []
+
+        # Loop through all features
+        for feature_index in range(len(self.averages)):
+            # Loop through all horizons we want the average of
+            for interval in self.averages[feature_index]:
+                values = self.memory[-interval:, feature_index]
+                averages.append(mean(values))
+
+        return averages
+
+    def shift_construction(self) -> None:
+        shifts = []
+
+        # Loop through all features
+        for feature_index in range(len(self.shifts)):
+            # Loop through all shift values
+            for look_back in self.shifts[feature_index]:
+                shifts.append(self.memory[self.memory_size-look_back, feature_index])
+
+        return shifts
+
+    def time_features_construction(self, timestamp: str) -> None:
+        time_features = []
+
+        # TODO
+
+        return time_features
+
+
 
 
 class BorderCheck(AnomalyDetectionAbstract):
+    """ works with 1D data and checks if the value is above, below or close
+    to guven upper and lower limits 
+    """
     UL: float
     LL: float
     warning_stages: List[float]
@@ -74,6 +131,7 @@ class BorderCheck(AnomalyDetectionAbstract):
         for o in range(len(self.outputs)):
             self.outputs[o].configure(output_configurations[o])
 
+        # If configuration is specified configure it
         if ("visualization" in conf):
             self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
