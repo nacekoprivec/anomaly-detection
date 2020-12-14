@@ -17,25 +17,27 @@ class VisualizationAbstract(ABC):
 
 class GraphVisualization(VisualizationAbstract):
     num_of_points: int
+    num_of_lines: int
+    linestyles: List[str]
+    lines: List[List[float]]
+    colors: List[str]
+    ax_graph: Any
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
         if(conf is not None):
             self.configure(conf=conf)
-        else:
-            default = {"num_of_points": 50,
-                       "num_of_lines": 1,
-                       "linestyles": ['ro']}
-            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.num_of_points = conf["num_of_points"]
         self.num_of_lines = conf["num_of_lines"]
         self.linestyles = conf["linestyles"]
         self.lines = [[] for _ in range(self.num_of_lines)]
+        self.colors = []
         pass
 
-    def update(self, value: List[Any], timestamp: Any = 0) -> None:
+    def update(self, value: List[Any], timestamp: Any = 0,
+               status_code: int = None) -> None:
         assert self.num_of_lines <= len(value), "Configuration specifies more lines that were given."
         # value is an array
         # [lastvalue, current_moving_average, current_moving_average+sigma,
@@ -44,42 +46,67 @@ class GraphVisualization(VisualizationAbstract):
         x_data = []
         y_data = value.copy()
 
-        # define or update lines
+        self.colors.append(self.get_color(status_code=status_code))
+        self.colors = self.colors[-self.num_of_points:]
+
+        # define lines
         if self.lines[0] == []:
             plt.ion()
             fig_graph = plt.figure(figsize=(13, 6))
-            ax_graph = [None] * self.num_of_lines
+            self.ax_graph = [None] * self.num_of_lines
             for i in range(self.num_of_lines):
-                ax_graph[i] = fig_graph.add_subplot(111)
+                self.ax_graph[i] = fig_graph.add_subplot(111)
             x_data = [float(timestamp)]
             y_data = value.copy()
-            for i in range(self.num_of_lines):
-                self.lines[i], = ax_graph[i].plot(x_data, y_data[i],
+            self.lines[0] = self.ax_graph[0].scatter(x_data[0], y_data[0], c=self.colors[0])
+            for i in range(1, self.num_of_lines):
+                self.lines[i], = self.ax_graph[i].plot(x_data, y_data[i],
                                             self.linestyles[i], alpha=0.8)
                 plt.show()
+            return
 
-        if (len(self.lines[0].get_data()[0]) < self.num_of_points):
+        # less points than there could be
+        elif (len(self.lines[0].get_offsets()[:, 0]) < self.num_of_points):
             x_data = [None] * self.num_of_points
-            x_data = np.append(x_data, self.lines[0].get_data()[0])
+            x_data = np.append(x_data, self.lines[0].get_offsets()[:, 0])
             x_data = np.append(x_data, float(timestamp))
             x_data = x_data[-self.num_of_points:]
-            for i in range(self.num_of_lines):
+
+            y_data[0] = np.append(y_data[0], self.lines[0].get_offsets()[:, 1])
+            y_data[0] = np.append(y_data[0], value[0])
+            y_data[0] = y_data[0][-self.num_of_points:]
+
+            for i in range(1, self.num_of_lines):
                 y_data[i] = [None]*self.num_of_points
                 y_data[i] = np.append(y_data[i], self.lines[i].get_data()[1])
                 y_data[i] = np.append(y_data[i], value[i])
                 y_data[i] = y_data[i][-self.num_of_points:]
         else:
-            x_data = self.lines[0].get_data()[0]
+            x_data = self.lines[0].get_offsets()[:, 0]
             x_data = np.append(x_data, float(timestamp))
             x_data = x_data[-self.num_of_points:]
-            for i in range(self.num_of_lines):
+
+            y_data[0] = self.lines[0].get_offsets()[:, 1]
+            y_data[0] = np.append(y_data[0], value[0])
+            y_data[0] = y_data[0][-self.num_of_points:]
+
+            for i in range(1, self.num_of_lines):
                 y_data[i] = self.lines[i].get_data()[1]
                 y_data[i] = np.append(y_data[i], value[i])
                 y_data[i] = y_data[i][-self.num_of_points:]
 
-        for i in range(self.num_of_lines):
+        for i in range(1, self.num_of_lines):
             self.lines[i].set_ydata(y_data[i])
             self.lines[i].set_xdata(x_data)
+
+        x_data = self.lines[0].get_offsets()[:, 0]
+        x_data = np.append(x_data, float(timestamp))
+        x_data = x_data[-self.num_of_points:]
+        y_data = self.lines[0].get_offsets()[:, 1]
+        y_data = np.append(y_data, value[0])
+        y_data = y_data[-self.num_of_points:]
+
+        self.lines[0] = self.ax_graph[0].scatter(x_data, y_data, c=self.colors)
 
         # plot limits correction
         if(value is not None):
@@ -89,6 +116,17 @@ class GraphVisualization(VisualizationAbstract):
 
             plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 1, max(filter(lambda x: x is not None, x_data))+1])
         plt.pause(0.1)
+
+    def get_color(self, status_code: int) -> str:
+        if(status_code == 1):
+            return "w"
+        elif (status_code == 0):
+            return "y"
+        elif(status_code == -1):
+            return "r"
+        else:
+            print("Visualization: Invalid status code")
+            exit(1)
 
 
 class HistogramVisualization(VisualizationAbstract):
@@ -102,10 +140,6 @@ class HistogramVisualization(VisualizationAbstract):
         super().__init__()
         if(conf is not None):
             self.configure(conf=conf)
-        else:
-            default = {"num_of_bins": 50,
-                       "range": [0, 10]}
-            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.num_of_bins = conf["num_of_bins"]
@@ -114,7 +148,8 @@ class HistogramVisualization(VisualizationAbstract):
         self.bin_vals = np.zeros(len(self.bins))
         self.line = []
 
-    def update(self, value: List[Any], timestamp: Any = 0) -> None:
+    def update(self, value: List[Any], timestamp: Any = 0,
+               status_code: int = None) -> None:
         if (self.line == []):
             fig_hist = plt.figure(figsize=(13, 6))
             ax_hist = fig_hist.add_subplot(111)

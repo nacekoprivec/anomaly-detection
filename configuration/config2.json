@@ -13,17 +13,12 @@
         "output_conf": [
             {}
         ],
-        "visualization": ["GraphVisualization()", "HistogramVisualization()"],
-        "visualization_conf":[
+        "visualization": "GraphVisualization()",
+        "visualization_conf":
             {
                 "num_of_points": 50,
                 "num_of_lines": 4,
                 "linestyles":["wo", "r-", "b--", "b--"]
-            },
-            {
-                "num_of_bins": 50,
-                "range": [0, 10]
             }
-        ]
     }
 }

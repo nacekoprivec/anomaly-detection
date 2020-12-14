@@ -50,26 +50,19 @@ class ConsumerKafka(ConsumerAbstract):
         else:
             print("No configuration was given")
 
-    def configure(self, con: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        if(con is not None):
-            self.topics = con['topics']
-            self.consumer = KafkaConsumer(
-                            bootstrap_servers=con['bootstrap_servers'],
-                            auto_offset_reset=con['auto_offset_reset'],
-                            enable_auto_commit=con['enable_auto_commit'],
-                            group_id=con['group_id'],
-                            value_deserializer=eval(con['value_deserializer']))
-            self.consumer.subscribe(self.topics)
-        elif(configuration_location is not None):
-            # Read config file
-            with open("configuration/" + configuration_location) as data_file:
-                conf = json.load(data_file)
-            self.configure(con=conf)
-        else:
+    def configure(self, con: Dict[Any, Any] = None) -> None:
+        if(con is None):
             print("No configuration was given")
-            return
+            return            
 
+        self.topics = con['topics']
+        self.consumer = KafkaConsumer(
+                        bootstrap_servers=con['bootstrap_servers'],
+                        auto_offset_reset=con['auto_offset_reset'],
+                        enable_auto_commit=con['enable_auto_commit'],
+                        group_id=con['group_id'],
+                        value_deserializer=eval(con['value_deserializer']))
+        self.consumer.subscribe(self.topics)
         self.anomaly = eval(con["anomaly_detection_alg"])
         anomaly_configuration = con["anomaly_detection_conf"]
         self.anomaly.configure(anomaly_configuration)

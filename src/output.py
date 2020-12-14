@@ -29,16 +29,13 @@ class TerminalOutput(OutputAbstract):
         super().__init__()
         if(conf is not None):
             self.configure(conf=conf)
-        else:
-            default = {}
-            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         # Nothing to configure
         pass
 
     def send_out(self,  value: Any, status: str = "",
-                 timestamp: Any = 0) -> None:
+                 timestamp: Any = 0, status_code: int = None) -> None:
         o = status + "(value: " + str(value) + ")"
         print(o)
 
@@ -52,11 +49,6 @@ class FileOutput(OutputAbstract):
         super().__init__()
         if(conf is not None):
             self.configure(conf=conf)
-        else:
-            default = {
-                "file_name": "output.json",
-                "mode": "a"}
-            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.file_name = conf["file_name"]
@@ -86,7 +78,7 @@ class FileOutput(OutputAbstract):
                     writer.writeheader()
 
     def send_out(self,  value: Any = None, status: str = "",
-                 timestamp: Any = None) -> None:
+                 timestamp: Any = None, status_code: int = None) -> None:
         if(self.file_name[-4:] == "json"):
             self.write_JSON(value=value, status=status,
                             timestamp=timestamp)
@@ -145,9 +137,6 @@ class KafkaOutput(OutputAbstract):
         print(conf)
         if(conf is not None):
             self.configure(conf=conf)
-        else:
-            default = {"output_topic": "anomaly_detection_EMA", "output_metric": "EMA"}
-            self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any]) -> None:
         self.output_topic = conf['output_topic']
@@ -157,6 +146,7 @@ class KafkaOutput(OutputAbstract):
                          value_serializer=lambda x: 
                          dumps(x).encode('utf-8'))
 
-    def send_out(self, value: Any = None, status: str = "", timestamp: Any = None) -> None:
+    def send_out(self, value: Any = None, status: str = "",
+                 timestamp: Any = None, status_code: int = None) -> None:
         data = {self.output_metric: value}
         self.producer.send(self.output_topic, value=data)

@@ -12,6 +12,11 @@ from visualization import VisualizationAbstract, GraphVisualization,\
 class AnomalyDetectionAbstract(ABC):
     memory_size: int
     memory: List[Any]
+    averages: List[List[int]]
+    shifts: List[List[int]]
+    time_features: List[str]
+
+    input_vector_size: int
     outputs: List["OutputAbstract"]
 
     def __init__(self) -> None:
@@ -23,7 +28,22 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
-        pass
+        self.input_vector_size = conf["input_vector_size"]
+
+        if("averages" in conf):
+            self.averages = conf["averages"]
+        else:
+            self.averages = []
+
+        if("shifts" in conf):
+            self.shifts = conf["shifts"]
+        else:
+            self.shifts = []
+
+        if("time_features" in conf):
+            self.time_features = conf["time_features"]
+        else:
+            self.time_features = []
 
 
 class BorderCheck(AnomalyDetectionAbstract):
@@ -31,25 +51,15 @@ class BorderCheck(AnomalyDetectionAbstract):
     LL: float
     warning_stages: List[float]
     outputs: List["OutputAbstract"]
-    visualizations: List["VisualizationAbstract"]
+    visualization: List["VisualizationAbstract"]
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
         if(conf is not None):
             self.configure(conf)
-        else:
-            default = {
-                "UL": 5,
-                "LL": 0,
-                "warning_stages": [0.9],
-                "output": ["TerminalOutput()"],
-                "output_conf": [
-                    {}
-                ]
-            }
-            self.configure(default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super.configure(conf)
         self.LL = conf["LL"]
         self.UL = conf["UL"]
 
@@ -65,13 +75,11 @@ class BorderCheck(AnomalyDetectionAbstract):
             self.outputs[o].configure(output_configurations[o])
 
         if ("visualization" in conf):
-            self.visualizations = [eval(v) for v in conf["visualization"]]
-            # configure all visualizations
+            self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
-            for v in range(len(self.visualizations)):
-                self.visualizations[v].configure(visualization_configurations[v])
+            self.visualization.configure(visualization_configurations)
         else:
-            self.visualizations = []
+            self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         value = float(message_value["test_value"])
@@ -80,28 +88,35 @@ class BorderCheck(AnomalyDetectionAbstract):
         value_normalized = 2*(value - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
         status = "OK"
+        status_code = 1
 
         if(value_normalized > 1):
             status = "Error: measurement above upper limit"
+            status_code = -1
         elif(value_normalized < -1):
             status = "Error: measurement below lower limit"
+            status_code = -1
         else:
             for stage in range(len(self.warning_stages)):
                 if(value_normalized > self.warning_stages[stage]):
                     status = "Warning" + str(stage) + \
                         ": measurement close to upper limit."
+                    status_code = 0
                 elif(value_normalized < -self.warning_stages[stage]):
                     status = "Warning" + str(stage) + \
                         ": measurement close to lower limit."
+                    status_code = 0
                 else:
                     break
 
         for output in self.outputs:
-            output.send_out(status=status, value=value)
+            output.send_out(status=status, value=value,
+                            status_code=status_code)
 
-        lines = [value]
-        for visualization in self.visualizations:
-            visualization.update(value=lines, timestamp=timestamp)
+        if(self.visualization is not None):
+            lines = [value]
+            self.visualization.update(value=lines, timestamp=timestamp,
+                                      status_code=status_code)
 
 
 class EMA(AnomalyDetectionAbstract):
@@ -113,7 +128,7 @@ class EMA(AnomalyDetectionAbstract):
     sigma: List[float]
     numbers: List[float]
     timestamp: List[Any]
-    visualizations: List["VisualizationAbstract"]
+    visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -146,13 +161,11 @@ class EMA(AnomalyDetectionAbstract):
             self.outputs[o].configure(output_configurations[o])
 
         if ("visualization" in conf):
-            self.visualizations = [eval(v) for v in conf["visualization"]]
-            # configure all visualizations
+            self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
-            for v in range(len(self.visualizations)):
-                self.visualizations[v].configure(visualization_configurations[v])
+            self.visualization.configure(visualization_configurations)
         else:
-            self.visualizations = []
+            self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]):
         self.numbers.append(float(message_value['test_value']))
@@ -179,5 +192,5 @@ class EMA(AnomalyDetectionAbstract):
         sigma = self.sigma[-1]
         lines = [self.numbers[-1], mean, mean+sigma, mean-sigma]
         timestamp = self.timestamps[-1]
-        for visualization in self.visualizations:
-            visualization.update(value=lines, timestamp=timestamp)
+        if(self.visualization is not None):
+            self.visualization.update(value=lines, timestamp=timestamp)

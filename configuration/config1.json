@@ -7,6 +7,7 @@
     "topics": ["anomaly_detection"],
     "anomaly_detection_alg": "BorderCheck()",
     "anomaly_detection_conf": {
+        "input_vector_size": 1,
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,
@@ -18,17 +19,12 @@
                 "mode": "a"
             }
         ],
-        "visualization": [],
-        "visualization_conf":[
-            {
-                "num_of_bins": 50,
-                "range": [0, 10]
-            },
+        "visualization": "GraphVisualization()",
+        "visualization_conf":
             {
                 "num_of_points": 50,
                 "num_of_lines": 1,
-                "linestyles":["wo"]
-            }            
-        ]
+                "linestyles":["bo", "r-", "b--", "b--"]
+            }
     }
 }
