@@ -1,9 +1,10 @@
 from abc import abstractclassmethod, abstractmethod
 from abc import ABC
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 import numpy as np
 import sys
 from statistics import mean
+from datetime import datetime
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -47,34 +48,46 @@ class AnomalyDetectionAbstract(ABC):
             self.time_features = conf["time_features"]
         else:
             self.time_features = []
+
+        # Finds the largest element among averages and shifts
+        self.memory_size = max(max(map(max, self.shifts))+1,
+                               max(map(max, self.averages)))
     
-    def feature_construction(self, value: List[Any], timestamp: str) -> None:
+    def feature_construction(self, value: List[Any], 
+                             timestamp: str) -> Union[None, bool]:
+
         # Add new value to memory and slice it
         self.memory.append(value)
         self.memory = self.memory[-self.memory_size:]
+
+        if(len(self.memory) < self.memory_size):
+            # The memory does not contain enough records for all shifts and 
+            # averages to be created
+            return False
 
         # create new value to be returned
         new_value = value.copy()
 
         # Create average features
-        new_value.append(self.average_construction(value))
+        new_value.extend(self.average_construction())
 
         # Create shifted features
-        new_value.append(self.shift_construction(value))
+        new_value.extend(self.shift_construction())
 
         # Create time features
-        new_value.append(self.time_features_construction(timestamp))
+        new_value.extend(self.time_features_construction(timestamp))
 
         return new_value
 
     def average_construction(self) -> None:
         averages = []
+        np_memory = np.array(self.memory)
 
         # Loop through all features
         for feature_index in range(len(self.averages)):
             # Loop through all horizons we want the average of
             for interval in self.averages[feature_index]:
-                values = self.memory[-interval:, feature_index]
+                values = np_memory[-interval:, feature_index]
                 averages.append(mean(values))
 
         return averages
@@ -86,14 +99,25 @@ class AnomalyDetectionAbstract(ABC):
         for feature_index in range(len(self.shifts)):
             # Loop through all shift values
             for look_back in self.shifts[feature_index]:
-                shifts.append(self.memory[self.memory_size-look_back, feature_index])
+                shifts.append(self.memory[self.memory_size-(look_back+1)][feature_index])
 
         return shifts
 
     def time_features_construction(self, timestamp: str) -> None:
         time_features = []
 
-        # TODO
+        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
+
+        # Requires datetime format
+        # Check for keywords specified in time_features
+        if("month" in self.time_features):
+            time_features.append(int(dt.month))
+        if ("day" in self.time_features):
+            time_features.append(int(dt.day))
+        if ("weekday" in self.time_features):
+            time_features.append(int(dt.weekday()))
+        if ("hour" in self.time_features):
+            time_features.append(int(dt.hour))
 
         return time_features
 
@@ -116,7 +140,7 @@ class BorderCheck(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super.configure(conf)
+        super().configure(conf)
         self.LL = conf["LL"]
         self.UL = conf["UL"]
 
@@ -140,7 +164,9 @@ class BorderCheck(AnomalyDetectionAbstract):
             self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        value = float(message_value["test_value"])
+        super().message_insert(message_value)
+        value = message_value["test_value"]
+        value = value[0]
         timestamp = message_value["timestamp"]
 
         value_normalized = 2*(value - (self.UL + self.LL)/2) / \
@@ -226,7 +252,8 @@ class EMA(AnomalyDetectionAbstract):
             self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]):
-        self.numbers.append(float(message_value['test_value']))
+        super().message_insert(message_value)
+        self.numbers.append(message_value['test_value'][0])
         self.timestamps.append(message_value['timestamp'])
         if(len(self.EMA) == 0):
             self.EMA.append(self.numbers[-1])
@@ -252,3 +279,70 @@ class EMA(AnomalyDetectionAbstract):
         timestamp = self.timestamps[-1]
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=timestamp)
+
+
+class IsolationForest(AnomalyDetectionAbstract):
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf)
+
+        # Outputs and visualization initialization and configuration
+        self.outputs = [eval(o) for o in conf["output"]]
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+        if ("visualization" in conf):
+            self.visualization = eval(conf["visualization"])
+            visualization_configurations = conf["visualization_conf"]
+            self.visualization.configure(visualization_configurations)
+        else:
+            self.visualization = None
+
+
+        if("load_model_from" in conf):
+            # Load the model
+            pass
+
+        elif ("train_data" in conf):
+            # Create and train the model
+            pass
+
+    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        super().message_insert(message_value)
+        value = message_value["test_value"]
+        timestamp = message_value["timestamp"]
+
+        feature_vector = super().feature_construction(value=value,
+                                                      timestamp=timestamp)
+
+        if (feature_vector == False):
+            # If this happens the memory does not contain enough samples to
+            # create all additional features.
+
+            # Send undefined message to output
+            for output in self.outputs:
+                output.send_out(timestamp=message_value['timestamp'],
+                                value=message_value["test_value"][0],
+                                status_code=2)
+            
+            # And to visualization
+            if(self.visualization is not None):
+                lines = [value[0]]
+                self.visualization.update(value=lines, timestamp=timestamp,
+                                          status_code=2)
+            return
+
+        print(self.memory)
+        print(feature_vector)
+
+        status_code = 1
+
+        # Visualization and outputs.
+        for output in self.outputs:
+                output.send_out(timestamp=message_value['timestamp'],
+                                value=message_value["test_value"][0],
+                                status_code=status_code)
+
+        if(self.visualization is not None):
+            lines = [feature_vector[0]]
+            self.visualization.update(value=lines, timestamp=timestamp,
+                                        status_code=status_code)

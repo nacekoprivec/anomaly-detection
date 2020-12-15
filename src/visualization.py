@@ -22,6 +22,7 @@ class GraphVisualization(VisualizationAbstract):
     lines: List[List[float]]
     colors: List[str]
     ax_graph: Any
+    count: int
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -34,7 +35,7 @@ class GraphVisualization(VisualizationAbstract):
         self.linestyles = conf["linestyles"]
         self.lines = [[] for _ in range(self.num_of_lines)]
         self.colors = []
-        pass
+        self.count = 0
 
     def update(self, value: List[Any], timestamp: Any = 0,
                status_code: int = None) -> None:
@@ -43,8 +44,6 @@ class GraphVisualization(VisualizationAbstract):
         # [lastvalue, current_moving_average, current_moving_average+sigma,
         # current_moving_average-sigma] how many of those you actually need
         # depends on num of lines
-        x_data = []
-        y_data = value.copy()
 
         self.colors.append(self.get_color(status_code=status_code))
         self.colors = self.colors[-self.num_of_points:]
@@ -56,21 +55,36 @@ class GraphVisualization(VisualizationAbstract):
             self.ax_graph = [None] * self.num_of_lines
             for i in range(self.num_of_lines):
                 self.ax_graph[i] = fig_graph.add_subplot(111)
-            x_data = [float(timestamp)]
+            
+            self.x_data_lables = []
+            self.x_data_lables = np.append(self.x_data_lables, timestamp)
+            self.x_data_lables = self.x_data_lables[-self.num_of_points:]
+            
+            self.x_data = []
+            self.x_data = np.append(self.x_data, self.count)
+            self.x_data = self.x_data[-self.num_of_points:]
+            
             y_data = value.copy()
-            self.lines[0] = self.ax_graph[0].scatter(x_data[0], y_data[0], c=self.colors[0])
+
+            
+
+            self.lines[0] = self.ax_graph[0].scatter(self.x_data, y_data[0], c=self.colors[0])
             for i in range(1, self.num_of_lines):
-                self.lines[i], = self.ax_graph[i].plot(x_data, y_data[i],
+                self.lines[i], = self.ax_graph[i].plot(self.x_data, y_data[i],
                                             self.linestyles[i], alpha=0.8)
+                plt.xticks(self.x_data, self.x_data_lables)
                 plt.show()
             return
 
         # less points than there could be
         elif (len(self.lines[0].get_offsets()[:, 0]) < self.num_of_points):
-            x_data = [None] * self.num_of_points
-            x_data = np.append(x_data, self.lines[0].get_offsets()[:, 0])
-            x_data = np.append(x_data, float(timestamp))
-            x_data = x_data[-self.num_of_points:]
+            self.x_data_lables = np.append(self.x_data_lables, timestamp)
+            self.x_data_lables = self.x_data_lables[-self.num_of_points:]
+
+            self.x_data = np.append(self.x_data, self.count)
+            self.x_data = self.x_data[-self.num_of_points:]
+
+            y_data = [None]*self.num_of_lines
 
             y_data[0] = np.append(y_data[0], self.lines[0].get_offsets()[:, 1])
             y_data[0] = np.append(y_data[0], value[0])
@@ -82,9 +96,13 @@ class GraphVisualization(VisualizationAbstract):
                 y_data[i] = np.append(y_data[i], value[i])
                 y_data[i] = y_data[i][-self.num_of_points:]
         else:
-            x_data = self.lines[0].get_offsets()[:, 0]
-            x_data = np.append(x_data, float(timestamp))
-            x_data = x_data[-self.num_of_points:]
+            self.x_data = np.append(self.x_data, self.count)
+            self.x_data = self.x_data[-self.num_of_points:]
+
+            self.x_data_lables = np.append(self.x_data_lables, timestamp)
+            self.x_data_lables = self.x_data_lables[-self.num_of_points:]
+
+            y_data = [None]*self.num_of_lines
 
             y_data[0] = self.lines[0].get_offsets()[:, 1]
             y_data[0] = np.append(y_data[0], value[0])
@@ -97,16 +115,13 @@ class GraphVisualization(VisualizationAbstract):
 
         for i in range(1, self.num_of_lines):
             self.lines[i].set_ydata(y_data[i])
-            self.lines[i].set_xdata(x_data)
+            self.lines[i].set_xdata(self.x_data)
 
-        x_data = self.lines[0].get_offsets()[:, 0]
-        x_data = np.append(x_data, float(timestamp))
-        x_data = x_data[-self.num_of_points:]
         y_data = self.lines[0].get_offsets()[:, 1]
         y_data = np.append(y_data, value[0])
         y_data = y_data[-self.num_of_points:]
 
-        self.lines[0] = self.ax_graph[0].scatter(x_data, y_data, c=self.colors)
+        self.lines[0] = self.ax_graph[0].scatter(self.x_data, y_data, c=self.colors)
 
         # plot limits correction
         if(value is not None):
@@ -114,16 +129,24 @@ class GraphVisualization(VisualizationAbstract):
                 plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_data()[1])) - 1,
                                           max(filter(lambda x: x is not None, self.lines[0].get_data()[1])) + 1])
 
-            plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 1, max(filter(lambda x: x is not None, x_data))+1])
+            plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
         plt.pause(0.1)
+
+        self.count += 1
 
     def get_color(self, status_code: int) -> str:
         if(status_code == 1):
+            # OK
             return "w"
         elif (status_code == 0):
+            # Warning
             return "y"
         elif(status_code == -1):
+            # Error
             return "r"
+        elif(status_code == 2):
+            # Undefined
+            return "b"
         else:
             print("Visualization: Invalid status code")
             exit(1)

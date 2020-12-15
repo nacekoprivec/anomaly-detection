@@ -5,7 +5,8 @@ import sys
 
 from typing import Any, Dict, List
 
-from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck
+from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
+        IsolationForest
 
 from kafka import KafkaConsumer, TopicPartition
 from pymongo import MongoClient
@@ -125,7 +126,7 @@ class ConsumerFile(ConsumerAbstract):
             except ValueError:
                 timestamp_index = None
             test_value_index = header.index("test_value")
-            other_indicies = [i for i, x in enumerate(header) if (x != "timestamp" and x != "test_value")]
+            other_indicies = [i for i, x in enumerate(header) if (x != "timestamp")]
 
             # Iterate over each row in the csv using reader object
             for row in csv_reader:
@@ -137,10 +138,8 @@ class ConsumerFile(ConsumerAbstract):
                     except ValueError:
                         pass
                     d["timestamp"] = timestamp
-                test_value = float(row[test_value_index])
-                other_values = [float(row[i]) for i in other_indicies]
+                test_value = [float(row[i]) for i in other_indicies]
 
                 d["test_value"] = test_value
-                d["other_values"] = other_values
 
                 self.anomaly.message_insert(d)
