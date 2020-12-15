@@ -331,9 +331,6 @@ class IsolationForest(AnomalyDetectionAbstract):
                                           status_code=2)
             return
 
-        print(self.memory)
-        print(feature_vector)
-
         status_code = 1
 
         # Visualization and outputs.
