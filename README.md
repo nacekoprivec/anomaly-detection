@@ -43,13 +43,17 @@ For more details see example configuration files in configuration folder.
 Consumer components differ in where the data is read from.
 1. **Kafka consumer:** Data is read from kafka stream from a specified topic. The conciguration file must specify following parameters:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
-   * auto_offset_reset": TODO (example: "latest")
+   * auto_offset_reset: TODO (example: "latest")
    * enable_auto_commit": TODO (example: "True")
-   * group_id": TODO (example "my-group")
+   * group_id: TODO (example "my-group")
    * value_deserializer": TODO (example "lambda x: loads(x.decode('utf-8'))")
-   * topics": A list of topics streaming the data. (example ["anomaly_detection"])
+   * topics: A list of topics streaming the data. (example ["anomaly_detection"])
 
-2. **File consumer:** Data is read from a csv or JSON file. The csv must have a "test_value" column with the signal on which we are searching for anomalies and optionaly a "timestamp" column. The JSON file must be of shape `{"data": [{"timestamp": ..., "test_value": ..., "other_values": [...]}]}`. The configuration file must specify the following parameters:
+   A message in kafka topic must contain two fields:
+   * timestamp: Contains a timestamp of the data in datastream in datetime format.
+   * test_value: Contains an array (a feature vector) of values.
+
+2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., "value1": ..., "value2": ..., ...}]}`. All timestamp values must be strings in datetime format. The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
 
 ### Output
@@ -77,7 +81,11 @@ An optional conponent intendet to visualize the inputted stream.
    * range: The interval shown on the histogram. (example: [0, 10])
 
 ### Anomaly detection
-The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. 
+The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all conponents:
+* input_vector_size: An integer representing the dimensionality of the inputted vector (number of features) (example: 2),
+* averages: Specifies additional features to be constructed. In this case averages of the last i values of a feature are calculated and included in the feature vector. (example: [[2, 3, 5], [2]] -> this means that the first feature gets addtitonal features: average over last 2 values, average over last 3 values and average over last 5 values and the second feature gets average over last 2 values)
+* shifts: Specifies additional features to be constructed. In this case shifted values of a feature are included in the feature vector. (example: [[1, 2, 3], [4, 5]] -> this means that the first feature gets addtitonal features: value shifted for 1, value shifted for 2 and value shifted for 3 and the second feature gets value shifted for 4 and value shifted for 5)
+* "time_features": TODO ["day", "month", "weekday", "hour"],
 1. **Border check:** A simple component that checks if the test_value falls within the specified interval and also gives warnings if it is close to the border. It requires the following arguments in the config file:
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9])
    * UL: Upper limit of the specified interval. (example: 4)
