@@ -96,3 +96,5 @@ EMA is calculated using past EMA values and the newest test value, giving more w
 EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing).\
 It requires the following arguments in the config file:
    * N : Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
+   
+2. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data.
