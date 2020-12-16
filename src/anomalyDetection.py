@@ -5,11 +5,13 @@ import numpy as np
 import sys
 from statistics import mean
 from datetime import datetime
+import pickle
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization
+
 
 
 class AnomalyDetectionAbstract(ABC):
@@ -299,20 +301,20 @@ class IsolationForest(AnomalyDetectionAbstract):
 
 
         if("load_model_from" in conf):
-            # Load the model
-            pass
-
-        elif ("train_data" in conf):
-            # Create and train the model
-            pass
+            self.model = self.load_model(conf["load_model_from"])
+        elif("train_data" in conf):
+            self.train_model(conf)
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
+
         value = message_value["test_value"]
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
+
+    
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -321,25 +323,55 @@ class IsolationForest(AnomalyDetectionAbstract):
             # Send undefined message to output
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
-                                value=message_value["test_value"][0],
-                                status_code=2)
+                                value=message_value["test_value"][0])
             
             # And to visualization
             if(self.visualization is not None):
                 lines = [value[0]]
-                self.visualization.update(value=lines, timestamp=timestamp,
+                self.visualization.update(value=[-0.26], timestamp=timestamp,
                                           status_code=2)
             return
-
-        status_code = 1
-
-        # Visualization and outputs.
-        for output in self.outputs:
+        else:
+            feature_vector = np.array(self.shift_construction())
+            print("Feature vector")
+            print(feature_vector)
+            isolation_score = self.model.decision_function(feature_vector.T.reshape(1, -1))
+            for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
-                                value=message_value["test_value"][0],
-                                status_code=status_code)
+                                value=isolation_score)
+            
 
-        if(self.visualization is not None):
-            lines = [feature_vector[0]]
-            self.visualization.update(value=lines, timestamp=timestamp,
-                                        status_code=status_code)
+            if(self.visualization is not None):
+                lines = [value[0]]
+                self.visualization.update(value=isolation_score, timestamp=timestamp,
+                                          status_code=1)
+            return
+
+    def save_model(clf, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump(clf, f)
+
+    def load_model(self, filename):
+        with open(filename, 'rb') as f:
+            clf = pickle.load(f)
+        return(clf)
+
+    def train_model(self, conf):
+     #load data from location stored in "filename"
+        data = np.loadtxt(conf["filename"])
+
+        features = []
+        N = conf["max_features"]
+        for i in range(N, len(data)):
+            features.append(np.array(data[i-N:N]))
+
+        #fit IsolationForest model to data
+        self.model = sklearn.ensemble.IsolationForest(
+            max_samples = conf["max_samples"],
+            max_features = conf["max_features"]
+            ).fit(features)
+
+        save_model(self.model, "models/" + conf["model_name"])
+ 
+
+    
