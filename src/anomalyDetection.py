@@ -6,6 +6,7 @@ import sys
 from statistics import mean
 from datetime import datetime
 import pickle
+import sklearn.ensemble
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -35,7 +36,7 @@ class AnomalyDetectionAbstract(ABC):
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
         self.input_vector_size = conf["input_vector_size"]
-
+        
         if("averages" in conf):
             self.averages = conf["averages"]
         else:
@@ -141,6 +142,7 @@ class BorderCheck(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
+
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
         self.LL = conf["LL"]
@@ -159,6 +161,7 @@ class BorderCheck(AnomalyDetectionAbstract):
 
         # If configuration is specified configure it
         if ("visualization" in conf):
+            print(conf["visualization"])
             self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
             self.visualization.configure(visualization_configurations)
@@ -196,8 +199,7 @@ class BorderCheck(AnomalyDetectionAbstract):
                     break
 
         for output in self.outputs:
-            output.send_out(status=status, value=value,
-                            status_code=status_code)
+            output.send_out(status=status, value=value)
 
         if(self.visualization is not None):
             lines = [value]
@@ -221,18 +223,9 @@ class EMA(AnomalyDetectionAbstract):
         super().__init__()
         if(conf is not None):
             self.configure(conf)
-        else:
-            default = {
-                "N": 5,
-                "num_of_points": 50,
-                "output": ["TerminalOutput()"],
-                "output_conf": [
-                    {}
-                ]
-            }
-            self.configure(default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf)
         self.N = conf['N']
         self.smoothing = 2/(self.N+1)
         self.EMA = []
@@ -272,7 +265,7 @@ class EMA(AnomalyDetectionAbstract):
             self.sigma.append(np.std(self.numbers[-self.N:]))
 
         for output in self.outputs:
-            output.send_out(timestamp=float(message_value['timestamp']),
+            output.send_out(timestamp=message_value["timestamp"],
                             value=message_value["test_value"])
 
         mean = self.EMA[-1]
@@ -280,7 +273,8 @@ class EMA(AnomalyDetectionAbstract):
         lines = [self.numbers[-1], mean, mean+sigma, mean-sigma]
         timestamp = self.timestamps[-1]
         if(self.visualization is not None):
-            self.visualization.update(value=lines, timestamp=timestamp)
+            self.visualization.update(value=lines, timestamp=message_value["timestamp"],
+            status_code = 0)
 
 
 class IsolationForest(AnomalyDetectionAbstract):
@@ -323,18 +317,17 @@ class IsolationForest(AnomalyDetectionAbstract):
             # Send undefined message to output
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
-                                value=message_value["test_value"][0])
+                                value=None)
             
             # And to visualization
             if(self.visualization is not None):
                 lines = [value[0]]
-                self.visualization.update(value=[-0.26], timestamp=timestamp,
-                                          status_code=2)
+                #self.visualization.update(value=[None], timestamp=timestamp,
+                #                          status_code=2)
             return
         else:
             feature_vector = np.array(self.shift_construction())
-            print("Feature vector")
-            print(feature_vector)
+
             isolation_score = self.model.decision_function(feature_vector.T.reshape(1, -1))
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
@@ -347,9 +340,9 @@ class IsolationForest(AnomalyDetectionAbstract):
                                           status_code=1)
             return
 
-    def save_model(clf, filename):
-        with open(filename, 'wb') as f:
-            pickle.dump(clf, f)
+    def save_model(self, filename):
+        with open("models/" + filename, 'wb') as f:
+            pickle.dump(self.model, f)
 
     def load_model(self, filename):
         with open(filename, 'rb') as f:
@@ -358,20 +351,20 @@ class IsolationForest(AnomalyDetectionAbstract):
 
     def train_model(self, conf):
      #load data from location stored in "filename"
-        data = np.loadtxt(conf["filename"])
+        data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
 
         features = []
-        N = conf["max_features"]
+        N = conf["train_conf"]["max_features"]
         for i in range(N, len(data)):
-            features.append(np.array(data[i-N:N]))
+            features.append(np.array(data[i-N:i]))
 
         #fit IsolationForest model to data
         self.model = sklearn.ensemble.IsolationForest(
-            max_samples = conf["max_samples"],
-            max_features = conf["max_features"]
+            max_samples = conf["train_conf"]["max_samples"],
+            max_features = N
             ).fit(features)
 
-        save_model(self.model, "models/" + conf["model_name"])
+        self.save_model(conf["train_conf"]["model_name"])
  
 
     
