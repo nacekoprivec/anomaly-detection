@@ -10,7 +10,7 @@
         "load_model_from": "models/IsolationForest", 
         "input_vector_size": 2,
         "averages": [[2, 3, 5], [2]],
-        "shifts": [[1, 2, 3]],
+        "shifts": [[1, 2, 3, 4]],
         "time_features": ["day", "month", "weekday", "hour"],
         "output": ["TerminalOutput()"],
         "max_samples": 1000,
