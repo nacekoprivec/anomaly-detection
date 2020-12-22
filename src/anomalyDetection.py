@@ -226,6 +226,10 @@ class EMA(AnomalyDetectionAbstract):
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
+        self.LL = conf["LL"]
+        self.UL = conf["UL"]
+        self.warning_stages = conf["warning_stages"]
+        self.warning_stages.sort()
         self.N = conf['N']
         self.smoothing = 2/(self.N+1)
         self.EMA = []
@@ -264,9 +268,40 @@ class EMA(AnomalyDetectionAbstract):
         else:
             self.sigma.append(np.std(self.numbers[-self.N:]))
 
+
+        
+        value_normalized = 2*(self.EMA[-1] - (self.UL + self.LL)/2) / \
+            (self.UL - self.LL)
+        status = "OK"
+        status_code = 1
+
+        if(value_normalized > 1):
+            status = "Error: EMA above upper limit"
+            status_code = -1
+        elif(value_normalized < -1):
+            status = "Error: EMA below lower limit"
+            status_code = -1
+        else:
+            for stage in range(len(self.warning_stages)):
+                if(value_normalized > self.warning_stages[stage]):
+                    status = "Warning" + str(stage) + \
+                        ": EMA close to upper limit."
+                    status_code = 0
+                elif(value_normalized < -self.warning_stages[stage]):
+                    status = "Warning" + str(stage) + \
+                        ": EMA close to lower limit."
+                    status_code = 0
+                else:
+                    break
+
+
+
+
+
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             value=message_value["test_value"])
+            output.send_out(status=status, value=value)
 
         mean = self.EMA[-1]
         sigma = self.sigma[-1]
@@ -364,6 +399,93 @@ class IsolationForest(AnomalyDetectionAbstract):
             max_features = N
             ).fit(features)
 
+        self.save_model(conf["train_conf"]["model_name"])
+
+
+class PCA(AnomalyDetectionAbstract):
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf)
+
+        # Outputs and visualization initialization and configuration
+        self.outputs = [eval(o) for o in conf["output"]]
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+        if ("visualization" in conf):
+            self.visualization = eval(conf["visualization"])
+            visualization_configurations = conf["visualization_conf"]
+            self.visualization.configure(visualization_configurations)
+        else:
+            self.visualization = None
+
+        if("load_model_from" in conf):
+            self.model = self.load_model(conf["load_model_from"])
+        elif("train_data" in conf):
+            self.train_model(conf)
+
+    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        super().message_insert(message_value)
+
+        value = message_value["test_value"]
+        timestamp = message_value["timestamp"]
+
+        feature_vector = super().feature_construction(value=value,
+                                                      timestamp=timestamp)
+
+    
+
+        if (feature_vector == False):
+            # If this happens the memory does not contain enough samples to
+            # create all additional features.
+
+            # Send undefined message to output
+            for output in self.outputs:
+                output.send_out(timestamp=message_value['timestamp'],
+                                value=None)
+            
+            # And to visualization
+            if(self.visualization is not None):
+                lines = [value[0]]
+                #self.visualization.update(value=[None], timestamp=timestamp,
+                #                          status_code=2)
+            return
+        else:
+            feature_vector = np.array(self.shift_construction())
+
+            PCA_transformed = self.model.transform(feature_vector.reshape(1, -1))
+            for output in self.outputs:
+                output.send_out(timestamp=message_value['timestamp'],
+                                value=PCA_transformed)
+            
+
+            if(self.visualization is not None):
+                lines = PCA_transformed[0]
+                self.visualization.update(value=lines, timestamp=timestamp,
+                                          status_code=1)
+            return
+
+    def save_model(self, filename):
+        with open("models/" + filename, 'wb') as f:
+            pickle.dump(self.model, f)
+
+    def load_model(self, filename):
+        with open(filename, 'rb') as f:
+            clf = pickle.load(f)
+        return(clf)
+
+    def train_model(self, conf):
+     #load data from location stored in "train_data"
+        data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
+
+        features = []
+        N_components = conf["train_conf"]["N_components"]
+        N_past_data = conf["train_conf"]["N_past_data"]
+        for i in range(N_past_data, len(data)):
+            features.append(np.array(data[i-N_past_data:i]))
+
+        #fit IsolationForest model to data
+        self.model = sklearn.decomposition.PCA(n_components = N_components)
+        self.model.fit(features)
         self.save_model(conf["train_conf"]["model_name"])
  
 
