@@ -93,8 +93,22 @@ The component that does the actual anomaly detection. It recieves data from a co
 
 2. **EMA:** Calculates the exponential moving average of test values. It recieves data from a consumer component and sends output to output components. 
 EMA is calculated using past EMA values and the newest test value, giving more weigth to newer data. It is calculated in the following way:
-EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing).\
+EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing). Warnings are issued if the EMA approaches UL or LL.\
 It requires the following arguments in the config file:
-   * N : Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
+   * N: Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
+   * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9])
    
-2. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data.
+2. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
+    *train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. 
+    *max_features: The number of features to draw from X to train each base estimator. (example: 4)
+    *max_samples: The number of samples to draw from X to train each base estimator. (example:100)
+    *contamination: The proportion of outliers in the dataset. (example: 0.1 if we know we have 10% of outliers in our dataset) Can be set to "auto".
+    *model_name: Name of the model, which will be saved in "models/" folder.
+Example model train config: IsolationForestTrain.json
+Model train mode is activated if "load_model_from" is not in the config file, and "train_data" is defined. After training, the trained model will be used to continue with evaluation of data from consumer automatically.
+If we have a pre-trained model, we load it by specifying:
+    *load_model_from: location of pre-trained iForest model. (example: "models/IsolationForest")
+in the config file. Example config: IsolationForest.json
+
+3. **PCA:** Principal component analysis. Projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). Could be effective to combine PCA followed by e.g. Isolation Forest (TODO)
+
