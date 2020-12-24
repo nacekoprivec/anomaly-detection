@@ -63,7 +63,7 @@ class FileOutput(OutputAbstract):
         # If mode is write clear the file
         if(self.mode == "w"):
             if(self.file_name[-4:] == "json"):
-                print("here")
+                # print("here")
                 with open(self.file_path, "w") as f:
                     d = {
                         "data": []
@@ -134,7 +134,7 @@ class KafkaOutput(OutputAbstract):
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
-        print(conf)
+        # print(conf)
         if(conf is not None):
             self.configure(conf=conf)
 

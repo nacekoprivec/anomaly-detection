@@ -126,8 +126,8 @@ class GraphVisualization(VisualizationAbstract):
         # plot limits correction
         if(value is not None):
             if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
-                plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_data()[1])) - 1,
-                                          max(filter(lambda x: x is not None, self.lines[0].get_data()[1])) + 1])
+                plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_offsets()[1])) - 1,
+                                          max(filter(lambda x: x is not None, self.lines[0].get_offsets()[1])) + 1])
 
             plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
         plt.pause(0.1)

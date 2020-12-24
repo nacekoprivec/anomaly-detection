@@ -2,6 +2,7 @@
     "file_name": "sin.csv",
     "anomaly_detection_alg": "BorderCheck()",
     "anomaly_detection_conf": {
+        "input_vector_size": 2,
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,

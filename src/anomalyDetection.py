@@ -53,8 +53,17 @@ class AnomalyDetectionAbstract(ABC):
             self.time_features = []
 
         # Finds the largest element among averages and shifts
-        self.memory_size = max(max(map(max, self.shifts))+1,
-                               max(map(max, self.averages)))
+        if(len(self.shifts) == 0):
+            max_shift = 0
+        else:
+            max_shift = max(map(max, self.shifts))+1
+
+        if (len(self.averages) == 0):
+            max_average = 0
+        else:
+            max_average = max(map(max, self.averages))
+
+        self.memory_size = max(max_shift, max_average)
     
     def feature_construction(self, value: List[Any], 
                              timestamp: str) -> Union[None, bool]:
@@ -161,7 +170,7 @@ class BorderCheck(AnomalyDetectionAbstract):
 
         # If configuration is specified configure it
         if ("visualization" in conf):
-            print(conf["visualization"])
+            # print(conf["visualization"])
             self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
             self.visualization.configure(visualization_configurations)
@@ -301,7 +310,8 @@ class EMA(AnomalyDetectionAbstract):
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             value=message_value["test_value"])
-            output.send_out(status=status, value=value)
+            output.send_out(status=status,
+                            value=message_value['test_value'][0])
 
         mean = self.EMA[-1]
         sigma = self.sigma[-1]
