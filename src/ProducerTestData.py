@@ -30,4 +30,3 @@ for i in range(len(stored_data)):
 	
     producer.send('anomaly_detection1', value=data)
     sleep(1) #one data point each second
-
