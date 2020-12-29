@@ -11,7 +11,7 @@ import sklearn.ensemble
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
-    HistogramVisualization
+    HistogramVisualization, StatusPointsVisualization
 
 
 
@@ -269,7 +269,6 @@ class EMA(AnomalyDetectionAbstract):
             new = self.numbers[-1] * self.smoothing + self.EMA[-1] *\
                 (1-self.smoothing)
             self.EMA.append(new)
-
         if(len(self.numbers) == 1):
             self.sigma.append(0)
         elif(len(self.numbers) < self.N):
@@ -303,13 +302,7 @@ class EMA(AnomalyDetectionAbstract):
                 else:
                     break
 
-
-
-
-
         for output in self.outputs:
-            output.send_out(timestamp=message_value["timestamp"],
-                            value=message_value["test_value"])
             output.send_out(status=status,
                             value=message_value['test_value'][0])
 
@@ -319,7 +312,7 @@ class EMA(AnomalyDetectionAbstract):
         timestamp = self.timestamps[-1]
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
-            status_code = 0)
+            status_code = status_code)
 
 
 class IsolationForest(AnomalyDetectionAbstract):

@@ -30,14 +30,15 @@ for e in range(1000):
     tab_data_csv.append(data_csv)
 	
     producer.send('anomaly_detection1', value=data)
-    #sleep(1) #one data point each second
+    sleep(1) #one data point each second
 
 """with open("../data/consumer/sin.json", "w") as f:
     d = {"data": tab_data}
     json.dump(d, f)
 """
-with open("../data/consumer/sin.csv", "w", newline="") as csv_file:
+"""with open("../data/consumer/sin.csv", "w", newline="") as csv_file:
         fieldnames = ["timestamp", "test_value", "second"]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(tab_data_csv)
+"""

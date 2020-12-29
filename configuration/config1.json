@@ -11,15 +11,11 @@
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,
-        "output": ["TerminalOutput()", "FileOutput()"],
+        "output": ["TerminalOutput()"],
         "output_conf": [
-            {},
-            {
-                "file_name": "output.csv",
-                "mode": "a"
-            }
+            {}
         ],
-        "visualization": "GraphVisualization()",
+        "visualization": "StatusPointsVisualization()",
         "visualization_conf":
             {
                 "num_of_points": 50,
