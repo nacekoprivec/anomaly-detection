@@ -6,7 +6,7 @@ import sys
 from typing import Any, Dict, List
 
 from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
-        IsolationForest
+        IsolationForest, Welford
 
 from kafka import KafkaConsumer, TopicPartition
 from pymongo import MongoClient

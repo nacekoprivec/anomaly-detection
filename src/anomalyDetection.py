@@ -2,7 +2,9 @@ from abc import abstractclassmethod, abstractmethod
 from abc import ABC
 from typing import Any, Dict, List, Union
 import numpy as np
+import statistics
 import sys
+import math
 from statistics import mean
 from datetime import datetime
 import pickle
@@ -24,6 +26,18 @@ class AnomalyDetectionAbstract(ABC):
 
     input_vector_size: int
     outputs: List["OutputAbstract"]
+
+    # Statuses
+    UNDEFINED = "Undefined"
+    ERROR = "Error"
+    WARNING = "Warning"
+    OK = "OK"
+
+    # Status codes
+    UNDEFIEND_CODE = 2
+    ERROR_CODE = -1
+    WARNING_CODE = 0
+    OK_CODE = 1
 
     def __init__(self) -> None:
         self.memory = []
@@ -214,6 +228,129 @@ class BorderCheck(AnomalyDetectionAbstract):
             lines = [value]
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
+
+
+class Welford(AnomalyDetectionAbstract):
+    UL: float
+    LL: float
+    N: int
+    count: int
+    memory: List[float]
+    X: float
+    mean: float
+    s: float
+    warning_stages: List[float]
+    visualization: List["VisualizationAbstract"]
+    outputs: List["OutputAbstract"]
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf)
+
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf)
+        if ('N' in conf):
+            self.N = conf['N']
+            self.memory = [None] * self.N
+        else:
+            self.N = None
+
+        self.UL = self.LL = None
+        self.count = 0
+
+        self.X = conf["X"]
+        self.warning_stages = conf["warning_stages"]
+        self.warning_stages.sort()
+
+        self.outputs = [eval(o) for o in conf["output"]]
+        # configure all outputs
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+
+        if ("visualization" in conf):
+            self.visualization = eval(conf["visualization"])
+            visualization_configurations = conf["visualization_conf"]
+            self.visualization.configure(visualization_configurations)
+        else:
+            self.visualization = None
+
+    def message_insert(self, message_value: Dict[Any, Any]):
+        super().message_insert(message_value)
+        # extract from message
+        value = message_value["test_value"]
+        value = value[0]
+        timestamp = message_value["timestamp"]
+
+        # First value is undefined
+        if (self.count == 0):
+            self.mean = value
+            self.s = 0
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+        # Infinite stream and has at least 2 elements so far, or finite stream
+        # with full memory
+        elif ((self.N is None and self.count > 1) or
+             (self.N is not None and self.N <= self.count)):
+            value_normalized = 2*(value - (self.UL + self.LL)/2) / \
+                (self.UL - self.LL)
+            status = self.OK
+            status_code = self.OK_CODE
+
+            if(value_normalized > 1):
+                status = "Error: measurement above upper limit"
+                status_code = -1
+            elif(value_normalized < -1):
+                status = "Error: measurement below lower limit"
+                status_code = -1
+            else:
+                for stage in range(len(self.warning_stages)):
+                    if(value_normalized > self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": measurement close to upper limit."
+                        status_code = 0
+                    elif(value_normalized < -self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": measurement close to lower limit."
+                        status_code = 0
+                    else:
+                        break
+        else:
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+
+        # Outputs and visualizations
+        for output in self.outputs:
+            output.send_out(status=status, value=value)
+
+        if(self.visualization is not None):
+            lines = [value]
+            self.visualization.update(value=lines, timestamp=timestamp,
+                                      status_code=status_code)
+        
+        self.count += 1
+        # adjust mean and stdev for the current window
+        if(self.N is not None):
+            self.memory.append(value)
+            self.memory = self.memory[-self.N:]
+            # If the memory is not full calculate stdev, mean LL and UL
+            if(self.count >= self.N):
+                self.mean = statistics.mean(self.memory)
+                self.s = statistics.stdev(self.memory)
+                self.LL = self.mean - self.X*self.s
+                self.UL = self.mean + self.X*self.s
+        # Adjust mean and stdev for all data till this point
+        elif(self.count > 1):
+            # Actual welfords algorithm formulas
+            new_mean = self.mean + (value - self.mean)*1./self.count
+            new_s = self.s + (value - self.mean)* \
+                        (value - new_mean)
+            self.mean = new_mean
+            self.s = new_s
+            self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
+            self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
+
 
 
 class EMA(AnomalyDetectionAbstract):

@@ -20,7 +20,10 @@ tab_data_csv = []
 
 for e in range(1000):
     timestamp = e
-    ran = float(np.random.normal(0, 0.1) + np.sin(0.1*e))
+    # Normal distribution
+    ran = float(np.random.normal(0, 0.1))
+    # Sin with normal distribution error
+    # ran = float(np.random.normal(0, 0.1) + np.sin(0.1*e))
     data = {"test_value" : [3 + ran],
 			"timestamp": str(datetime.now())}
     data_csv = {"test_value" : 3 + ran,
@@ -29,7 +32,7 @@ for e in range(1000):
     tab_data.append(data)
     tab_data_csv.append(data_csv)
 	
-    producer.send('anomaly_detection1', value=data)
+    producer.send('anomaly_detection', value=data)
     sleep(1) #one data point each second
 
 """with open("../data/consumer/sin.json", "w") as f:
