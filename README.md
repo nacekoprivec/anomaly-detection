@@ -98,7 +98,7 @@ It requires the following arguments in the config file:
    * N: Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
    * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9])
    
-2. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
+3. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
     *train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. 
     *max_features: The number of features to draw from X to train each base estimator. (example: 4)
     *max_samples: The number of samples to draw from X to train each base estimator. (example:100)
@@ -110,5 +110,11 @@ If we have a pre-trained model, we load it by specifying:
     *load_model_from: location of pre-trained iForest model. (example: "models/IsolationForest")
 in the config file. Example config: IsolationForest.json
 
-3. **PCA:** Principal component analysis. Projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). Could be effective to combine PCA followed by e.g. Isolation Forest (TODO)
+4. **PCA:** Principal component analysis. Projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). Could be effective to combine PCA followed by e.g. Isolation Forest (TODO)
+
+5. **Welfords algorithm:** Very simmilar to border check only in this case UL and LL are calculated with every new sample (with equations: UL=online_mean_consumption+X*online_standard_+deviation and LL=online_mean_consumption-X*online_standard_+deviation). There are two modes for this method. Frist one calculates mean and standard deviation of the previous N samples and the second one calculates them for all the datasamples so far.
+It requires the following arguments in the config file:
+   * N: An integer representing the number of samples used for calculating mean and standard deviation. If it is not specified all samples till some point will be used in calculation. (example: 5)
+   * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9])
+   * X: A parameter in the equation for calculating LL and UL. The larger it is the bigger the interval of normal values it (more false negatives) (example: 1.5)
 
