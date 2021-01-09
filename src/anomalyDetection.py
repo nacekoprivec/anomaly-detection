@@ -9,6 +9,7 @@ from statistics import mean
 from datetime import datetime
 import pickle
 import sklearn.ensemble
+from scipy import signal
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -627,6 +628,84 @@ class PCA(AnomalyDetectionAbstract):
         self.model = sklearn.decomposition.PCA(n_components = N_components)
         self.model.fit(features)
         self.save_model(conf["train_conf"]["model_name"])
- 
 
-    
+class Filtering(AnomalyDetectionAbstract):
+    UL: float
+    LL: float
+    filtered: List[float]
+    visualization: List["VisualizationAbstract"]
+    outputs: List["OutputAbstract"]
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf)
+
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf)
+        self.LL = conf["LL"]
+        self.UL = conf["UL"]
+        self.warning_stages = conf["warning_stages"]
+        self.warning_stages.sort()
+        self.filtered = []
+        self.numbers = []
+        self.timestamps = []
+
+        self.b, self.a = signal.butter(conf["filter_order"], conf["cutoff_frequency"])
+        self.z = signal.lfilter_zi(self.b, self.a)
+
+        self.outputs = [eval(o) for o in conf["output"]]
+        # configure all outputs
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+
+        if ("visualization" in conf):
+            self.visualization = eval(conf["visualization"])
+            visualization_configurations = conf["visualization_conf"]
+            self.visualization.configure(visualization_configurations)
+        else:
+            self.visualization = None
+
+    def message_insert(self, message_value: Dict[Any, Any]):
+        super().message_insert(message_value)
+
+        self.last_measurement = message_value['test_value'][0]
+        filtered_value, self.z = signal.lfilter(self.b, self.a, x = [self.last_measurement], zi = self.z)
+
+        self.filtered.append(filtered_value[0])
+        
+        value_normalized = 2*(self.filtered[-1] - (self.UL + self.LL)/2) / \
+            (self.UL - self.LL)
+        status = "OK"
+        status_code = 1
+
+        if(value_normalized > 1):
+            status = "Error: Filtered signal above upper limit"
+            status_code = -1
+        elif(value_normalized < -1):
+            status = "Error: Filtered signal below lower limit"
+            status_code = -1
+        else:
+            for stage in range(len(self.warning_stages)):
+                if(value_normalized > self.warning_stages[stage]):
+                    status = "Warning" + str(stage) + \
+                        ": Filtered signal close to upper limit."
+                    status_code = 0
+                elif(value_normalized < -self.warning_stages[stage]):
+                    status = "Warning" + str(stage) + \
+                        ": Filtered signal close to lower limit."
+                    status_code = 0
+                else:
+                    break
+
+        for output in self.outputs:
+            output.send_out(status=status,
+                            value=message_value['test_value'][0])
+
+        
+        lines = [self.filtered[-1], self.last_measurement]
+        #timestamp = self.timestamps[-1]
+        if(self.visualization is not None):
+            self.visualization.update(value=lines, timestamp=message_value["timestamp"],
+            status_code = status_code)

@@ -45,7 +45,8 @@ class GraphVisualization(VisualizationAbstract):
         # [lastvalue, current_moving_average, current_moving_average+sigma,
         # current_moving_average-sigma] how many of those you actually need
         # depends on num of lines
-        y_data = value.copy()
+        y_data = [None]*self.num_of_lines
+        print(value)
 
         # define or update lines
         if(self.lines[0] == []):
@@ -91,10 +92,20 @@ class GraphVisualization(VisualizationAbstract):
 
         # plot limits correction
         if(value is not None):
-            if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
-                plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_data()[1])) - 1,
-                                          max(filter(lambda x: x is not None, self.lines[0].get_data()[1])) + 1])
-            plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 1, max(filter(lambda x: x is not None, x_data))+1])
+            if(isinstance(self.lines[0].get_data()[1], np.ndarray)):
+
+                Min = min(filter(lambda x: x is not None,self.lines[0].get_data()[1]))
+                Max = max(filter(lambda x: x is not None,self.lines[0].get_data()[1]))
+                for i in range(len(self.lines)):
+                    if (min(filter(lambda x: x is not None,self.lines[i].get_data()[1])) <= Min):
+                        Min = min(filter(lambda x: x is not None,self.lines[i].get_data()[1]))
+                    if (max(filter(lambda x: x is not None,self.lines[i].get_data()[1])) >= Max):
+                        Max = max(filter(lambda x: x is not None,self.lines[i].get_data()[1])) 
+            else:
+                Min = min(value)-0.1
+                Max = max(value)+0.1
+        plt.subplot(111).set_ylim([Min - 0.1, Max + 0.1])
+        plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 0.1, max(filter(lambda x: x is not None, x_data))+0.1])
         plt.pause(0.1)
 
         self.count += 1
@@ -210,8 +221,8 @@ class StatusPointsVisualization(VisualizationAbstract):
         # plot limits correction
         if(value is not None):
             if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
-                plt.subplot(111).set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_offsets()[1])) - 1,
-                                          max(filter(lambda x: x is not None, self.lines[0].get_offsets()[1])) + 1])
+                self.ax_graph[0].set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) - 1,
+                                          max(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) + 1])
 
             plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
         plt.pause(0.1)
