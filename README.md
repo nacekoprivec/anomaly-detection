@@ -79,6 +79,8 @@ An optional conponent intendet to visualize the inputted stream.
 2. **Histogram visualization:** It visualizes the quantity of values, from test_value stream. It requires the following arguments in the config file:
    * num_of_bins: TODO (example: 50)
    * range: The interval shown on the histogram. (example: [0, 10])
+   
+3. **Status Points Visualization:** Used to visualize processed data e.g. outputs of EMA or Filtering. The points are colored white if OK, or according to warning(yellow) or error stages(red).
 
 ### Anomaly detection
 The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all conponents:
@@ -117,4 +119,17 @@ It requires the following arguments in the config file:
    * N: An integer representing the number of samples used for calculating mean and standard deviation. If it is not specified all samples till some point will be used in calculation. (example: 5)
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9])
    * X: A parameter in the equation for calculating LL and UL. The larger it is the bigger the interval of normal values it (more false negatives) (example: 1.5)
+   
+6. **Filtering:** Digital filtering is applied to the input data via a lowpass filter, smoothing the signal. The filter used is Butterworth of the order specified in config. This helps to identify trend changes in the data. Similarly to Border check and EMA, warnings are issued if the filtered signal approaches UL or LL.
+
+Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (TODO)
+
+It requires the following arguments in the config file:
+    * warning_stages: similar to e.g. EMA (example: [0.7, 0.9])
+    * filter_order: order of the filter - how many latest points are used in the filter response. Most of the time, somewhere around order 3 is enough, as a higher order filter will cause a delay in the filtered signal compared to the real-time data. (example: 3)
+    *cutoff_frequency: the frequency, at which the filter response starts to drop off. Lower frequency components of the input data will be passed through, but higher frequency components are filtered out. This is not an actual physical frequency but rather a float between 0 and 1. (example: 0.1)
+    
+
+
+
 
