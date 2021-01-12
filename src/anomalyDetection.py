@@ -401,6 +401,8 @@ class EMA(AnomalyDetectionAbstract):
         super().message_insert(message_value)
         self.numbers.append(message_value['test_value'][0])
         self.timestamps.append(message_value['timestamp'])
+        
+        #Calculate exponential moving average
         if(len(self.EMA) == 0):
             self.EMA.append(self.numbers[-1])
         else:
@@ -415,12 +417,13 @@ class EMA(AnomalyDetectionAbstract):
             self.sigma.append(np.std(self.numbers[-self.N:]))
 
 
-        
+        #Normalize the moving average to the range LL - UL
         value_normalized = 2*(self.EMA[-1] - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
         status = "OK"
         status_code = 1
 
+        #Perform error and warning checks
         if(value_normalized > 1):
             status = "Error: EMA above upper limit"
             status_code = -1
@@ -444,6 +447,7 @@ class EMA(AnomalyDetectionAbstract):
             output.send_out(status=status,
                             value=message_value['test_value'][0])
 
+        #send EMA and +- sigma band to visualization
         mean = self.EMA[-1]
         sigma = self.sigma[-1]
         lines = [self.numbers[-1], mean, mean+sigma, mean-sigma]
@@ -454,6 +458,19 @@ class EMA(AnomalyDetectionAbstract):
 
 
 class IsolationForest(AnomalyDetectionAbstract):
+
+    N: int
+    memory: List[float]
+    isolation_score: float
+    warning_stages: List[float]
+    visualization: List["VisualizationAbstract"]
+    outputs: List["OutputAbstract"]
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf)
+
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
 
@@ -484,8 +501,6 @@ class IsolationForest(AnomalyDetectionAbstract):
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
 
-    
-
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
@@ -498,12 +513,13 @@ class IsolationForest(AnomalyDetectionAbstract):
             # And to visualization
             if(self.visualization is not None):
                 lines = [value[0]]
-                #self.visualization.update(value=[None], timestamp=timestamp,
-                #                          status_code=2)
+                self.visualization.update(value=lines, timestamp=timestamp,
+                                          status_code=2)
             return
         else:
             feature_vector = np.array(self.shift_construction())
 
+            #Model prediction
             isolation_score = self.model.decision_function(feature_vector.T.reshape(1, -1))
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
@@ -544,6 +560,19 @@ class IsolationForest(AnomalyDetectionAbstract):
 
 
 class PCA(AnomalyDetectionAbstract):
+
+    N: int
+    N_components: int
+    N_past_data: int
+    PCA_transformed: List[float]
+    visualization: List["VisualizationAbstract"]
+    outputs: List["OutputAbstract"]
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf)
+
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
 
@@ -593,6 +622,7 @@ class PCA(AnomalyDetectionAbstract):
         else:
             feature_vector = np.array(self.shift_construction())
 
+            #Model prediction
             PCA_transformed = self.model.transform(feature_vector.reshape(1, -1))
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
@@ -632,7 +662,9 @@ class PCA(AnomalyDetectionAbstract):
 class Filtering(AnomalyDetectionAbstract):
     UL: float
     LL: float
+    value_normalized: float
     filtered: List[float]
+    result: float
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
 
@@ -643,6 +675,7 @@ class Filtering(AnomalyDetectionAbstract):
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
+        self.mode = conf["mode"]
         self.LL = conf["LL"]
         self.UL = conf["UL"]
         self.warning_stages = conf["warning_stages"]
@@ -651,6 +684,7 @@ class Filtering(AnomalyDetectionAbstract):
         self.numbers = []
         self.timestamps = []
 
+        #Initalize the digital filter
         self.b, self.a = signal.butter(conf["filter_order"], conf["cutoff_frequency"])
         self.z = signal.lfilter_zi(self.b, self.a)
 
@@ -671,15 +705,19 @@ class Filtering(AnomalyDetectionAbstract):
         super().message_insert(message_value)
 
         self.last_measurement = message_value['test_value'][0]
+
+        #Update filter output after last measurement
         filtered_value, self.z = signal.lfilter(self.b, self.a, x = [self.last_measurement], zi = self.z)
 
         self.filtered.append(filtered_value[0])
         
+        #Normalize filter outputs
         value_normalized = 2*(self.filtered[-1] - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
         status = "OK"
         status_code = 1
 
+        #Perform error and warning checks
         if(value_normalized > 1):
             status = "Error: Filtered signal above upper limit"
             status_code = -1
@@ -699,12 +737,17 @@ class Filtering(AnomalyDetectionAbstract):
                 else:
                     break
 
+        if(self.mode == 0):
+            result = self.filtered[-1]
+        elif(self.mode == 1):
+            result = self.last_measurement - self.filtered[-1]
+
         for output in self.outputs:
             output.send_out(status=status,
-                            value=message_value['test_value'][0])
+                            value=result)
 
         
-        lines = [self.filtered[-1], self.last_measurement]
+        lines = [result, self.last_measurement]
         #timestamp = self.timestamps[-1]
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
