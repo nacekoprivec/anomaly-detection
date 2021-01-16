@@ -143,3 +143,44 @@ class ConsumerFile(ConsumerAbstract):
                 d["test_value"] = test_value
 
                 self.anomaly.message_insert(d)
+
+
+class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
+    file_name: str
+    file_path: str
+
+    def __init__(self, conf: Dict[Any, Any] = None,
+                 configuration_location: str = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(con=conf)
+        elif(configuration_location is not None):
+            # Read config file
+            with open("configuration/" + configuration_location) as data_file:
+                conf = json.load(data_file)
+            self.configure(con=conf)
+        else:
+            print("No configuration was given")
+
+    def configure(self, con: Dict[Any, Any] = None) -> None:
+        # File configuration
+        self.file_name = con["file_name"]
+        self.file_path = "./data/consumer/" + self.file_name
+
+        # Kafka configuration
+        self.topics = con['topics']
+        self.consumer = KafkaConsumer(
+                        bootstrap_servers=con['bootstrap_servers'],
+                        auto_offset_reset=con['auto_offset_reset'],
+                        enable_auto_commit=con['enable_auto_commit'],
+                        group_id=con['group_id'],
+                        value_deserializer=eval(con['value_deserializer']))
+        self.consumer.subscribe(self.topics)
+
+        self.anomaly = eval(con["anomaly_detection_alg"])
+        anomaly_configuration = con["anomaly_detection_conf"]
+        self.anomaly.configure(anomaly_configuration)
+
+    def read(self) -> None:
+        ConsumerFile.read(self)
+        ConsumerKafka.read(self)
