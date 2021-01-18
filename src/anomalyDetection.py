@@ -741,7 +741,7 @@ class Filtering(AnomalyDetectionAbstract):
 
         if(self.mode == 0):
             result = self.filtered[-1]
-        elif(self.mode == 1):
+        else:
             result = self.last_measurement - self.filtered[-1]
 
         for output in self.outputs:
