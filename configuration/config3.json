@@ -10,7 +10,7 @@
         "output_conf": [
             {}
         ],
-        "visualization": "GraphVisualization()",
+        "visualization": "StatusPointsVisualization()",
         "visualization_conf":
             {
                 "num_of_points": 50,

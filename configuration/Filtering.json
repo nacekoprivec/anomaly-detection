@@ -8,10 +8,11 @@
     "anomaly_detection_alg": "Filtering()",
     "anomaly_detection_conf": {
         "input_vector_size": 1,
+        "mode": 0,
         "LL": 2,
         "UL": 5,
-        "filter_order": 10,
-        "cutoff_frequency":0.1,
+        "filter_order": 3,
+        "cutoff_frequency":0.4,
         "warning_stages": [0.7, 0.9], 
         "output": ["TerminalOutput()"],
         "output_conf": [

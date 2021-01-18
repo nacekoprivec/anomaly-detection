@@ -6,10 +6,9 @@ import sys
 from typing import Any, Dict, List
 
 from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
-        IsolationForest, Welford
+        IsolationForest, Welford, Filtering
 
 from kafka import KafkaConsumer, TopicPartition
-from pymongo import MongoClient
 from json import loads
 import matplotlib.pyplot as plt
 from time import sleep
