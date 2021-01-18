@@ -4,10 +4,10 @@
     "enable_auto_commit": "True",
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
-    "topics": "anomaly_detection1",
+    "topics": "anomaly_detection",
     "anomaly_detection_alg": "IsolationForest()",
     "anomaly_detection_conf": {
-        "load_model_from": "models/IsolationForest", 
+        "load_model_from": "models/Continental0", 
         "input_vector_size": 2,
         "averages": [[2, 3, 5], [2]],
         "shifts": [[1, 2, 3, 4]],

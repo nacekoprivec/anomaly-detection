@@ -7,15 +7,14 @@
     "topics": "anomaly_detection1",
     "anomaly_detection_alg": "IsolationForest()",
     "anomaly_detection_conf": {
-        "train_data": "data/Continental/0.txt",
+        "train_data": "data/Continental/0",
         "train_conf":{
             "max_features": 4,
             "max_samples": 100,
             "contamination": "auto",
             "model_name": "Continental0"
         } ,
-        "input_vector_size": 2,
-        "averages": [[2, 3, 5], [2]],
+        "input_vector_size": 1,
         "shifts": [[1, 2, 3, 4]],
         "time_features": ["day", "month", "weekday", "hour"],
         "output": ["TerminalOutput()"],
