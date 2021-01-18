@@ -1,6 +1,6 @@
 ### General
 config1.json: kafka input, bordercheck, status point visualization, terminal output <br>
-config3.json: file input, bordercheck, graph visualization, terminal output <br>
+config3.json: file input, bordercheck, / , terminal and file output <br>
 config4.json: kafka input, EMA, graph visualization, terminal output
 
 ### Wleford

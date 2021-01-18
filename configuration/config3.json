@@ -6,16 +6,13 @@
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,
-        "output": ["TerminalOutput()"],
+        "output": ["TerminalOutput()", "FileOutput()"],
         "output_conf": [
-            {}
-        ],
-        "visualization": "StatusPointsVisualization()",
-        "visualization_conf":
+            {},
             {
-                "num_of_points": 50,
-                "num_of_lines": 1,
-                "linestyles":["wo", "r-", "b--", "b--"]
+                "file_name": "out.txt",
+                "mode": "w"
             }
+        ]
     }
 }

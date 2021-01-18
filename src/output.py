@@ -74,7 +74,7 @@ class FileOutput(OutputAbstract):
                 open(self.file_path, "w").close()
             elif(self.file_name[-3:] == "csv"):
                 with open(self.file_path, "w", newline="") as csvfile:
-                    fieldnames = ["timestamp", "status", "value"]
+                    fieldnames = ["timestamp", "status", "status_code", "value", "algorithm"]
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
 
@@ -129,17 +129,13 @@ class FileOutput(OutputAbstract):
                   algorithm: str = "Unknown") -> None:
         # Construct the object to write
         to_write = {"algorithm": algorithm}
-        if (value is not None):
-            to_write["value"] = value
-        if (status != ""):
-            to_write["status"] = status
-        if (timestamp is not None):
-            to_write["timestamp"] = timestamp
-        if (status_code is not None):
-            to_write["status_code"] = status_code
+        to_write["value"] = value
+        to_write["status"] = status
+        to_write["timestamp"] = timestamp
+        to_write["status_code"] = status_code
 
         with open(self.file_path, 'a', newline='') as csv_file:
-            fieldnames = ["timestamp", "status", "value"]
+            fieldnames = ["timestamp", "status", "status_code", "value", "algorithm"]
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writerow(to_write)
 
