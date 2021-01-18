@@ -9,3 +9,6 @@ welford2.json: kafka input, welford with unlimited window, status point visualiz
 
 ### FileKafka input method.
 fileKafka.josn: file kafka input, bordercheck, graph visualization, terminal output
+
+## BRAILA TESTING
+bordercheck.json: file input, bordercheck, / , terminal and file output
