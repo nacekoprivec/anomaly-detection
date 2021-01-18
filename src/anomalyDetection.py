@@ -46,7 +46,7 @@ class AnomalyDetectionAbstract(ABC):
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         assert len(message_value['test_value']) == self.input_vector_size, \
-            "Given test value does not sattisfy input vector size"
+            "Given test value does not satisfy input vector size"
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
@@ -223,7 +223,8 @@ class BorderCheck(AnomalyDetectionAbstract):
                     break
 
         for output in self.outputs:
-            output.send_out(status=status, value=value)
+            output.send_out(status=status, value=value,
+                            status_code=status_code)
 
         if(self.visualization is not None):
             lines = [value]

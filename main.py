@@ -2,7 +2,7 @@ import argparse
 import json
 import sys
 
-from src.consumer import ConsumerKafka, ConsumerFile
+from src.consumer import ConsumerKafka, ConsumerFile, ConsumerFileKafka
 
 
 def main():
@@ -16,33 +16,20 @@ def main():
         help=u"Config file located in ./config/ directory."
     )
 
-    """parser.add_argument(
-        "-f",
-        "--fit",
-        dest="train_data",
-        help=u"Train the model from .csv data file in ./data/train/ directory."
-    )
-
-    parser.add_argument(
-        "-s",
-        "--save",
-        dest="model_file_name_save",
-        help=u"Save the model to a file in directory ./models/"
-    )
-
-    parser.add_argument(
-        "-l",
-        "--load",
-        dest="model_file_name_load",
-        help=u"Load the model from a file in directory ./models/"
-    )"""
-
     parser.add_argument(
         "-f",
         "--file",
-        dest="data_to_process",
+        dest="data_file",
         action="store_true",
         help=u"Read data from a specified file on specified location."
+    )
+
+    parser.add_argument(
+        "-fk",
+        "--filekafka",
+        dest="data_both",
+        action="store_true",
+        help=u"Read data from a specified file on specified location and then from kafka stream."
     )
 
     # Display help if no arguments are defined
@@ -53,21 +40,12 @@ def main():
     # Parse input arguments
     args = parser.parse_args()
 
-    if(args.data_to_process):
-        
+    if(args.data_file):   
         consumer = ConsumerFile(configuration_location=args.config)
+    elif(args.data_both):
+        consumer = ConsumerFileKafka(configuration_location=args.config)
     else:
         consumer = ConsumerKafka(configuration_location=args.config)
-
-    """if(args.train_data is not None):
-        # fitting the models for anomaly detection algorithms that use them
-        consumer.anomaly.fit(train_data=args.train_data)
-
-    if(args.model_file_name_save is not None):
-        consumer.anomaly.save(dest=args.model_file_name_save)
-
-    if(args.model_file_name_load is not None):
-        consumer.anomaly.load(dest=args.model_file_name_load)"""
 
     consumer.read()
 

@@ -21,10 +21,11 @@ tab_data_csv = []
 for e in range(1000):
     timestamp = e
     # Normal distribution
-    ran = float(np.random.normal(0, 0.1))
+    # ran = float(np.random.normal(0, 0.1))
+
     # Sin with normal distribution error
-    # ran = float(np.random.normal(0, 0.1) + np.sin(0.1*e))
-    data = {"test_value" : [3 + ran],
+    ran = float(np.random.normal(0, 0.1) + np.sin(0.1*e))
+    data = {"test_value" : [3 + ran, e],
 			"timestamp": str(datetime.now())}
     data_csv = {"test_value" : 3 + ran,
             "second": e,
