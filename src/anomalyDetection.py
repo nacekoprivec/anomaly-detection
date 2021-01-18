@@ -445,7 +445,8 @@ class EMA(AnomalyDetectionAbstract):
 
         for output in self.outputs:
             output.send_out(status=status,
-                            value=message_value['test_value'][0])
+                            value=message_value['test_value'][0],
+                            status_code=status_code)
 
         #send EMA and +- sigma band to visualization
         mean = self.EMA[-1]
