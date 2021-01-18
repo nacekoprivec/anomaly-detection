@@ -19,7 +19,8 @@ class OutputAbstract(ABC):
         pass
 
     @abstractmethod
-    def send_out(self, value: Any, status: str, timestamp: Any) -> None:
+    def send_out(self, value: Any, status: str, timestamp: Any,
+                 status_code: int = None) -> None:
         pass
 
 
