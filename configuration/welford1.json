@@ -7,7 +7,7 @@
     "topics": ["anomaly_detection"],
     "anomaly_detection_alg": "Welford()",
     "anomaly_detection_conf": {
-        "input_vector_size": 2,
+        "input_vector_size": 3,
         "warning_stages": [0.7, 0.9],
         "N": 4,
         "X": 2,

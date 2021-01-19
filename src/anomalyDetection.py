@@ -1,5 +1,4 @@
-from abc import abstractclassmethod, abstractmethod
-from abc import ABC
+from abc import abstractmethod, ABC
 from typing import Any, Dict, List, Union
 import numpy as np
 import statistics
@@ -344,6 +343,13 @@ class Welford(AnomalyDetectionAbstract):
             if(self.count >= self.N):
                 self.mean = statistics.mean(self.memory)
                 self.s = statistics.stdev(self.memory)
+
+                # if standard deviation is 0 it causes error in the next
+                # iteration (UL and LL are the same) so a small number is
+                # choosen instead 
+                if(self.s == 0):
+                    self.s = np.nextafter(0, 1)
+
                 self.LL = self.mean - self.X*self.s
                 self.UL = self.mean + self.X*self.s
         # Adjust mean and stdev for all data till this point
@@ -354,6 +360,13 @@ class Welford(AnomalyDetectionAbstract):
                         (value - new_mean)
             self.mean = new_mean
             self.s = new_s
+
+            # if standard deviation is 0 it causes error in the next
+            # iteration (UL and LL are the same) so a small number is
+            # choosen instead 
+            if(self.s == 0):
+                self.s = np.nextafter(0, 1)
+
             self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
             self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
 

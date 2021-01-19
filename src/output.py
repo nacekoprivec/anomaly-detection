@@ -38,7 +38,7 @@ class TerminalOutput(OutputAbstract):
     def send_out(self,  value: Any, status: str = "",
                  timestamp: Any = 0, status_code: int = None,
                  algorithm: str = "Unknown") -> None:
-        o = status + "(value: " + str(value) + ")"
+        o = timestamp + ": " + status + "(value: " + str(value) + ")"
         print(o)
 
 

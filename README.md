@@ -32,8 +32,8 @@ The program is configured through configuration file specified with -c flag (loc
         ...
         "output": ["list of output components"],
         "output_conf": ["list of output components configurations"],
-        "visualization": ["list of visualization components"], # optional
-        "visualization_conf":["list of visualization components configurations"] # optional
+        "visualization": "visualization component", # optional
+        "visualization_conf": "visualization component configuration" # optional
     }
 }
 ```

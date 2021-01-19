@@ -124,7 +124,6 @@ class ConsumerFile(ConsumerAbstract):
                 timestamp_index = header.index("timestamp")
             except ValueError:
                 timestamp_index = None
-            test_value_index = header.index("test_value")
             other_indicies = [i for i, x in enumerate(header) if (x != "timestamp")]
 
             # Iterate over each row in the csv using reader object
