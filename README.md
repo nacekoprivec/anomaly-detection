@@ -44,10 +44,10 @@ For more details see example configuration files in configuration folder.
 Consumer components differ in where the data is read from.
 1. **Kafka consumer:** Data is read from kafka stream from a specified topic. The conciguration file must specify following parameters:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
-   * auto_offset_reset: TODO (example: "latest")
-   * enable_auto_commit": TODO (example: "True")
-   * group_id: TODO (example "my-group")
-   * value_deserializer": TODO (example "lambda x: loads(x.decode('utf-8'))")
+   * auto_offset_reset: Where the consumer starts to read messages. If "latest", when comsumer is started, it will continue reading from the message where it last left off. If "earliest" it will read from the oldest available message onwards. (example: "latest")
+   * enable_auto_commit": If True , the consumer’s offset (the point in the topic where messages are read) will be periodically committed in the background. Otherwise offsets can be commited manually. (example: "True")
+   * group_id: The name of the consumer group. (example "my-group")
+   * value_deserializer":  Any callable that takes a raw message value and returns a deserialized value. (example "lambda x: loads(x.decode('utf-8'))")
    * topics: A list of topics streaming the data. (example ["anomaly_detection"])
 
    A message in kafka topic must contain two fields:
@@ -60,11 +60,12 @@ Consumer components differ in where the data is read from.
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
 The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
+The following parameters are similar to ones in Kafka consumer:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
-   * auto_offset_reset: TODO (example: "latest")
-   * enable_auto_commit": TODO (example: "True")
-   * group_id: TODO (example "my-group")
-   * value_deserializer": TODO (example "lambda x: loads(x.decode('utf-8'))")
+   * auto_offset_reset: (example: "latest")
+   * enable_auto_commit": (example: "True")
+   * group_id: (example "my-group")
+   * value_deserializer": (example "lambda x: loads(x.decode('utf-8'))")
    * topics: A list of topics streaming the data. (example ["anomaly_detection"])
 
 ### Output
@@ -86,7 +87,7 @@ An optional conponent intendet to visualize the inputted stream.
    * linestyles: A list, specifying the styles of the lines plotted. (example: ["wo", "r-", "b--", "b--"])
 
 2. **Histogram visualization:** It visualizes the quantity of values, from test_value stream. It requires the following arguments in the config file:
-   * num_of_bins: TODO (example: 50)
+   * num_of_bins: Number of bins in the histogram's range. (example: 50)
    * range: The interval shown on the histogram. (example: [0, 10])
    
 3. **Status Points Visualization:** Used to visualize processed data e.g. outputs of EMA or Filtering. The points are colored white if OK, warning yellow, error red or undefined blue.It requires the following arguments in the config file:
