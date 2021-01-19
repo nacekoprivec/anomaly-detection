@@ -59,7 +59,7 @@ Consumer components differ in where the data is read from.
 
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
 The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. The configuration file must specify the following parameters:
-   * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
+   * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")\
 The following parameters are similar to ones in Kafka consumer:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
    * auto_offset_reset: (example: "latest")
