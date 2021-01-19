@@ -139,6 +139,8 @@ The filtered signal helps to identify trend shifts. (mode 0)
 Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (mode 1)
 
 It requires the following arguments in the config file:
+   * UL: Upper limit of the specified interval. (example: 4)
+   * LL: Lower limit of the specified interval. (example: 2)
    * warning_stages: similar to e.g. EMA (example: [0.7, 0.9])
    * filter_order: order of the filter - how many latest points are used in the filter response. Most of the time, somewhere around order 3 is enough, as a higher order filter will cause a delay in the filtered signal compared to the real-time data. (example: 3)
    * cutoff_frequency: the frequency, at which the filter response starts to drop off. Lower frequency components of the input data will be passed through, but higher frequency components are filtered out. This is not an actual physical frequency but rather a float between 0 and 1. (example: 0.1)

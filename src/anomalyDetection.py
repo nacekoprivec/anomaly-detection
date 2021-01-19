@@ -774,7 +774,7 @@ class Filtering(AnomalyDetectionAbstract):
 
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
-                            status=status, value=result, 
+                            status=status, value=message_value['test_value'][0], 
                             status_code=status_code, algorithm=self.name)
 
         
