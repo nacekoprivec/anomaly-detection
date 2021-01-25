@@ -18,7 +18,7 @@
         "visualization": "GraphVisualization()",
         "visualization_conf":
             {
-                "num_of_points": 50,
+                "num_of_points": 100,
                 "num_of_lines": 4,
                 "linestyles":["wo", "r-", "b--", "b--"]
             }

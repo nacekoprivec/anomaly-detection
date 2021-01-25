@@ -8,7 +8,7 @@
     "anomaly_detection_alg": "Filtering()",
     "anomaly_detection_conf": {
         "input_vector_size": 1,
-        "mode": 0,
+        "mode": 1,
         "LL": 2,
         "UL": 5,
         "filter_order": 3,
@@ -21,7 +21,7 @@
         "visualization": "GraphVisualization()",
         "visualization_conf":
             {
-                "num_of_points": 200,
+                "num_of_points": 100,
                 "num_of_lines": 2,
                 "linestyles":["w-", "bo"]
             }
