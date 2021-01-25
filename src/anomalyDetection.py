@@ -1,5 +1,4 @@
-from abc import abstractclassmethod, abstractmethod
-from abc import ABC
+from abc import abstractmethod, ABC
 from typing import Any, Dict, List, Union
 import numpy as np
 import statistics
@@ -24,6 +23,7 @@ class AnomalyDetectionAbstract(ABC):
     averages: List[List[int]]
     shifts: List[List[int]]
     time_features: List[str]
+    name: str
 
     input_vector_size: int
     outputs: List["OutputAbstract"]
@@ -160,6 +160,7 @@ class BorderCheck(AnomalyDetectionAbstract):
     warning_stages: List[float]
     outputs: List["OutputAbstract"]
     visualization: List["VisualizationAbstract"]
+    name: str = "Border check"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -223,8 +224,8 @@ class BorderCheck(AnomalyDetectionAbstract):
                     break
 
         for output in self.outputs:
-            output.send_out(status=status, value=value,
-                            status_code=status_code)
+            output.send_out(timestamp=timestamp, status=status, value=value,
+                            status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
             lines = [value]
@@ -244,6 +245,7 @@ class Welford(AnomalyDetectionAbstract):
     warning_stages: List[float]
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
+    name: str = "Welford"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -324,7 +326,8 @@ class Welford(AnomalyDetectionAbstract):
 
         # Outputs and visualizations
         for output in self.outputs:
-            output.send_out(status=status, value=value)
+            output.send_out(timestamp=timestamp, status=status, value=value,
+                            status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
             lines = [value]
@@ -340,6 +343,13 @@ class Welford(AnomalyDetectionAbstract):
             if(self.count >= self.N):
                 self.mean = statistics.mean(self.memory)
                 self.s = statistics.stdev(self.memory)
+
+                # if standard deviation is 0 it causes error in the next
+                # iteration (UL and LL are the same) so a small number is
+                # choosen instead 
+                if(self.s == 0):
+                    self.s = np.nextafter(0, 1)
+
                 self.LL = self.mean - self.X*self.s
                 self.UL = self.mean + self.X*self.s
         # Adjust mean and stdev for all data till this point
@@ -350,6 +360,13 @@ class Welford(AnomalyDetectionAbstract):
                         (value - new_mean)
             self.mean = new_mean
             self.s = new_s
+
+            # if standard deviation is 0 it causes error in the next
+            # iteration (UL and LL are the same) so a small number is
+            # choosen instead 
+            if(self.s == 0):
+                self.s = np.nextafter(0, 1)
+
             self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
             self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
 
@@ -366,6 +383,7 @@ class EMA(AnomalyDetectionAbstract):
     timestamp: List[Any]
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
+    name: str = "EMA"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -445,7 +463,8 @@ class EMA(AnomalyDetectionAbstract):
                     break
 
         for output in self.outputs:
-            output.send_out(status=status,
+            output.send_out(timestamp=message_value["timestamp"],
+                            algorithm=self.name, status=status,
                             value=message_value['test_value'][0],
                             status_code=status_code)
 
@@ -460,13 +479,13 @@ class EMA(AnomalyDetectionAbstract):
 
 
 class IsolationForest(AnomalyDetectionAbstract):
-
     N: int
     memory: List[float]
     isolation_score: float
     warning_stages: List[float]
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
+    name: str = "Isolation forest"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -510,7 +529,9 @@ class IsolationForest(AnomalyDetectionAbstract):
             # Send undefined message to output
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
-                                value=None)
+                                value=value, status=self.UNDEFINED,
+                                status_code=self.UNDEFIEND_CODE,
+                                algorithm=self.name)
             
             # And to visualization
             if(self.visualization is not None):
@@ -519,10 +540,13 @@ class IsolationForest(AnomalyDetectionAbstract):
                                           status_code=2)
             return
         else:
+            # TODO: probably  feature_vector = np.array(feature vector)?
             feature_vector = np.array(self.shift_construction())
 
             #Model prediction
             isolation_score = self.model.decision_function(feature_vector.T.reshape(1, -1))
+
+            # TODO: fix sendout calls, status and status_codes
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
                                 value=isolation_score)
@@ -562,13 +586,13 @@ class IsolationForest(AnomalyDetectionAbstract):
 
 
 class PCA(AnomalyDetectionAbstract):
-
     N: int
     N_components: int
     N_past_data: int
     PCA_transformed: List[float]
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
+    name: str = "PCA"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -622,10 +646,13 @@ class PCA(AnomalyDetectionAbstract):
                 #                          status_code=2)
             return
         else:
+            # TODO: probably  feature_vector = np.array(feature vector)?
             feature_vector = np.array(self.shift_construction())
 
             #Model prediction
             PCA_transformed = self.model.transform(feature_vector.reshape(1, -1))
+
+            # TODO: fix sendout calls, status and status_codes
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
                                 value=PCA_transformed)
@@ -669,6 +696,7 @@ class Filtering(AnomalyDetectionAbstract):
     result: float
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
+    name: str = "Filtering"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -741,12 +769,13 @@ class Filtering(AnomalyDetectionAbstract):
 
         if(self.mode == 0):
             result = self.filtered[-1]
-        elif(self.mode == 1):
+        else:
             result = self.last_measurement - self.filtered[-1]
 
         for output in self.outputs:
-            output.send_out(status=status,
-                            value=result)
+            output.send_out(timestamp=message_value["timestamp"],
+                            status=status, value=message_value['test_value'][0], 
+                            status_code=status_code, algorithm=self.name)
 
         
         lines = [result, self.last_measurement]
