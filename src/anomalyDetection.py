@@ -748,24 +748,45 @@ class Filtering(AnomalyDetectionAbstract):
         status_code = 1
 
         #Perform error and warning checks
-        if(value_normalized > 1):
-            status = "Error: Filtered signal above upper limit"
-            status_code = -1
-        elif(value_normalized < -1):
-            status = "Error: Filtered signal below lower limit"
-            status_code = -1
+        if(self.mode == 1):
+            deviation = (self.last_measurement - self.filtered[-1])/(self.UL - self.LL)
+            if(deviation > 1):
+                status = "Error: Large deviation"
+                status_code = -1
+            elif(value_normalized < -1):
+                status = "Error: Large deviation"
+                status_code = -1
+            else:
+                for stage in range(len(self.warning_stages)):
+                    if(deviation > self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": Significant deviation."
+                        status_code = 0
+                    elif(deviation < -self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": Significant deviation."
+                        status_code = 0
+                    else:
+                        break
         else:
-            for stage in range(len(self.warning_stages)):
-                if(value_normalized > self.warning_stages[stage]):
-                    status = "Warning" + str(stage) + \
-                        ": Filtered signal close to upper limit."
-                    status_code = 0
-                elif(value_normalized < -self.warning_stages[stage]):
-                    status = "Warning" + str(stage) + \
-                        ": Filtered signal close to lower limit."
-                    status_code = 0
-                else:
-                    break
+            if(value_normalized > 1):
+                status = "Error: Filtered signal above upper limit"
+                status_code = -1
+            elif(value_normalized < -1):
+                status = "Error: Filtered signal below lower limit"
+                status_code = -1
+            else:
+                for stage in range(len(self.warning_stages)):
+                    if(value_normalized > self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": Filtered signal close to upper limit."
+                        status_code = 0
+                    elif(value_normalized < -self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": Filtered signal close to lower limit."
+                        status_code = 0
+                    else:
+                        break
 
         if(self.mode == 0):
             result = self.filtered[-1]
