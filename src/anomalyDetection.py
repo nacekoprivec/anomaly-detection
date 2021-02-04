@@ -149,8 +149,6 @@ class AnomalyDetectionAbstract(ABC):
         return time_features
 
 
-
-
 class BorderCheck(AnomalyDetectionAbstract):
     """ works with 1D data and checks if the value is above, below or close
     to guven upper and lower limits 
@@ -371,7 +369,6 @@ class Welford(AnomalyDetectionAbstract):
             self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
 
 
-
 class EMA(AnomalyDetectionAbstract):
     UL: float
     LL: float
@@ -570,7 +567,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     def train_model(self, conf):
      #load data from location stored in "filename"
         data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
-
+        # TODO feature construction
         features = []
         N = conf["train_conf"]["max_features"]
         for i in range(N, len(data)):
@@ -593,6 +590,8 @@ class PCA(AnomalyDetectionAbstract):
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
     name: str = "PCA"
+
+    isolation_forest: "Isolation_forest"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -652,21 +651,14 @@ class PCA(AnomalyDetectionAbstract):
             #Model prediction
             PCA_transformed = self.model.transform(feature_vector.reshape(1, -1))
 
-            # TODO: fix sendout calls, status and status_codes
-            for output in self.outputs:
-                output.send_out(timestamp=message_value['timestamp'],
-                                value=PCA_transformed)
-            
-
-            if(self.visualization is not None):
-                lines = PCA_transformed[0]
-                self.visualization.update(value=lines, timestamp=timestamp,
-                                          status_code=1)
+            # TODO: Call message insert isolation forest
             return
 
     def save_model(self, filename):
         with open("models/" + filename, 'wb') as f:
             pickle.dump(self.model, f)
+        
+        self.isolation_forest.save_model()
 
     def load_model(self, filename):
         with open(filename, 'rb') as f:
@@ -674,9 +666,9 @@ class PCA(AnomalyDetectionAbstract):
         return(clf)
 
     def train_model(self, conf):
-     #load data from location stored in "train_data"
+        # load data from location stored in "train_data"
         data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
-
+        # TODO featuere construction
         features = []
         N_components = conf["train_conf"]["N_components"]
         N_past_data = conf["train_conf"]["N_past_data"]
@@ -687,6 +679,7 @@ class PCA(AnomalyDetectionAbstract):
         self.model = sklearn.decomposition.PCA(n_components = N_components)
         self.model.fit(features)
         self.save_model(conf["train_conf"]["model_name"])
+
 
 class Filtering(AnomalyDetectionAbstract):
     UL: float

@@ -19,8 +19,9 @@ class OutputAbstract(ABC):
         pass
 
     @abstractmethod
-    def send_out(self, value: Any, status: str, timestamp: Any,
-                 status_code: int = None) -> None:
+    def send_out(self, value: Any, suggested_value: Any, status: str, timestamp: Any,
+                 status_code: int = None, algorithm: str = "Unknown"
+                 ) -> None:
         pass
 
 
@@ -35,7 +36,8 @@ class TerminalOutput(OutputAbstract):
         # Nothing to configure
         pass
 
-    def send_out(self,  value: Any, status: str = "",
+    def send_out(self,  value: Any, suggested_value: Any = None, 
+                status: str = "",
                  timestamp: Any = 0, status_code: int = None,
                  algorithm: str = "Unknown") -> None:
         o = timestamp + ": " + status + "(value: " + str(value) + ")"
@@ -78,7 +80,7 @@ class FileOutput(OutputAbstract):
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
 
-    def send_out(self,  value: Any = None, status: str = "",
+    def send_out(self,  value: Any = None, suggested_value: Any = None, status: str = "",
                  timestamp: Any = None, status_code: int = None,
                  algorithm: str = "Unknown") -> None:
         if(self.file_name[-4:] == "json"):
