@@ -222,7 +222,7 @@ class BorderCheck(AnomalyDetectionAbstract):
                     break
 
         for output in self.outputs:
-            output.send_out(timestamp=timestamp, status=status, value=value,
+            output.send_out(timestamp=timestamp, status=status, value=message_value["test_value"],
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
@@ -324,7 +324,8 @@ class Welford(AnomalyDetectionAbstract):
 
         # Outputs and visualizations
         for output in self.outputs:
-            output.send_out(timestamp=timestamp, status=status, value=value,
+            output.send_out(timestamp=timestamp, status=status,
+                            value=message_value["test_value"],
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
@@ -462,7 +463,7 @@ class EMA(AnomalyDetectionAbstract):
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             algorithm=self.name, status=status,
-                            value=message_value['test_value'][0],
+                            value=message_value['test_value'],
                             status_code=status_code)
 
         #send EMA and +- sigma band to visualization

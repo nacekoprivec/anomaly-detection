@@ -1,9 +1,5 @@
 {
-    "bootstrap_servers": ["localhost:9092"],
-    "auto_offset_reset": "latest",
-    "enable_auto_commit": "True",
-    "group_id": "my-group",
-    "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
+    "file_name": "sin.csv",
     "topics": ["anomaly_detection"],
     "anomaly_detection_alg": "BorderCheck()",
     "anomaly_detection_conf": {
@@ -11,16 +7,20 @@
         "warning_stages": [0.7, 0.9],
         "UL": 4,
         "LL": 2,
-        "output": ["TerminalOutput()"],
+        "output": ["FileOutput()", "FileOutput()", "FileOutput()"],
         "output_conf": [
-            {}
-        ],
-        "visualization": "StatusPointsVisualization()",
-        "visualization_conf":
             {
-                "num_of_points": 100,
-                "num_of_lines": 1,
-                "linestyles":["bo", "r-", "b--", "b--"]
+                "file_name": "sin.csv",
+                "mode": "w"
+            },
+            {
+                "file_name": "sin.json",
+                "mode": "w"
+            },
+            {
+                "file_name": "sin.txt",
+                "mode": "w"
             }
+        ]
     }
 }
