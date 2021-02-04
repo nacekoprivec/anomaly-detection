@@ -137,7 +137,7 @@ It requires the following arguments in the config file:
 6. **Filtering:** Digital filtering is applied to the input data via a lowpass filter, smoothing the signal. The filter used is Butterworth of the order specified in config. This helps to identify trend changes in the data. Similarly to Border check and EMA, warnings are issued if the filtered signal approaches UL or LL.
 
 The filtered signal helps to identify trend shifts. (mode 0)
-Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (mode 1)
+Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (mode 1) In mode 1 a normalised value is calculated: value = last change in value/(UL-LL). The normalised value is classified according to warning stages or marked as an error id the value is >1 or <-1. 
 
 It requires the following arguments in the config file:
    * UL: Upper limit of the specified interval. (example: 4)

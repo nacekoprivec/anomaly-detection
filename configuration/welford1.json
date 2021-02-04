@@ -10,7 +10,7 @@
         "input_vector_size": 3,
         "warning_stages": [0.7, 0.9],
         "N": 4,
-        "X": 2,
+        "X": 3,
         "output": ["TerminalOutput()"],
         "output_conf": [
             {}
@@ -18,7 +18,7 @@
         "visualization": "StatusPointsVisualization()",
         "visualization_conf":
             {
-                "num_of_points": 50,
+                "num_of_points": 100,
                 "num_of_lines": 1,
                 "linestyles":["bo", "r-", "b--", "b--"]
             }
