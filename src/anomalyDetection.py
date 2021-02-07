@@ -9,6 +9,7 @@ from datetime import datetime
 import pickle
 import sklearn.ensemble
 from scipy import signal
+import pandas as pd
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -523,12 +524,13 @@ class IsolationForest(AnomalyDetectionAbstract):
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
-
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
             # Send undefined message to output
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
-                                value=value, status=self.UNDEFINED,
-                                status_code=self.UNDEFIEND_CODE,
+                                value=value, status=status,
+                                status_code=status_code,
                                 algorithm=self.name)
             
             # And to visualization
@@ -538,23 +540,35 @@ class IsolationForest(AnomalyDetectionAbstract):
                                           status_code=2)
             return
         else:
-            # TODO: probably  feature_vector = np.array(feature vector)?
-            feature_vector = np.array(self.shift_construction())
+            feature_vector = np.array(feature_vector)
 
             #Model prediction
-            isolation_score = self.model.decision_function(feature_vector.T.reshape(1, -1))
+            isolation_score = self.model.predict(feature_vector.reshape(1, -1))
+            print("isol_score: " + str(isolation_score))
+            if(isolation_score == 1):
+                status = self.OK
+                status_code = self.OK_CODE
+            elif(isolation_score == -1):
+                status = "Error: outlier detected"
+                status_code = -1
+            else:
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
+            
+
 
             # TODO: fix sendout calls, status and status_codes
             for output in self.outputs:
-                output.send_out(timestamp=message_value['timestamp'],
-                                value=isolation_score)
+                output.send_out(timestamp=timestamp, status=status,
+                            value=message_value["test_value"],
+                            status_code=status_code, algorithm=self.name)
             
 
             if(self.visualization is not None):
-                lines = [value[0]]
-                self.visualization.update(value=isolation_score, timestamp=timestamp,
-                                          status_code=1)
-            return
+                lines = [value]
+                self.visualization.update(value=lines, timestamp=timestamp,
+                                      status_code=status_code)
+
 
     def save_model(self, filename):
         with open("models/" + filename, 'wb') as f:
@@ -566,13 +580,20 @@ class IsolationForest(AnomalyDetectionAbstract):
         return(clf)
 
     def train_model(self, conf):
-     #load data from location stored in "filename"
-        data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
-        # TODO feature construction
+        #load data from location stored in "filename"
+        df = pd.read_csv(conf["train_data"], skiprows=1, delimiter = ",")
+        df = df.to_numpy()
+        timestamps = np.array(df[:,0])
+        data = np.array(df[:,1])
         features = []
         N = conf["train_conf"]["max_features"]
-        for i in range(N, len(data)):
-            features.append(np.array(data[i-N:i]))
+        for i in range(len(data)):
+            value = [data[i]]
+            timestamp = timestamps[i]
+            feature_vector = super().feature_construction(value=value,
+                                                      timestamp=timestamp)
+            if(feature_vector is not False):
+                features.append(np.array(feature_vector))
 
         #fit IsolationForest model to data
         self.model = sklearn.ensemble.IsolationForest(

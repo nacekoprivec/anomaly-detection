@@ -24,8 +24,10 @@ for e in range(1000):
     # ran = float(np.random.normal(0, 0.1))
 
     # Sin with normal distribution error
-    ran = float(np.random.normal(0, 0.1) + np.sin(0.1*e))
-    data = {"test_value" : [3 + ran, e],
+    ran = float(np.random.normal(0, 0.01) + np.sin(0.01*e))
+    if(e%20 == 0):
+        ran += 0.3
+    data = {"test_value" : [3 + ran],
 			"timestamp": str(datetime.now())}
     data_csv = {"test_value" : 3 + ran,
             "second": e,
