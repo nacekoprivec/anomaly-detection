@@ -484,6 +484,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     visualization: List["VisualizationAbstract"]
     outputs: List["OutputAbstract"]
     name: str = "Isolation forest"
+    untill_retrain: int
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
