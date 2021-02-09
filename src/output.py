@@ -41,7 +41,7 @@ class TerminalOutput(OutputAbstract):
                 algorithm: str = "Unknown") -> None:
         o = timestamp + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
         if(suggested_value is not None):
-            o = o + ", Suggested value: " + suggested_value
+            o = o + ", Suggested value: " + str(suggested_value)
         print(o)
 
 

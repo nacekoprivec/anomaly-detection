@@ -8,6 +8,7 @@ from statistics import mean
 from datetime import datetime
 import pickle
 from pandas.core.frame import DataFrame
+from scipy.signal.lti_conversion import _atleast_2d_or_none
 import sklearn.ensemble
 from scipy import signal
 import pandas as pd
@@ -16,6 +17,8 @@ sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
+from normalization import NormalizationAbstract, LastNAverage,\
+    PeriodicLastNAverage
 
 
 class AnomalyDetectionAbstract(ABC):
@@ -28,6 +31,8 @@ class AnomalyDetectionAbstract(ABC):
 
     input_vector_size: int
     outputs: List["OutputAbstract"]
+    visualization: "VisualizationAbstract"
+    normalization: "NormalizationAbstract"
 
     # Statuses
     UNDEFINED = "Undefined"
@@ -93,9 +98,20 @@ class AnomalyDetectionAbstract(ABC):
             self.visualization.configure(visualization_configurations)
         else:
             self.visualization = None
+
+        # NORMALIZATION INITIALIZATION & CONFIGURATION
+        if("normalization" in conf):
+            self.normalization = eval(conf["normalization"])
+            normalization_configuration = conf["normalization_conf"]
+            self.normalization.configure(normalization_configuration) 
+        else:
+            self.normalization = None
     
+    def change_last_record(self, value: List[Any]) -> None:
+        self.memory[-1] = value
+
     def feature_construction(self, value: List[Any], 
-                             timestamp: str) -> Union[None, bool]:
+                             timestamp: str) -> Union[Any, bool]:
 
         # Add new value to memory and slice it
         self.memory.append(value)
@@ -170,8 +186,6 @@ class BorderCheck(AnomalyDetectionAbstract):
     UL: float
     LL: float
     warning_stages: List[float]
-    outputs: List["OutputAbstract"]
-    visualization: List["VisualizationAbstract"]
     name: str = "Border check"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -229,6 +243,8 @@ class BorderCheck(AnomalyDetectionAbstract):
 
 
 class Welford(AnomalyDetectionAbstract):
+    name: str = "Welford"
+
     UL: float
     LL: float
     N: int
@@ -238,9 +254,6 @@ class Welford(AnomalyDetectionAbstract):
     mean: float
     s: float
     warning_stages: List[float]
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
-    name: str = "Welford"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -355,6 +368,8 @@ class Welford(AnomalyDetectionAbstract):
 
 
 class EMA(AnomalyDetectionAbstract):
+    name: str = "EMA"
+
     UL: float
     LL: float
     N: int
@@ -363,9 +378,6 @@ class EMA(AnomalyDetectionAbstract):
     sigma: List[float]
     numbers: List[float]
     timestamp: List[Any]
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
-    name: str = "EMA"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -449,8 +461,6 @@ class EMA(AnomalyDetectionAbstract):
 
 class IsolationForest(AnomalyDetectionAbstract):
     name: str = "Isolation forest"
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
     
     # method specific
     N: int
@@ -540,6 +550,11 @@ class IsolationForest(AnomalyDetectionAbstract):
                 lines = [value[0]]
                 self.visualization.update(value=lines, timestamp=timestamp,
                                           status_code=2)
+
+            # Add to normalization
+            if(self.normalization is not None):
+                self.normalization.add_value(value=value)
+
             return
         else:
             feature_vector = np.array(feature_vector)
@@ -555,12 +570,25 @@ class IsolationForest(AnomalyDetectionAbstract):
             else:
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
+
+            # Normalize if needed or just add the value
+            normalized = None
+            if(self.normalization is not None):
+                if(status_code == -1):
+                    print("here")
+                    normalized = self.normalization.get_normalized(value=value)
+                    if(normalized != False):
+                        self.change_last_record(value=normalized)
+                    else:
+                        normalized = None
+                else:
+                    self.normalization.add_value(value=value)
             
             for output in self.outputs:
                 output.send_out(timestamp=timestamp, status=status,
-                            value=message_value["test_value"],
-                            status_code=status_code, algorithm=self.name)
-            
+                                suggested_value=normalized,
+                                value=message_value["test_value"],
+                                status_code=status_code, algorithm=self.name)
 
             if(self.visualization is not None):
                 lines = [value]
@@ -632,14 +660,13 @@ class IsolationForest(AnomalyDetectionAbstract):
 
 
 class PCA(AnomalyDetectionAbstract):
+    name: str = "PCA"
+
     # TODO: method is not functional. Isolation forest layer is to be added
     N: int
     N_components: int
     N_past_data: int
     PCA_transformed: List[float]
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
-    name: str = "PCA"
 
     isolation_forest: "Isolation_forest"
 
@@ -718,14 +745,13 @@ class PCA(AnomalyDetectionAbstract):
 
 
 class Filtering(AnomalyDetectionAbstract):
+    name: str = "Filtering"
+
     UL: float
     LL: float
     value_normalized: float
     filtered: List[float]
     result: float
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
-    name: str = "Filtering"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
