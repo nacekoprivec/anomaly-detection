@@ -446,8 +446,8 @@ class EMA(AnomalyDetectionAbstract):
         #Normalize the moving average to the range LL - UL
         value_normalized = 2*(self.EMA[-1] - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
-        status = "OK"
-        status_code = 1
+        status = self.OK
+        status_code = self.OK_CODE
 
         #Perform error and warning checks
         if(value_normalized > 1):
@@ -476,9 +476,10 @@ class EMA(AnomalyDetectionAbstract):
                             status_code=status_code)
 
         #send EMA and +- sigma band to visualization
-        mean = self.EMA[-1]
-        sigma = self.sigma[-1]
-        lines = [self.numbers[-1], mean, mean+sigma, mean-sigma]
+        
+        # mean = self.EMA[-1]
+        #sigma = self.sigma[-1]
+        lines = [self.numbers[-1]]
         timestamp = self.timestamps[-1]
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
@@ -685,10 +686,45 @@ class PCA(AnomalyDetectionAbstract):
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
 
+        # Train configuration
+        self.N = conf["train_conf"]["max_features"]
+        self.model_name = conf["train_conf"]["model_name"]
+        self.max_samples = conf["train_conf"]["max_samples"]
+
+        # Retrain configuration
+        if("retrain_interval" in conf):
+            self.retrain_interval = conf["retrain_interval"]
+            self.samples_from_retrain = 0
+            if("samples_for_retrain" in conf):
+                self.samples_for_retrain = conf["samples_for_retrain"]
+            else:
+                self.samples_for_retrain = None
+
+            # Retrain memory initialization
+            if("train_data" in conf):
+                self.memory_dataframe = pd.read_csv(conf["train_data"],
+                                                    skiprows=1,
+                                                    delimiter=",")
+                if(self.samples_for_retrain is not None):
+                    self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            else:
+                columns = ["timestamp"]
+                for i in range(self.input_shape):
+                    columns.append(str(i))
+                self.memory_dataframe = pd.DataFrame(columns=columns)
+        else:
+            self.retrain_interval = None
+            self.samples_for_retrain = None
+            self.memory_dataframe = None
+
+        # Initialize model
         if("load_model_from" in conf):
             self.model = self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
-            self.train_model(conf)
+            self.train_model(conf["train_data"])
+        else:
+            raise Exception("Model or train dataset must be specified to\
+                            initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
@@ -715,40 +751,93 @@ class PCA(AnomalyDetectionAbstract):
                 #                          status_code=2)
             return
         else:
-            # TODO: probably  feature_vector = np.array(feature vector)?
-            feature_vector = np.array(self.shift_construction())
+            feature_vector = np.array(feature_vector)
 
             #Model prediction
-            PCA_transformed = self.model.transform(feature_vector.reshape(1, -1))
+            PCA_transformed = self.PCA.transform(feature_vector.reshape(1, -1))
+            IsolationForest_transformed =  self.IsolationForest.predict(feature_vector.reshape(1, -1))
+            if(isolation_score == 1):
+                status = self.OK
+                status_code = self.OK_CODE
+            elif(isolation_score == -1):
+                status = "Error: outlier detected"
+                status_code = -1
+            else:
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
 
-            # TODO: Call message insert isolation forest
+            self.normalization_output_visualization(status=status,
+                                                    status_code=status_code,
+                                                    value=value,
+                                                    timestamp=timestamp)
+
+        # Add to memory for retrain and execute retrain if needed 
+        if (self.retrain_interval is not None):
+            print(self.samples_from_retrain)
+            print(self.memory_dataframe.shape)
+            # Add to memory
+            to_save = [timestamp] + value
+            samples_in_memory = self.memory_dataframe.shape[0]
+            self.memory_dataframe.loc[samples_in_memory] = to_save
+            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            self.samples_from_retrain += 1
+
+            # Retrain if needed (and possible)
+            if(self.samples_from_retrain >= self.retrain_interval and
+                self.samples_for_retrain == self.memory_dataframe.shape[0]):
+                self.samples_from_retrain = 0
+                self.train_model(train_dataframe=self.memory_dataframe)
             return
 
     def save_model(self, filename):
-        with open("models/" + filename, 'wb') as f:
-            pickle.dump(self.model, f)
+        with open("models/" + filename + "_PCA", 'wb') as f:
+            pickle.dump(self.PCA, f)
+
+        with open("models/" + filename + "_IsolationForest", 'wb') as f:
+            pickle.dump(self.Isolation_forest, f)
         
-        self.isolation_forest.save_model()
+        
 
     def load_model(self, filename):
-        with open(filename, 'rb') as f:
+        with open(filename + "_PCA", 'rb') as f:
             clf = pickle.load(f)
-        return(clf)
+        self.PCA = clf
+        with open(filename + "_IsolationForest", 'rb') as f:
+            clf = pickle.load(f)
+        self.IsolationForest = clf
 
-    def train_model(self, conf):
-        # load data from location stored in "train_data"
-        data = np.loadtxt(conf["train_data"], skiprows=1, delimiter = ",", usecols=(1,))
-        # TODO featuere construction
+    def train_model(self, conf, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
+        
+        df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+        
+        df = df.to_numpy()
+        timestamps = np.array(df[:,0])
+        data = np.array(df[:,1:])
+
+        # Aditional feature construction
         features = []
-        N_components = conf["train_conf"]["N_components"]
-        N_past_data = conf["train_conf"]["N_past_data"]
-        for i in range(N_past_data, len(data)):
-            features.append(np.array(data[i-N_past_data:i]))
+        for i in range(len(data)):
+            value = data[i].tolist()
+            timestamp = timestamps[i]
+            feature_vector = super().feature_construction(value=value,
+                                                      timestamp=timestamp)
 
-        #fit IsolationForest model to data
-        self.model = sklearn.decomposition.PCA(n_components = N_components)
-        self.model.fit(features)
-        self.save_model(conf["train_conf"]["model_name"])
+            if(feature_vector is not False):
+                features.append(np.array(feature_vector))
+        # Fit IsolationForest model to data
+
+        N_components = conf["train_conf"]["N_components"]
+
+        self.PCA = sklearn.decomposition.PCA(n_components = N_components)
+        self.PCA.fit(features)
+        transformed = self.PCA.transform(features)
+
+        self.IsolationForest = sklearn.ensemble.IsolationForest(
+            max_samples = self.max_samples,
+            max_features = self.N
+            ).fit(transformed)
+
+        self.save_model(self.model_name)
 
 
 class Filtering(AnomalyDetectionAbstract):
