@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC
+from os import stat
 from typing import Any, Dict, List, Union
 import numpy as np
 import statistics
@@ -178,6 +179,31 @@ class AnomalyDetectionAbstract(ABC):
 
         return time_features
 
+    def normalization_output_visualization(self, status_code: int,
+                                           status: str, value: List[Any],
+                                           timestamp: Any) -> None:
+        # Normalize if needed or just add the value
+        normalized = None
+        if(self.normalization is not None):
+            if(status_code == -1):
+                normalized = self.normalization.get_normalized(value=value)
+                if(normalized != False):
+                    self.change_last_record(value=normalized)
+                else:
+                    normalized = None
+            else:
+                self.normalization.add_value(value=value)
+        
+        for output in self.outputs:
+            output.send_out(timestamp=timestamp, status=status,
+                            suggested_value=normalized,
+                            value=value,
+                            status_code=status_code, algorithm=self.name)
+
+        if(self.visualization is not None):
+            lines = [value]
+            self.visualization.update(value=lines, timestamp=timestamp,
+                                      status_code=status_code)
 
 class BorderCheck(AnomalyDetectionAbstract):
     """ works with 1D data and checks if the value is above, below or close
@@ -571,29 +597,10 @@ class IsolationForest(AnomalyDetectionAbstract):
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
 
-            # Normalize if needed or just add the value
-            normalized = None
-            if(self.normalization is not None):
-                if(status_code == -1):
-                    print("here")
-                    normalized = self.normalization.get_normalized(value=value)
-                    if(normalized != False):
-                        self.change_last_record(value=normalized)
-                    else:
-                        normalized = None
-                else:
-                    self.normalization.add_value(value=value)
-            
-            for output in self.outputs:
-                output.send_out(timestamp=timestamp, status=status,
-                                suggested_value=normalized,
-                                value=message_value["test_value"],
-                                status_code=status_code, algorithm=self.name)
-
-            if(self.visualization is not None):
-                lines = [value]
-                self.visualization.update(value=lines, timestamp=timestamp,
-                                      status_code=status_code)
+            self.normalization_output_visualization(status=status,
+                                                    status_code=status_code,
+                                                    value=value,
+                                                    timestamp=timestamp)
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
