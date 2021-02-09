@@ -115,15 +115,17 @@ It requires the following arguments in the config file:
    * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9])
    
 3. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
-    *train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. 
-    *max_features: The number of features to draw from X to train each base estimator. (example: 4)
-    *max_samples: The number of samples to draw from X to train each base estimator. (example:100)
-    *contamination: The proportion of outliers in the dataset. (example: 0.1 if we know we have 10% of outliers in our dataset) Can be set to "auto".
-    *model_name: Name of the model, which will be saved in "models/" folder.
+   * train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. This is an optional parameter. If it is not provided load_model_from must be. 
+   * max_features: The number of features to draw from X to train each base estimator. (example: 4)
+   * max_samples: The number of samples to draw from X to train each base estimator. (example:100)
+   * contamination: The proportion of outliers in the dataset. (example: 0.1 if we know we have 10% of outliers in our dataset) Can be set to "auto".
+   * model_name: Name of the model, which will be saved in "models/" folder.
+   * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining (example: 100)
+   * samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
 Example model train config: IsolationForestTrain.json
 Model train mode is activated if "load_model_from" is not in the config file, and "train_data" is defined. After training, the trained model will be used to continue with evaluation of data from consumer automatically.
 If we have a pre-trained model, we load it by specifying:
-    *load_model_from: location of pre-trained iForest model. (example: "models/IsolationForest")
+   * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be.  (example: "models/IsolationForest")
 in the config file. Example config: IsolationForest.json
 
 4. **PCA:** Principal component analysis. Projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). Could be effective to combine PCA followed by e.g. Isolation Forest (TODO)

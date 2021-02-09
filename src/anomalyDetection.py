@@ -7,6 +7,7 @@ import math
 from statistics import mean
 from datetime import datetime
 import pickle
+from pandas.core.frame import DataFrame
 import sklearn.ensemble
 from scipy import signal
 import pandas as pd
@@ -15,7 +16,6 @@ sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
-
 
 
 class AnomalyDetectionAbstract(ABC):
@@ -51,6 +51,7 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
+        # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
         
         if("averages" in conf):
@@ -80,6 +81,18 @@ class AnomalyDetectionAbstract(ABC):
             max_average = max(map(max, self.averages))
 
         self.memory_size = max(max_shift, max_average)
+
+        # OUTPUT/VISUALIZATION INITIALIZATION & CONFIGURATION
+        self.outputs = [eval(o) for o in conf["output"]]
+        output_configurations = conf["output_conf"]
+        for o in range(len(self.outputs)):
+            self.outputs[o].configure(output_configurations[o])
+        if ("visualization" in conf):
+            self.visualization = eval(conf["visualization"])
+            visualization_configurations = conf["visualization_conf"]
+            self.visualization.configure(visualization_configurations)
+        else:
+            self.visualization = None
     
     def feature_construction(self, value: List[Any], 
                              timestamp: str) -> Union[None, bool]:
@@ -175,23 +188,6 @@ class BorderCheck(AnomalyDetectionAbstract):
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
 
-        # initialize all outputs
-        self.outputs = [eval(o) for o in conf["output"]]
-
-        # configure all outputs
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-
-        # If configuration is specified configure it
-        if ("visualization" in conf):
-            # print(conf["visualization"])
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
-        else:
-            self.visualization = None
-
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
         value = message_value["test_value"]
@@ -265,19 +261,6 @@ class Welford(AnomalyDetectionAbstract):
         self.X = conf["X"]
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
-
-        self.outputs = [eval(o) for o in conf["output"]]
-        # configure all outputs
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-
-        if ("visualization" in conf):
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
-        else:
-            self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
@@ -402,19 +385,6 @@ class EMA(AnomalyDetectionAbstract):
         self.numbers = []
         self.timestamps = []
 
-        self.outputs = [eval(o) for o in conf["output"]]
-        # configure all outputs
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-
-        if ("visualization" in conf):
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
-        else:
-            self.visualization = None
-
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
         self.numbers.append(message_value['test_value'][0])
@@ -478,14 +448,23 @@ class EMA(AnomalyDetectionAbstract):
 
 
 class IsolationForest(AnomalyDetectionAbstract):
+    name: str = "Isolation forest"
+    visualization: List["VisualizationAbstract"]
+    outputs: List["OutputAbstract"]
+    
+    # method specific
     N: int
+    max_samples: int
+    model_name: str
     memory: List[float]
     isolation_score: float
     warning_stages: List[float]
-    visualization: List["VisualizationAbstract"]
-    outputs: List["OutputAbstract"]
-    name: str = "Isolation forest"
-    untill_retrain: int
+
+    # retrain information
+    samples_from_retrain: int
+    retrain_interval: int
+    samples_for_retrain: int
+    memory_dataframe: DataFrame
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -495,23 +474,45 @@ class IsolationForest(AnomalyDetectionAbstract):
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
 
-        # Outputs and visualization initialization and configuration
-        self.outputs = [eval(o) for o in conf["output"]]
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-        if ("visualization" in conf):
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
+        # Train configuration
+        self.N = conf["train_conf"]["max_features"]
+        self.model_name = conf["train_conf"]["model_name"]
+        self.max_samples = conf["train_conf"]["max_samples"]
+
+        # Retrain configuration
+        if("retrain_interval" in conf):
+            self.retrain_interval = conf["retrain_interval"]
+            self.samples_from_retrain = 0
+            if("samples_for_retrain" in conf):
+                self.samples_for_retrain = conf["samples_for_retrain"]
+            else:
+                self.samples_for_retrain = None
+
+            # Retrain memory initialization
+            if("train_data" in conf):
+                self.memory_dataframe = pd.read_csv(conf["train_data"],
+                                                    skiprows=1,
+                                                    delimiter=",")
+                if(self.samples_for_retrain is not None):
+                    self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            else:
+                columns = ["timestamp"]
+                for i in range(self.input_shape):
+                    columns.append(str(i))
+                self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
-            self.visualization = None
+            self.retrain_interval = None
+            self.samples_for_retrain = None
+            self.memory_dataframe = None
 
-
+        # Initialize model
         if("load_model_from" in conf):
             self.model = self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
-            self.train_model(conf)
+            self.train_model(conf["train_data"])
+        else:
+            raise Exception("Model or train dataset must be specified to\
+                            initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
@@ -542,10 +543,9 @@ class IsolationForest(AnomalyDetectionAbstract):
             return
         else:
             feature_vector = np.array(feature_vector)
-
             #Model prediction
             isolation_score = self.model.predict(feature_vector.reshape(1, -1))
-            print("isol_score: " + str(isolation_score))
+            #print("isol_score: " + str(isolation_score))
             if(isolation_score == 1):
                 status = self.OK
                 status_code = self.OK_CODE
@@ -556,9 +556,6 @@ class IsolationForest(AnomalyDetectionAbstract):
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
             
-
-
-            # TODO: fix sendout calls, status and status_codes
             for output in self.outputs:
                 output.send_out(timestamp=timestamp, status=status,
                             value=message_value["test_value"],
@@ -570,42 +567,72 @@ class IsolationForest(AnomalyDetectionAbstract):
                 self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
 
+        # Add to memory for retrain and execute retrain if needed 
+        if (self.retrain_interval is not None):
+            print(self.samples_from_retrain)
+            print(self.memory_dataframe.shape)
+            # Add to memory
+            to_save = [timestamp] + value
+            samples_in_memory = self.memory_dataframe.shape[0]
+            self.memory_dataframe.loc[samples_in_memory] = to_save
+            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            self.samples_from_retrain += 1
 
-    def save_model(self, filename):
+            # Retrain if needed (and possible)
+            if(self.samples_from_retrain >= self.retrain_interval and
+                self.samples_for_retrain == self.memory_dataframe.shape[0]):
+                self.samples_from_retrain = 0
+                self.train_model(train_dataframe=self.memory_dataframe)
+
+    def save_model(self, filename: str) -> None:
         with open("models/" + filename, 'wb') as f:
             pickle.dump(self.model, f)
 
-    def load_model(self, filename):
+    def load_model(self, filename: str) -> None:
         with open(filename, 'rb') as f:
             clf = pickle.load(f)
         return(clf)
 
-    def train_model(self, conf):
-        #load data from location stored in "filename"
-        df = pd.read_csv(conf["train_data"], skiprows=1, delimiter = ",")
+    def train_model(self, train_file: str = None,
+                    train_dataframe: DataFrame = None) -> None:  
+        if(train_dataframe is not None):
+            print("RETRAIN")
+            df = train_dataframe
+        elif(train_file is not None):
+            #load data from location stored in "filename"
+            df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+        else:
+            raise Exception("train_file or train_dataframe must be specified.")
+        
         df = df.to_numpy()
         timestamps = np.array(df[:,0])
-        data = np.array(df[:,1])
+        data = np.array(df[:,1:])
+
+        # Aditional feature construction
         features = []
-        N = conf["train_conf"]["max_features"]
         for i in range(len(data)):
-            value = [data[i]]
+            value = data[i].tolist()
             timestamp = timestamps[i]
             feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
+
             if(feature_vector is not False):
                 features.append(np.array(feature_vector))
-
-        #fit IsolationForest model to data
+        # Fit IsolationForest model to data
         self.model = sklearn.ensemble.IsolationForest(
-            max_samples = conf["train_conf"]["max_samples"],
-            max_features = N
+            max_samples = self.max_samples,
+            max_features = self.N
             ).fit(features)
 
-        self.save_model(conf["train_conf"]["model_name"])
+        self.save_model(self.model_name)
+
+    def retrain_model(self) -> None:
+        # TODO
+        pass
 
 
 class PCA(AnomalyDetectionAbstract):
+    # TODO: method is not functional. Isolation forest layer is to be added
     N: int
     N_components: int
     N_past_data: int
@@ -624,18 +651,6 @@ class PCA(AnomalyDetectionAbstract):
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         super().configure(conf)
 
-        # Outputs and visualization initialization and configuration
-        self.outputs = [eval(o) for o in conf["output"]]
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-        if ("visualization" in conf):
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
-        else:
-            self.visualization = None
-
         if("load_model_from" in conf):
             self.model = self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
@@ -649,8 +664,6 @@ class PCA(AnomalyDetectionAbstract):
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
-
-    
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -733,19 +746,6 @@ class Filtering(AnomalyDetectionAbstract):
         #Initalize the digital filter
         self.b, self.a = signal.butter(conf["filter_order"], conf["cutoff_frequency"])
         self.z = signal.lfilter_zi(self.b, self.a)
-
-        self.outputs = [eval(o) for o in conf["output"]]
-        # configure all outputs
-        output_configurations = conf["output_conf"]
-        for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
-
-        if ("visualization" in conf):
-            self.visualization = eval(conf["visualization"])
-            visualization_configurations = conf["visualization_conf"]
-            self.visualization.configure(visualization_configurations)
-        else:
-            self.visualization = None
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)

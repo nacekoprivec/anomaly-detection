@@ -35,7 +35,7 @@ for e in range(1000):
     tab_data.append(data)
     tab_data_csv.append(data_csv)
 	
-    producer.send('anomaly_detection', value=data)
+    producer.send('anomaly_detection1', value=data)
     sleep(1) #one data point each second
 
 """with open("../data/consumer/sin.json", "w") as f:
