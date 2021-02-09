@@ -16,7 +16,8 @@ The anomaly detection program consists of three main types of components:
 2. Anomaly detection component
 3. Output component
 Each component has many implementations that are interchangeable. Which ones are used depends on the task the program is solving.
-There is also an optional Visualization component which doesn't effect the general workflow and is used for streaming data visualization.
+Normalization is an additional optional component which replaces anomalic samples with normalized ones.
+Another optional component is Visualization component which doesn't effect the general workflow and is used for streaming data visualization.
 
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
@@ -30,6 +31,12 @@ The program is configured through configuration file specified with -c flag (loc
         ...
         anomaly detection configuration
         ...
+        "input_vector_size": ...,
+        "averages": [...],
+        "shifts": [...],
+        "time_features": [...],
+        "normalization": "normalization component", # optional
+        "normalization_conf": "normalization component configuration", # optional
         "output": ["list of output components"],
         "output_conf": ["list of output components configurations"],
         "visualization": "visualization component", # optional
@@ -90,11 +97,19 @@ An optional conponent intendet to visualize the inputted stream.
    * num_of_bins: Number of bins in the histogram's range. (example: 50)
    * range: The interval shown on the histogram. (example: [0, 10])
    
-3. **Status Points Visualization:** Used to visualize processed data e.g. outputs of EMA or Filtering. The points are colored white if OK, warning yellow, error red or undefined blue.It requires the following arguments in the config file:
+3. **Status Points Visualization:** Used to visualize processed data e.g. outputs of EMA or Filtering. The points are colored white if OK, warning yellow, error red or undefined blue. It requires the following arguments in the config file:
    * num_of_points: Maximum number of points of the same line that are visible on the graph at the same time. (example: 50)
    * num_of_lines: Number of lines plotted on the graph. (TODO: it depends on the anomaly detection algorithm so in future this component will be removed) (example: 4)
    * linestyles: A list, specifying the styles of the lines plotted. (example: ["wo", "r-", "b--", "b--"])
 
+### Normalization
+An optional component that replaces anomalic values with normalized ones, which prevents values that follow anomalic values to be considered anomalic (because of shifted values). It is also usefull for "cleaning" the stream of anomalic values since this value is also returned to the output. For now only Isolation forest anomaly detection component has this implemented.
+1. **Last N average:** The normalized value is the average of the last N samples. It requires the following arguments in the config file:
+   * N: An integer representing the number of last samples to be taken into consideration (example: 5)
+
+2. **Periodic last N average:** The normalized value is the average of N samples that are a certain period apart. This is usefull for timeseries that are periodical. It requires the following arguments in the config file:
+   * N: An integer representing the number of last samples to be taken into consideration (example: 5)
+   * period: An integer representing the period between samples. (example: 24)
 
 ### Anomaly detection
 The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all conponents:
