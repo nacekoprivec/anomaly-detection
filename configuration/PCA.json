@@ -20,6 +20,11 @@
         "input_vector_size": 1,
         "shifts": [[0, 1, 2, 3]],
         "averages": [[2, 3, 5]],
+        "normalization": "LastNAverage()",
+        "normalization_conf":
+        {
+            "N": 3
+        },
         "output": ["TerminalOutput()"],
         "output_conf": [
             {}
