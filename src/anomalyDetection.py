@@ -670,7 +670,6 @@ class IsolationForest(AnomalyDetectionAbstract):
 class PCA(AnomalyDetectionAbstract):
     name: str = "PCA"
 
-    # TODO: method is not functional. Isolation forest layer is to be added
     N: int
     N_components: int
     N_past_data: int
@@ -690,6 +689,7 @@ class PCA(AnomalyDetectionAbstract):
         self.N = conf["train_conf"]["max_features"]
         self.model_name = conf["train_conf"]["model_name"]
         self.max_samples = conf["train_conf"]["max_samples"]
+        self.N_components = conf["train_conf"]["N_components"]
 
         # Retrain configuration
         if("retrain_interval" in conf):
@@ -719,9 +719,9 @@ class PCA(AnomalyDetectionAbstract):
 
         # Initialize model
         if("load_model_from" in conf):
-            self.model = self.load_model(conf["load_model_from"])
+            self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
-            self.train_model(conf["train_data"])
+            self.train_model(train_file = conf["train_data"])
         else:
             raise Exception("Model or train dataset must be specified to\
                             initialize model.")
@@ -755,11 +755,11 @@ class PCA(AnomalyDetectionAbstract):
 
             #Model prediction
             PCA_transformed = self.PCA.transform(feature_vector.reshape(1, -1))
-            IsolationForest_transformed =  self.IsolationForest.predict(feature_vector.reshape(1, -1))
-            if(isolation_score == 1):
+            IsolationForest_transformed =  self.IsolationForest.predict(PCA_transformed.reshape(1, -1))
+            if(IsolationForest_transformed == 1):
                 status = self.OK
                 status_code = self.OK_CODE
-            elif(isolation_score == -1):
+            elif(IsolationForest_transformed == -1):
                 status = "Error: outlier detected"
                 status_code = -1
             else:
@@ -790,11 +790,14 @@ class PCA(AnomalyDetectionAbstract):
             return
 
     def save_model(self, filename):
+        print("here")
         with open("models/" + filename + "_PCA", 'wb') as f:
+            print("Saving PCA")
             pickle.dump(self.PCA, f)
 
         with open("models/" + filename + "_IsolationForest", 'wb') as f:
-            pickle.dump(self.Isolation_forest, f)
+            print("Saving isolationForest")
+            pickle.dump(self.IsolationForest, f)
         
         
 
@@ -806,9 +809,12 @@ class PCA(AnomalyDetectionAbstract):
             clf = pickle.load(f)
         self.IsolationForest = clf
 
-    def train_model(self, conf, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        
-        df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+    def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
+        print("TrainingModel")
+        if(train_dataframe is None):
+            df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+        else:
+            df = train_dataframe
         
         df = df.to_numpy()
         timestamps = np.array(df[:,0])
@@ -826,7 +832,7 @@ class PCA(AnomalyDetectionAbstract):
                 features.append(np.array(feature_vector))
         # Fit IsolationForest model to data
 
-        N_components = conf["train_conf"]["N_components"]
+        N_components = self.N_components
 
         self.PCA = sklearn.decomposition.PCA(n_components = N_components)
         self.PCA.fit(features)
