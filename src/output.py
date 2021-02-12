@@ -163,25 +163,32 @@ class KafkaOutput(OutputAbstract):
             self.configure(conf=conf)
 
     def configure(self, conf: Dict[Any, Any]) -> None:
-        self.output_topic = conf['output_topic']
-        self.output_metric = conf['output_metric']
+        self.node_id = conf['node_id']
 
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                          value_serializer=lambda x: 
                          dumps(x).encode('utf-8'))
 
-    def send_out(self, value: Any = None, status: str = "",
+    def send_out(self, suggested_value: Any,status: str = "",
                  timestamp: Any = None, status_code: int = None,
+                value: Any = None,
                  algorithm: str = "Unknown") -> None:
-        # Build a object to be sent out
-        to_write = {"algorithm": algorithm}
-        if (value is not None):
-            to_write["value"] = value
-        if (status != ""):
-            to_write["status"] = status
-        if (timestamp is not None):
-            to_write["timestamp"] = timestamp
-        if (status_code is not None):
-            to_write["status_code"] = status_code
+        
+        #Send to kafka only if an anomaly is detected
+        if(status_code != 1):
+            # Build a object to be sent out
+            to_write = {"sensor": self.node_id}
+            if(algorithm is not None):
+                to_write["algorithm"] =algorithm
+            if(status_code is not None):
+                to_write["score"] = status_code
+            if (timestamp is not None):
+                to_write["timestamp"] = timestamp
+            #if (value is not None):
+            #    to_write["value"] = value
+            if (status != ""):
+                to_write["explanation"] = status
+            
+            kafka_topic = "anomalies_" + str(self.node_id)
 
-        self.producer.send(self.output_topic, value=status_code)
+            self.producer.send(kafka_topic, value=to_write)

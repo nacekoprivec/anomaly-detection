@@ -14,20 +14,27 @@
             "contamination": "auto",
             "model_name": "IsolForestModel"
         },
-        "retrain_interval": 10,
+        "retrain_interval": 100,
         "samples_for_retrain": 2000,
         "input_vector_size": 1,
-        "shifts": [[1, 2]],
-        "output": ["TerminalOutput()"],
+        "shifts": [[1, 2, 3, 4]],
+        "averages": [[1, 2]],
+        "normalization": "LastNAverage()",
+        "normalization_conf":
+        {
+            "N": 3
+        },
+        "output": ["KafkaOutput()"],
         "output_conf": [
-            {}
+            {"node_id": 1
+            }
         ],
         "visualization": "StatusPointsVisualization()",
         "visualization_conf":
             {
                 "num_of_points": 100,
                 "num_of_lines": 1,
-                "linestyles":["wo", "r-", "b--", "b--"]
+                "linestyles":["wo"]
             }
     }
 }
