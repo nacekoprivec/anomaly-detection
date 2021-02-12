@@ -143,8 +143,9 @@ If we have a pre-trained model, we load it by specifying:
    * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be.  (example: "models/IsolationForest")
 in the config file. Example config: IsolationForest.json
 
-4. **PCA:** Principal component analysis. Projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). Could be effective to combine PCA followed by e.g. Isolation Forest (TODO)
-
+4. **PCA + Isolation forest:** PCA (Principal component analysis) projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). First, PCA is applied to the input data followed by the Isolation forest algorithm. In addition to the Isolation forest requirements, the following parameters must be specified in the config file: \
+    * N_components: dimensionality of the PCA output space (example: 5)
+    
 5. **Welfords algorithm:** Very simmilar to border check only in this case UL and LL are calculated with every new sample (with equations: UL=online_mean_consumption+X*online_standard_+deviation and LL=online_mean_consumption-X*online_standard_+deviation). There are two modes for this method. Frist one calculates mean and standard deviation of the previous N samples and the second one calculates them for all the datasamples so far.
 It requires the following arguments in the config file:
    * N: An integer representing the number of samples used for calculating mean and standard deviation. If it is not specified all samples till some point will be used in calculation. (example: 5)
@@ -164,6 +165,11 @@ It requires the following arguments in the config file:
    * cutoff_frequency: the frequency, at which the filter response starts to drop off. Lower frequency components of the input data will be passed through, but higher frequency components are filtered out. This is not an actual physical frequency but rather a float between 0 and 1. (example: 0.1)
    * mode: either 0 or 1; 0 - output is the filtered signal, 1 - output is the difference between the test value and the filtered signal (this is for visualization purposes)
 
+7. **Hampel:** The Hampel filter is used to both detect outliers and replace them with "normal" values. The filter analyses a window of data including data points before and after the data point in question. The median value of these points is calculated, as well as the standard deviation. If the point in question is more than n_sigmas times the standard deviation away from the median it is marked as an outlier and replaced with the median value. Keep in mind that this algorithm can only analize each data point, when there are W points available after that point. The algorithm thus works with a delay of W points.
+It requires the following arguments in the config file:\
+    * n_sigmas: Tolerance of the algorithm (example: 3)
+    * W: Window size - in the calculations W points before and W after the point in question are used (example: 5)
+    * K: A multiplier which is dependent on the distribution of input data. For gaussian it is 1.4826
 
 ## Examples:
 For configuration examples see configuration folder and inside it READEME file. <br> <br>
