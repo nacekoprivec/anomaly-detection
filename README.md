@@ -10,6 +10,11 @@
 | `-f` | `--file` | If this flag is used the program will read data from file specified in config file instead of kafka stream|
 | `-fk` | `--filekafka` | If this flag is used the program will read data from file specified in config file and then from kafka stream|
 
+In order to interact with kafka separately from the anomaly detection module e.g. to check messages in a specific topic, scripts from the kafka installation can be run with appropriate flags. For example to view messages in topic 'test' (on windows):
+`.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test --from-beginning`
+
+
+
 ## Architecture
 The anomaly detection program consists of three main types of components:
 1. Consumer component
@@ -79,8 +84,18 @@ The following parameters are similar to ones in Kafka consumer:
 Output component differs in where the data is outputted to. more than one output conmonent can be specified. It recieves three arguments from the anomaly detection component: value (the last value of the stream), timestamp and status (wether data is anomalous).
 1. **Terminal output:** Timestamp, value and status are outputed to the terminal. It does not require any parameters in the configuration file.
 
-2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: `{"algorithm": [algorithm used], "value": [value of stream in question], "status": [gives information of anomalouesness], "status_code": [gives information of anomalouesness], "timestep": [timestep of the value in stream]}`. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following argments in the config file:
-    * output_topic: Name of the topic where the data will be stored (example: "anomaly_detection_EMA")
+2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: 
+```
+{
+ "sensor": ...,
+ "algorithm":...,
+ "score":...,
+ "timestamp":...,
+ "explanation":...
+}
+```
+Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following argments in the config file:
+    * node_id: The anomalies will be sent to topic: anomalies_[node_id] (example: 1)
 
 3. **File output:** Data is outputed to a JSON csv or txt file. The JSON file contains a single field "data" whose value is an array of objects of shape: `{"algorithm": [algorithm used], "value": [value of stream in question], "status": [gives information of anomalouesness], "status_code": [gives information of anomalouesness], "timestep": [timestep of the value in stream]}`. The output in the txt file is the same as terminal output. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following arguments in the config file:
    * file_name: The name of the file for output located in the log/ directory. (example: "output.csv")
