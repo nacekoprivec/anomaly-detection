@@ -17,21 +17,31 @@ import numpy as np
 
 class ConsumerAbstract(ABC):
     anomaly: "AnomalyDetectionAbstract"
-    last_message: Any
+    configuration_location: str
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, configuration_location: str = None) -> None:
+        self.configuration_location = configuration_location
 
     @abstractmethod
     def configure(self, con: Dict[Any, Any],
                   configuration_location: str) -> None:
-        pass
+        self.configuration_location = configuration_location
 
     @abstractmethod
     def read(self) -> None:
-        while(self._stopping_condition_):
-            self._read_next_()
-            self.anomaly.check(self.last_message)
+        pass
+
+    # rewrites anomaly detection configuration
+    def rewrite_configuration(self, anomaly_detection_conf: Dict[str, Any]
+                              ) -> None:
+        with open(self.configuration_location) as c:
+            conf = json.load(c)
+            conf["anomaly_detection_conf"] = anomaly_detection_conf
+
+        with open(self.configuration_location, "w") as c:
+            json.dump(conf, c)
+
+
 
 
 class ConsumerKafka(ConsumerAbstract):
@@ -39,7 +49,7 @@ class ConsumerKafka(ConsumerAbstract):
 
     def __init__(self, conf: Dict[Any, Any] = None,
                  configuration_location: str = None) -> None:
-        super().__init__()
+        super().__init__(configuration_location=configuration_location)
         if(conf is not None):
             self.configure(con=conf)
         elif(configuration_location is not None):
@@ -65,7 +75,7 @@ class ConsumerKafka(ConsumerAbstract):
         self.consumer.subscribe(self.topics)
         self.anomaly = eval(con["anomaly_detection_alg"])
         anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration)
+        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
 
     def read(self) -> None:
         for message in self.consumer:
@@ -96,7 +106,7 @@ class ConsumerFile(ConsumerAbstract):
 
         self.anomaly = eval(con["anomaly_detection_alg"])
         anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration)
+        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
 
     def read(self) -> None:
         if(self.file_name[-4:] == "json"):
@@ -177,7 +187,7 @@ class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
 
         self.anomaly = eval(con["anomaly_detection_alg"])
         anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration)
+        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
 
     def read(self) -> None:
         ConsumerFile.read(self)
