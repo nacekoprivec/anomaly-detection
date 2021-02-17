@@ -14,7 +14,7 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 
 "load real data from Continental, send it to kafka topic"
 
-stored_data = np.loadtxt("../data/Continental/1.txt", skiprows=1, delimiter = ",", usecols=(1,))
+stored_data = np.loadtxt("../data/Continental/1", skiprows=1, delimiter = ",", usecols=(1,))
 
 for i in range(len(stored_data)):
 

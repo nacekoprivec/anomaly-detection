@@ -33,6 +33,7 @@ class AnomalyDetectionAbstract(ABC):
     time_features: List[str]
     name: str
 
+    use_cols: List[int]
     input_vector_size: int
     outputs: List["OutputAbstract"]
     visualization: "VisualizationAbstract"
@@ -114,6 +115,12 @@ class AnomalyDetectionAbstract(ABC):
             self.normalization.configure(normalization_configuration) 
         else:
             self.normalization = None
+        
+        # If specified save which columns to use
+        if("use_cols" in conf):
+            self.use_cols = conf["use_cols"]
+        else:
+            self.use_cols = None
     
     def change_last_record(self, value: List[Any]) -> None:
         self.memory[-1] = value
@@ -566,7 +573,12 @@ class IsolationForest(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        value = []
+        for el in range(len(message_value["test_value"])):
+            if(el in self.use_cols):
+                value.append(message_value["test_value"][el])
+
+        print(value)
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
