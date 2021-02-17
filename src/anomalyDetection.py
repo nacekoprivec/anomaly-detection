@@ -594,7 +594,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         if (not feature_vector or not self.trained):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
-            print("undefined")
+            # print("undefined")
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
             # Send undefined message to output
@@ -636,8 +636,8 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            print(self.samples_from_retrain)
-            print(self.memory_dataframe.shape)
+            # print(self.samples_from_retrain)
+            # print(self.memory_dataframe.shape)
             # Add to memory
             to_save = [timestamp] + value
             samples_in_memory = self.memory_dataframe.shape[0]
@@ -829,8 +829,8 @@ class PCA(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            print(self.samples_from_retrain)
-            print(self.memory_dataframe.shape)
+            # print(self.samples_from_retrain)
+            # print(self.memory_dataframe.shape)
             # Add to memory
             to_save = [timestamp] + value
             samples_in_memory = self.memory_dataframe.shape[0]
@@ -846,7 +846,7 @@ class PCA(AnomalyDetectionAbstract):
             return
 
     def save_model(self, filename):
-        print("here")
+        # ("here")
         with open("models/" + filename + "_PCA", 'wb') as f:
             print("Saving PCA")
             pickle.dump(self.PCA, f)
@@ -866,7 +866,7 @@ class PCA(AnomalyDetectionAbstract):
         self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        print("TrainingModel")
+        # print("TrainingModel")
         if(train_dataframe is None):
             df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
         else:
@@ -1087,7 +1087,7 @@ class Hampel(AnomalyDetectionAbstract):
 
         if(suggested_value is not None):
             if(self.visualization is not None):
-                print(status_code)
+                # print(status_code)
                 lines = [suggested_value]
                 self.visualization.update(value=lines, timestamp=timestamp,
                                         status_code=status_code)

@@ -10,13 +10,17 @@ from kafka import KafkaProducer
 
 
 class OutputAbstract(ABC):
+    send_ok: bool
 
     def __init__(self) -> None:
         pass
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any]) -> None:
-        pass
+        if("send_ok" in conf):
+            self.send_ok = conf["send_ok"]
+        else:
+            self.send_ok = True
 
     @abstractmethod
     def send_out(self, value: Any, suggested_value: Any, status: str, timestamp: Any,
@@ -33,16 +37,20 @@ class TerminalOutput(OutputAbstract):
             self.configure(conf=conf)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf=conf)
         # Nothing to configure
         pass
 
     def send_out(self,  value: Any, suggested_value: Any = None, 
                 status: str = "", timestamp: Any = 0, status_code: int = None,
                 algorithm: str = "Unknown") -> None:
-        o = timestamp + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
-        if(suggested_value is not None):
-            o = o + ", Suggested value: " + str(suggested_value)
-        print(o)
+        # Send to kafka only if an anomaly is detected (or if it is specified
+        # that ok values are to be sent)
+        if(status_code != 1 or self.send_ok):    
+            o = timestamp + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
+            if(suggested_value is not None):
+                o = o + ", Suggested value: " + str(suggested_value)
+            print(o)
 
 
 class FileOutput(OutputAbstract):
@@ -56,6 +64,8 @@ class FileOutput(OutputAbstract):
             self.configure(conf=conf)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf=conf)
+
         self.file_name = conf["file_name"]
         self.mode = conf["mode"]
         self.file_path = "log/" + self.file_name
@@ -84,23 +94,27 @@ class FileOutput(OutputAbstract):
     def send_out(self,  value: Any = None, suggested_value: Any = None,
                  status: str = "", timestamp: Any = None,
                  status_code: int = None, algorithm: str = "Unknown") -> None:
-        if(self.file_name[-4:] == "json"):
-            self.write_JSON(value=value, status=status,
+
+        # Send to kafka only if an anomaly is detected (or if it is specified
+        # that ok values are to be sent)
+        if(status_code != 1 or self.send_ok):
+            if(self.file_name[-4:] == "json"):
+                self.write_JSON(value=value, status=status,
+                                timestamp=timestamp, status_code=status_code,
+                                algorithm=algorithm,
+                                suggested_value=suggested_value)
+            elif(self.file_name[-3:] == "txt"):
+                self.write_txt(value=value, status=status,
                             timestamp=timestamp, status_code=status_code,
                             algorithm=algorithm,
                             suggested_value=suggested_value)
-        elif(self.file_name[-3:] == "txt"):
-            self.write_txt(value=value, status=status,
-                           timestamp=timestamp, status_code=status_code,
-                           algorithm=algorithm,
-                           suggested_value=suggested_value)
-        elif(self.file_name[-3:] == "csv"):
-            self.write_csv(value=value, status=status,
-                           timestamp=timestamp, status_code=status_code,
-                           algorithm=algorithm,
-                           suggested_value=suggested_value)
-        else:
-            print("Output file type not supported.")
+            elif(self.file_name[-3:] == "csv"):
+                self.write_csv(value=value, status=status,
+                            timestamp=timestamp, status_code=status_code,
+                            algorithm=algorithm,
+                            suggested_value=suggested_value)
+            else:
+                print("Output file type not supported.")
 
     def write_JSON(self,  value: Any, timestamp: Any,
                    status: str = "", status_code: int = None,
@@ -163,6 +177,7 @@ class KafkaOutput(OutputAbstract):
             self.configure(conf=conf)
 
     def configure(self, conf: Dict[Any, Any]) -> None:
+        super().configure(conf=conf)
         self.node_id = conf['node_id']
 
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
@@ -174,8 +189,9 @@ class KafkaOutput(OutputAbstract):
                 value: Any = None,
                  algorithm: str = "Unknown") -> None:
         
-        #Send to kafka only if an anomaly is detected
-        if(status_code != 1):
+        # Send to kafka only if an anomaly is detected (or if it is specified
+        # that ok values are to be sent)
+        if(status_code != 1 or self.send_ok):
             # Build a object to be sent out
             to_write = {"sensor": self.node_id}
             if(algorithm is not None):
