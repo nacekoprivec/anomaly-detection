@@ -215,7 +215,7 @@ class AnomalyDetectionAbstract(ABC):
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
-            lines = [value]
+            lines = [value[0]]
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
 
@@ -519,6 +519,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     samples_from_retrain: int
     retrain_interval: int
     samples_for_retrain: int
+    trained: bool
     memory_dataframe: DataFrame
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -553,7 +554,7 @@ class IsolationForest(AnomalyDetectionAbstract):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
                 columns = ["timestamp"]
-                for i in range(self.input_shape):
+                for i in range(self.input_vector_size):
                     columns.append(str(i))
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
@@ -562,31 +563,38 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.memory_dataframe = None
 
         # Initialize model
+        self.trained = False
         if("load_model_from" in conf):
             self.model = self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
             self.train_model(conf["train_data"])
+        elif(self.retrain_interval is not None):
+            self.model = sklearn.ensemble.IsolationForest(
+                max_samples=self.max_samples, max_features=self.N)
         else:
-            raise Exception("Model or train dataset must be specified to\
-                            initialize model.")
+            raise Exception("The configuration must specify either \
+                            load_model_from, train_data or train_interval")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
 
-        value = []
-        for el in range(len(message_value["test_value"])):
-            if(el in self.use_cols):
-                value.append(message_value["test_value"][el])
+        if(self.use_cols is not None):
+            value = []
+            for el in range(len(message_value["test_value"])):
+                if(el in self.use_cols):
+                    value.append(message_value["test_value"][el])
+        else:
+            value = message_value["test_value"]
 
-        print(value)
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
 
-        if (feature_vector == False):
+        if (not feature_vector or not self.trained):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
+            print("undefined")
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
             # Send undefined message to output
@@ -606,7 +614,6 @@ class IsolationForest(AnomalyDetectionAbstract):
             if(self.normalization is not None):
                 self.normalization.add_value(value=value)
 
-            return
         else:
             feature_vector = np.array(feature_vector)
             #Model prediction
@@ -629,18 +636,20 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            # print(self.samples_from_retrain)
-            # print(self.memory_dataframe.shape)
+            print(self.samples_from_retrain)
+            print(self.memory_dataframe.shape)
             # Add to memory
             to_save = [timestamp] + value
             samples_in_memory = self.memory_dataframe.shape[0]
             self.memory_dataframe.loc[samples_in_memory] = to_save
-            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            if(self.samples_for_retrain is not None):
+                self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             self.samples_from_retrain += 1
 
             # Retrain if needed (and possible)
             if(self.samples_from_retrain >= self.retrain_interval and
-                self.samples_for_retrain == self.memory_dataframe.shape[0]):
+                (self.samples_for_retrain == self.memory_dataframe.shape[0] or
+                self.samples_for_retrain is None)):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
 
@@ -656,7 +665,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     def train_model(self, train_file: str = None,
                     train_dataframe: DataFrame = None) -> None:  
         if(train_dataframe is not None):
-            print("RETRAIN")
+            # print("RETRAIN")
             df = train_dataframe
 
             # Save dataframe to csv file
@@ -703,6 +712,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             ).fit(features)
 
         self.save_model(self.model_name)
+        self.trained = True
 
 
 class PCA(AnomalyDetectionAbstract):
@@ -748,7 +758,7 @@ class PCA(AnomalyDetectionAbstract):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
                 columns = ["timestamp"]
-                for i in range(self.input_shape):
+                for i in range(self.input_vector_size):
                     columns.append(str(i))
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
@@ -768,7 +778,14 @@ class PCA(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        if(self.use_cols is not None):
+            value = []
+            for el in range(len(message_value["test_value"])):
+                if(el in self.use_cols):
+                    value.append(message_value["test_value"][el])
+        else:
+            value = message_value["test_value"]
+
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
