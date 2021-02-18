@@ -10,6 +10,11 @@
 | `-f` | `--file` | If this flag is used the program will read data from file specified in config file instead of kafka stream|
 | `-fk` | `--filekafka` | If this flag is used the program will read data from file specified in config file and then from kafka stream|
 
+In order to interact with kafka separately from the anomaly detection module e.g. to check messages in a specific topic, scripts from the kafka installation can be run with appropriate flags. For example to view messages in topic 'test' (on windows):
+`.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test --from-beginning`
+
+
+
 ## Architecture
 The anomaly detection program consists of three main types of components:
 1. Consumer component
@@ -76,11 +81,22 @@ The following parameters are similar to ones in Kafka consumer:
    * topics: A list of topics streaming the data. (example ["anomaly_detection"])
 
 ### Output
-Output component differs in where the data is outputted to. more than one output conmonent can be specified. It recieves three arguments from the anomaly detection component: value (the last value of the stream), timestamp and status (wether data is anomalous).
+Output component differs in where the data is outputted to. more than one output conmonent can be specified. It recieves three arguments from the anomaly detection component: value (the last value of the stream), timestamp and status (wether data is anomalous). The following arguments of configuration file are general for all outputs:
+* send_ok: A boolean telling the component if OK samples are to be sent to output. This is an optional parameter. If it is not specified True is taken.
 1. **Terminal output:** Timestamp, value and status are outputed to the terminal. It does not require any parameters in the configuration file.
 
-2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: `{"algorithm": [algorithm used], "value": [value of stream in question], "status": [gives information of anomalouesness], "status_code": [gives information of anomalouesness], "timestep": [timestep of the value in stream]}`. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following argments in the config file:
-    * output_topic: Name of the topic where the data will be stored (example: "anomaly_detection_EMA")
+2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: 
+```
+{
+ "sensor": ...,
+ "algorithm":...,
+ "score":...,
+ "timestamp":...,
+ "explanation":...
+}
+```
+Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following argments in the config file:
+    * node_id: The anomalies will be sent to topic: anomalies_[node_id] (example: 1)
 
 3. **File output:** Data is outputed to a JSON csv or txt file. The JSON file contains a single field "data" whose value is an array of objects of shape: `{"algorithm": [algorithm used], "value": [value of stream in question], "status": [gives information of anomalouesness], "status_code": [gives information of anomalouesness], "timestep": [timestep of the value in stream]}`. The output in the txt file is the same as terminal output. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following arguments in the config file:
    * file_name: The name of the file for output located in the log/ directory. (example: "output.csv")
@@ -114,6 +130,7 @@ An optional component that replaces anomalic values with normalized ones, which 
 ### Anomaly detection
 The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all conponents:
 * input_vector_size: An integer representing the dimensionality of the inputted vector (number of features) (example: 2),
+* use_cols: A list of integers representing the indexes of elements in the inputted vector to be used. (example: [0, 2]),
 * averages: Specifies additional features to be constructed. In this case averages of the last i values of a feature are calculated and included in the feature vector. (example: [[2, 3, 5], [2]] -> this means that the first feature gets addtitonal features: average over last 2 values, average over last 3 values and average over last 5 values and the second feature gets average over last 2 values)
 * shifts: Specifies additional features to be constructed. In this case shifted values of a feature are included in the feature vector. (example: [[1, 2, 3], [4, 5]] -> this means that the first feature gets addtitonal features: value shifted for 1, value shifted for 2 and value shifted for 3 and the second feature gets value shifted for 4 and value shifted for 5)
 * "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires datetime format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]),
@@ -130,17 +147,17 @@ It requires the following arguments in the config file:
    * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9])
    
 3. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
-   * train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. This is an optional parameter. If it is not provided load_model_from must be. 
+   * train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is in the example file. This is an optional parameter. 
    * max_features: The number of features to draw from X to train each base estimator. (example: 4)
    * max_samples: The number of samples to draw from X to train each base estimator. (example:100)
    * contamination: The proportion of outliers in the dataset. (example: 0.1 if we know we have 10% of outliers in our dataset) Can be set to "auto".
    * model_name: Name of the model, which will be saved in "models/" folder.
-   * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining (example: 100)
+   * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100)
    * samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
 Example model train config: IsolationForestTrain.json
 Model train mode is activated if "load_model_from" is not in the config file, and "train_data" is defined. After training, the trained model will be used to continue with evaluation of data from consumer automatically.
 If we have a pre-trained model, we load it by specifying:
-   * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be.  (example: "models/IsolationForest")
+   * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be and vice versa. If neither of them are provided the retrain interval must be and the model will output undefiner results untill the first retrain.  (example: "models/IsolationForest")
 in the config file. Example config: IsolationForest.json
 
 4. **PCA + Isolation forest:** PCA (Principal component analysis) projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). First, PCA is applied to the input data followed by the Isolation forest algorithm. In addition to the Isolation forest requirements, the following parameters must be specified in the config file: \

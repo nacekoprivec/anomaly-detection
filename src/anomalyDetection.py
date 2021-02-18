@@ -1,10 +1,11 @@
 from abc import abstractmethod, ABC
-from os import stat
 from typing import Any, Dict, List, Union
 import numpy as np
 import statistics
 import sys
 import math
+import os
+import json
 from statistics import mean
 from datetime import datetime, time
 import pickle
@@ -23,6 +24,8 @@ from normalization import NormalizationAbstract, LastNAverage,\
 
 
 class AnomalyDetectionAbstract(ABC):
+    configuration_location: str
+
     memory_size: int
     memory: List[List[Any]]
     averages: List[List[int]]
@@ -30,6 +33,7 @@ class AnomalyDetectionAbstract(ABC):
     time_features: List[str]
     name: str
 
+    use_cols: List[int]
     input_vector_size: int
     outputs: List["OutputAbstract"]
     visualization: "VisualizationAbstract"
@@ -53,11 +57,15 @@ class AnomalyDetectionAbstract(ABC):
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         print(message_value['test_value'])
+        # print(message_value['test_value'])
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
     @abstractmethod
-    def configure(self, conf: Dict[Any, Any]) -> None:
+    def configure(self, conf: Dict[Any, Any],
+                  configuration_location: str = None) -> None:
+        self.configuration_location = configuration_location
+        
         # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
         
@@ -108,6 +116,12 @@ class AnomalyDetectionAbstract(ABC):
             self.normalization.configure(normalization_configuration) 
         else:
             self.normalization = None
+        
+        # If specified save which columns to use
+        if("use_cols" in conf):
+            self.use_cols = conf["use_cols"]
+        else:
+            self.use_cols = None
     
     def change_last_record(self, value: List[Any]) -> None:
         self.memory[-1] = value
@@ -219,9 +233,10 @@ class AnomalyDetectionAbstract(ABC):
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
-            lines = [value]
+            lines = [value[0]]
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
+
 
 class BorderCheck(AnomalyDetectionAbstract):
     """ works with 1D data and checks if the value is above, below or close
@@ -238,8 +253,9 @@ class BorderCheck(AnomalyDetectionAbstract):
             self.configure(conf)
 
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
         self.LL = conf["LL"]
         self.UL = conf["UL"]
 
@@ -304,8 +320,9 @@ class Welford(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
         if ('N' in conf):
             self.N = conf['N']
             self.memory = [None] * self.N
@@ -428,8 +445,9 @@ class EMA(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
         self.LL = conf["LL"]
         self.UL = conf["UL"]
         self.warning_stages = conf["warning_stages"]
@@ -519,6 +537,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     samples_from_retrain: int
     retrain_interval: int
     samples_for_retrain: int
+    trained: bool
     memory_dataframe: DataFrame
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -526,8 +545,9 @@ class IsolationForest(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
 
         # Train configuration
         self.N = conf["train_conf"]["max_features"]
@@ -553,7 +573,7 @@ class IsolationForest(AnomalyDetectionAbstract):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
                 columns = ["timestamp"]
-                for i in range(self.input_shape):
+                for i in range(self.input_vector_size):
                     columns.append(str(i))
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
@@ -562,26 +582,38 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.memory_dataframe = None
 
         # Initialize model
+        self.trained = False
         if("load_model_from" in conf):
             self.model = self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
             self.train_model(conf["train_data"])
+        elif(self.retrain_interval is not None):
+            self.model = sklearn.ensemble.IsolationForest(
+                max_samples=self.max_samples, max_features=self.N)
         else:
-            raise Exception("Model or train dataset must be specified to\
-                            initialize model.")
+            raise Exception("The configuration must specify either \
+                            load_model_from, train_data or train_interval")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        if(self.use_cols is not None):
+            value = []
+            for el in range(len(message_value["test_value"])):
+                if(el in self.use_cols):
+                    value.append(message_value["test_value"][el])
+        else:
+            value = message_value["test_value"]
+
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
 
-        if (feature_vector == False):
+        if (not feature_vector or not self.trained):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
+            # print("undefined")
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
             # Send undefined message to output
@@ -601,7 +633,6 @@ class IsolationForest(AnomalyDetectionAbstract):
             if(self.normalization is not None):
                 self.normalization.add_value(value=value)
 
-            return
         else:
             feature_vector = np.array(feature_vector)
             #Model prediction
@@ -625,18 +656,20 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            print(self.samples_from_retrain)
-            print(self.memory_dataframe.shape)
+            # print(self.samples_from_retrain)
+            # print(self.memory_dataframe.shape)
             # Add to memory
             to_save = [timestamp] + value
             samples_in_memory = self.memory_dataframe.shape[0]
             self.memory_dataframe.loc[samples_in_memory] = to_save
-            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            if(self.samples_for_retrain is not None):
+                self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             self.samples_from_retrain += 1
 
             # Retrain if needed (and possible)
             if(self.samples_from_retrain >= self.retrain_interval and
-                self.samples_for_retrain == self.memory_dataframe.shape[0]):
+                (self.samples_for_retrain == self.memory_dataframe.shape[0] or
+                self.samples_for_retrain is None)):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
 
@@ -652,10 +685,28 @@ class IsolationForest(AnomalyDetectionAbstract):
     def train_model(self, train_file: str = None,
                     train_dataframe: DataFrame = None) -> None:  
         if(train_dataframe is not None):
-            print("RETRAIN")
+            # print("RETRAIN")
             df = train_dataframe
+
+            # Save dataframe to csv file
+            name = "IsolationForest_last_" + str(self.samples_for_retrain)\
+                  + "_samples.csv"
+            dir = "./data"
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
+            path = dir + "/" + name
+            df.to_csv(path,index=False)
+
+            # Change the config file so the next time the model will train from that file
+            with open("configuration/" + self.configuration_location) as conf:
+                whole_conf = json.load(conf)
+                whole_conf["anomaly_detection_conf"]["train_data"] = path
+            
+            with open("configuration/" + self.configuration_location, "w") as conf:
+                json.dump(whole_conf, conf)
+
         elif(train_file is not None):
-            #load data from location stored in "filename"
+            # Load data from location stored in "filename"
             df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
         else:
             raise Exception("train_file or train_dataframe must be specified.")
@@ -681,10 +732,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             ).fit(features)
 
         self.save_model(self.model_name)
-
-    def retrain_model(self) -> None:
-        # TODO
-        pass
+        self.trained = True
 
 
 class PCA(AnomalyDetectionAbstract):
@@ -702,8 +750,9 @@ class PCA(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
 
         # Train configuration
         self.N = conf["train_conf"]["max_features"]
@@ -729,7 +778,7 @@ class PCA(AnomalyDetectionAbstract):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
                 columns = ["timestamp"]
-                for i in range(self.input_shape):
+                for i in range(self.input_vector_size):
                     columns.append(str(i))
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
@@ -749,7 +798,14 @@ class PCA(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        if(self.use_cols is not None):
+            value = []
+            for el in range(len(message_value["test_value"])):
+                if(el in self.use_cols):
+                    value.append(message_value["test_value"][el])
+        else:
+            value = message_value["test_value"]
+
         timestamp = message_value["timestamp"]
 
         feature_vector = super().feature_construction(value=value,
@@ -793,8 +849,8 @@ class PCA(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            print(self.samples_from_retrain)
-            print(self.memory_dataframe.shape)
+            # print(self.samples_from_retrain)
+            # print(self.memory_dataframe.shape)
             # Add to memory
             to_save = [timestamp] + value
             samples_in_memory = self.memory_dataframe.shape[0]
@@ -810,7 +866,7 @@ class PCA(AnomalyDetectionAbstract):
             return
 
     def save_model(self, filename):
-        print("here")
+        # ("here")
         with open("models/" + filename + "_PCA", 'wb') as f:
             print("Saving PCA")
             pickle.dump(self.PCA, f)
@@ -830,7 +886,7 @@ class PCA(AnomalyDetectionAbstract):
         self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        print("TrainingModel")
+        # print("TrainingModel")
         if(train_dataframe is None):
             df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
         else:
@@ -880,8 +936,9 @@ class Filtering(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
         self.mode = conf["mode"]
         self.LL = conf["LL"]
         self.UL = conf["UL"]
@@ -983,8 +1040,9 @@ class Hampel(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-    def configure(self, conf: Dict[Any, Any] = None) -> None:
-        super().configure(conf)
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
         if ('W' in conf):
             self.W = conf['W']
             self.memory = [None] * (2*self.W + 1)
@@ -1049,7 +1107,7 @@ class Hampel(AnomalyDetectionAbstract):
 
         if(suggested_value is not None):
             if(self.visualization is not None):
-                print(status_code)
+                # print(status_code)
                 lines = [suggested_value]
                 self.visualization.update(value=lines, timestamp=timestamp,
                                         status_code=status_code)
