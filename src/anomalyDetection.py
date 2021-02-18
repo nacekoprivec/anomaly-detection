@@ -6,7 +6,7 @@ import statistics
 import sys
 import math
 from statistics import mean
-from datetime import datetime
+from datetime import datetime, time
 import pickle
 from pandas.core.frame import DataFrame
 from scipy.signal.lti_conversion import _atleast_2d_or_none
@@ -52,6 +52,7 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        print(message_value['test_value'])
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
@@ -163,8 +164,11 @@ class AnomalyDetectionAbstract(ABC):
 
     def time_features_construction(self, timestamp: str) -> None:
         time_features = []
-
-        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
+        
+        if(len(str(timestamp)) == 19):
+            dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        else:
+            dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
 
         # Requires datetime format
         # Check for keywords specified in time_features
@@ -176,6 +180,20 @@ class AnomalyDetectionAbstract(ABC):
             time_features.append(int(dt.weekday()))
         if ("hour" in self.time_features):
             time_features.append(int(dt.hour))
+        if ("minute" in self.time_features):
+            time_features.append(int(dt.minute))
+        
+        if("Braila_day_night" in self.time_features):
+            start = time(23, 0, 0)
+            end = time(4, 45, 0)
+            now = time(dt.hour, dt.minute, dt.second)
+            day_night = int(start <= now or now <= end)
+            print(day_night)
+            print(start)
+            print(now)
+            print(end)
+            time_features.append(day_night)
+
 
         return time_features
 
@@ -515,6 +533,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         self.N = conf["train_conf"]["max_features"]
         self.model_name = conf["train_conf"]["model_name"]
         self.max_samples = conf["train_conf"]["max_samples"]
+        self.input_vector_size = conf["input_vector_size"]
 
         # Retrain configuration
         if("retrain_interval" in conf):
@@ -586,6 +605,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         else:
             feature_vector = np.array(feature_vector)
             #Model prediction
+            print(feature_vector)
             isolation_score = self.model.predict(feature_vector.reshape(1, -1))
             #print("isol_score: " + str(isolation_score))
             if(isolation_score == 1):
@@ -642,7 +662,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         
         df = df.to_numpy()
         timestamps = np.array(df[:,0])
-        data = np.array(df[:,1:])
+        data = np.array(df[:,1:(1 + self.input_vector_size)])
 
         # Aditional feature construction
         features = []
@@ -752,7 +772,7 @@ class PCA(AnomalyDetectionAbstract):
             return
         else:
             feature_vector = np.array(feature_vector)
-
+            print(feature_vector)
             #Model prediction
             PCA_transformed = self.PCA.transform(feature_vector.reshape(1, -1))
             IsolationForest_transformed =  self.IsolationForest.predict(PCA_transformed.reshape(1, -1))
@@ -818,7 +838,7 @@ class PCA(AnomalyDetectionAbstract):
         
         df = df.to_numpy()
         timestamps = np.array(df[:,0])
-        data = np.array(df[:,1:])
+        data = np.array(df[:,1:(1 + self.input_vector_size)])
 
         # Aditional feature construction
         features = []
