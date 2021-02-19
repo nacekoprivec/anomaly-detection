@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 import numpy as np
 import statistics
 import sys
@@ -29,6 +29,7 @@ class AnomalyDetectionAbstract(ABC):
     memory_size: int
     memory: List[List[Any]]
     averages: List[List[int]]
+    periodic_averages: List[List[Tuple[int, List[int]]]]
     shifts: List[List[int]]
     time_features: List[str]
     name: str
@@ -56,7 +57,7 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        print(message_value['test_value'])
+        # print("test value: " + str(message_value['test_value']))
         # print(message_value['test_value'])
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
@@ -73,6 +74,11 @@ class AnomalyDetectionAbstract(ABC):
             self.averages = conf["averages"]
         else:
             self.averages = []
+
+        if("periodic_averages" in conf):
+            self.periodic_averages = conf["periodic_averages"]
+        else:
+            self.periodic_averages = []
 
         if("shifts" in conf):
             self.shifts = conf["shifts"]
@@ -95,7 +101,19 @@ class AnomalyDetectionAbstract(ABC):
         else:
             max_average = max(map(max, self.averages))
 
-        self.memory_size = max(max_shift, max_average)
+        if (len(self.periodic_averages) == 0):
+            max_periodic_average = 0
+        else:
+            max_periodic_average = 0
+            for feature_avgs in self.periodic_averages:
+                for period_tuple in feature_avgs:
+                    period = period_tuple[0]
+                    max_avg = max(period_tuple[1])
+                    if(period * max_avg > max_periodic_average):
+                        max_periodic_average = period * max_avg
+
+        self.memory_size = max(max_shift, max_average, max_periodic_average)
+        # print(self.memory_size)
 
         # OUTPUT/VISUALIZATION INITIALIZATION & CONFIGURATION
         self.outputs = [eval(o) for o in conf["output"]]
@@ -126,6 +144,25 @@ class AnomalyDetectionAbstract(ABC):
     def change_last_record(self, value: List[Any]) -> None:
         self.memory[-1] = value
 
+    def training_feature_construction(self, data, timestamps) -> List[Any]:
+        # Saves memory so it can be restored
+        memory_backup = self.memory
+        self.memory = []
+
+        # Aditional feature construction
+        features = []
+        for i in range(len(data)):
+            value = data[i].tolist()
+            timestamp = timestamps[i]
+            feature_vector = self.feature_construction(value=value,
+                                                      timestamp=timestamp)
+
+            if(feature_vector is not False):
+                features.append(np.array(feature_vector))
+
+        self.memory = memory_backup
+        return features
+
     def feature_construction(self, value: List[Any], 
                              timestamp: str) -> Union[Any, bool]:
 
@@ -143,6 +180,9 @@ class AnomalyDetectionAbstract(ABC):
 
         # Create average features
         new_value.extend(self.average_construction())
+
+        # Create periodic averages
+        new_value.extend(self.periodic_average_construction())
 
         # Create shifted features
         new_value.extend(self.shift_construction())
@@ -164,6 +204,42 @@ class AnomalyDetectionAbstract(ABC):
                 averages.append(mean(values))
 
         return averages
+
+    def periodic_average_construction(self) -> None:
+        # construct periodic averages
+
+        periodic_averages = []
+        # Loop through features
+        for feature_indx in range(len(self.periodic_averages)):
+            # Loop through indexes for different features
+            for period_indx in range(len(self.periodic_averages[feature_indx])):
+                # Extract period and a list of how N-s (number of samples to
+                # take from this sequence)
+                period = self.periodic_averages[feature_indx][period_indx][0]
+                averages = self.periodic_averages[feature_indx][period_indx][1]
+
+                # Loop through N-s (number of samples to take from this
+                # sequence)
+                for average in averages:
+                    # Construct a list of semples with this period from memory
+                    periodic_list = []
+                    # Loop through samples (in opposite direction) and if they
+                    # are of right period add them to the list
+                    for i in range(self.memory_size):
+                        if(len(periodic_list) == average):
+                            # Enough samples
+                            break
+                        if(i%period==0):
+                            periodic_list.append(self.memory[self.memory_size-(i+1)][feature_indx])
+                    
+                    # print("periodic list:")
+                    # print(periodic_list)
+                    
+                    # Append average of the list to features
+                    avg = mean(periodic_list)
+                    periodic_averages.append(avg)
+
+        return periodic_averages
 
     def shift_construction(self) -> None:
         shifts = []
@@ -609,6 +685,7 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
+        # print("feature vector:", feature_vector)
 
         if (not feature_vector or not self.trained):
             # If this happens the memory does not contain enough samples to
@@ -635,8 +712,8 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         else:
             feature_vector = np.array(feature_vector)
-            #Model prediction
-            print(feature_vector)
+            # Model prediction
+            # print(feature_vector)
             isolation_score = self.model.predict(feature_vector.reshape(1, -1))
             #print("isol_score: " + str(isolation_score))
             if(isolation_score == 1):
@@ -715,24 +792,21 @@ class IsolationForest(AnomalyDetectionAbstract):
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])
 
-        # Aditional feature construction
-        features = []
-        for i in range(len(data)):
-            value = data[i].tolist()
-            timestamp = timestamps[i]
-            feature_vector = super().feature_construction(value=value,
-                                                      timestamp=timestamp)
+        # Requires special feature construction so it does not mess with the
+        # feature-construction memory
+        features = self.training_feature_construction(data=data,
+                                                      timestamps=timestamps)
 
-            if(feature_vector is not False):
-                features.append(np.array(feature_vector))
-        # Fit IsolationForest model to data
-        self.model = sklearn.ensemble.IsolationForest(
-            max_samples = self.max_samples,
-            max_features = self.N
-            ).fit(features)
+        # Fit IsolationForest model to data (if there was enoug samples to
+        # construct at leat one feature)
+        if(len(features) > 0):
+            self.model = sklearn.ensemble.IsolationForest(
+                max_samples = self.max_samples,
+                max_features = self.N
+                ).fit(features)
 
-        self.save_model(self.model_name)
-        self.trained = True
+            self.save_model(self.model_name)
+            self.trained = True
 
 
 class PCA(AnomalyDetectionAbstract):
@@ -828,7 +902,7 @@ class PCA(AnomalyDetectionAbstract):
             return
         else:
             feature_vector = np.array(feature_vector)
-            print(feature_vector)
+            # print(feature_vector)
             #Model prediction
             PCA_transformed = self.PCA.transform(feature_vector.reshape(1, -1))
             IsolationForest_transformed =  self.IsolationForest.predict(PCA_transformed.reshape(1, -1))
@@ -896,30 +970,26 @@ class PCA(AnomalyDetectionAbstract):
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])
 
-        # Aditional feature construction
-        features = []
-        for i in range(len(data)):
-            value = data[i].tolist()
-            timestamp = timestamps[i]
-            feature_vector = super().feature_construction(value=value,
-                                                      timestamp=timestamp)
+        # Requires special feature construction so it does not mess with the
+        # feature-construction memory
+        features = self.training_feature_construction(data=data,
+                                                      timestamps=timestamps)
 
-            if(feature_vector is not False):
-                features.append(np.array(feature_vector))
-        # Fit IsolationForest model to data
+        # Fit IsolationForest model to data (if there was enoug samples to
+        # construct at leat one feature)
+        if(len(features) > 0):
+            N_components = self.N_components
 
-        N_components = self.N_components
+            self.PCA = sklearn.decomposition.PCA(n_components = N_components)
+            self.PCA.fit(features)
+            transformed = self.PCA.transform(features)
 
-        self.PCA = sklearn.decomposition.PCA(n_components = N_components)
-        self.PCA.fit(features)
-        transformed = self.PCA.transform(features)
+            self.IsolationForest = sklearn.ensemble.IsolationForest(
+                max_samples = self.max_samples,
+                max_features = self.N
+                ).fit(transformed)
 
-        self.IsolationForest = sklearn.ensemble.IsolationForest(
-            max_samples = self.max_samples,
-            max_features = self.N
-            ).fit(transformed)
-
-        self.save_model(self.model_name)
+            self.save_model(self.model_name)
 
 
 class Filtering(AnomalyDetectionAbstract):
