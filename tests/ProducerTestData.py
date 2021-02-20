@@ -5,6 +5,7 @@ from json import dumps
 from kafka import KafkaProducer
 import numpy as np
 from datetime import datetime
+import pandas as pd
 
 #Define producer
 producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
@@ -14,18 +15,22 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 
 "load real data from Continental, send it to kafka topic"
 
-stored_data = np.loadtxt("../data/Continental/1", skiprows=1, delimiter = ",", usecols=(1,))
+df = pd.read_csv("../data/Braila_new_data/braila_pressure5771.csv", delimiter = ",")
+df['time'] = pd.to_datetime(df['time'],unit='s')
 
-for i in range(len(stored_data)):
+values = df['value']
+times = df['time']
+
+for i in range(len(values)):
 
     "Artificially add some anomalies"
-    if(i%20 == 0):
-        ran = np.random.choice([-1, 1])*5
-    else:
-        ran = 0
-    value = stored_data[i] + ran
-    data = {"test_value" : [value, int(i)],
-			"timestamp": str(datetime.now())}
+    #if(i%20 == 0):
+    #    ran = np.random.choice([-1, 1])*5
+    #else:
+    #    ran = 0
+    value = values[i]
+    data = {"test_value" : [value],
+			"timestamp": str(times[i])}
 
 	
     producer.send('anomaly_detection1', value=data)

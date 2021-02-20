@@ -68,6 +68,11 @@ class AnomalyDetectionAbstract(ABC):
         
         # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
+
+        if("braila_fall_feature" in conf):
+            self.braila_fall = conf["braila_fall_feature"]
+        else:
+            self.braila_fall = []
         
         if("averages" in conf):
             self.averages = conf["averages"]
@@ -147,6 +152,9 @@ class AnomalyDetectionAbstract(ABC):
         # Create shifted features
         new_value.extend(self.shift_construction())
 
+        # Braila specific feature
+        new_value.extend(self.braila_fall_feature())
+
         # Create time features
         new_value.extend(self.time_features_construction(timestamp))
 
@@ -176,9 +184,20 @@ class AnomalyDetectionAbstract(ABC):
 
         return shifts
 
+    def braila_fall_feature(self) -> None:
+        fall = []
+        if(self.memory[-1] < self.memory[-2]):
+            fall.append(100*(self.memory[-1][0] - self.memory[-2][0]))
+        else:
+            fall.append(0)
+
+        return fall
+
     def time_features_construction(self, timestamp: str) -> None:
         time_features = []
         
+        if(type(timestamp) is not str):
+            timestamp = datetime.utcfromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
         if(len(str(timestamp)) == 19):
             dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
         else:
@@ -196,17 +215,6 @@ class AnomalyDetectionAbstract(ABC):
             time_features.append(int(dt.hour))
         if ("minute" in self.time_features):
             time_features.append(int(dt.minute))
-        
-        if("Braila_day_night" in self.time_features):
-            start = time(23, 0, 0)
-            end = time(4, 45, 0)
-            now = time(dt.hour, dt.minute, dt.second)
-            day_night = int(start <= now or now <= end)
-            print(day_night)
-            print(start)
-            print(now)
-            print(end)
-            time_features.append(day_night)
 
 
         return time_features
@@ -866,7 +874,6 @@ class PCA(AnomalyDetectionAbstract):
             return
 
     def save_model(self, filename):
-        # ("here")
         with open("models/" + filename + "_PCA", 'wb') as f:
             print("Saving PCA")
             pickle.dump(self.PCA, f)
@@ -886,7 +893,7 @@ class PCA(AnomalyDetectionAbstract):
         self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        # print("TrainingModel")
+        print("TrainingModel")
         if(train_dataframe is None):
             df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
         else:
