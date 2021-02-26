@@ -14,6 +14,9 @@ from scipy.signal.lti_conversion import _atleast_2d_or_none
 import sklearn.ensemble
 from scipy import signal
 import pandas as pd
+from tensorflow.keras import backend as K
+import tensorflow as tf
+from tensorflow import keras
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -59,6 +62,7 @@ class AnomalyDetectionAbstract(ABC):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         # print("test value: " + str(message_value['test_value']))
         # print(message_value['test_value'])
+        print(len(message_value['test_value']))
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
@@ -117,7 +121,7 @@ class AnomalyDetectionAbstract(ABC):
                     if(period * max_avg > max_periodic_average):
                         max_periodic_average = period * max_avg
 
-        self.memory_size = max(max_shift, max_average, max_periodic_average)
+        self.memory_size = max(max_shift, max_average, max_periodic_average, 2)
         # print(self.memory_size)
 
         # OUTPUT/VISUALIZATION INITIALIZATION & CONFIGURATION
@@ -192,9 +196,6 @@ class AnomalyDetectionAbstract(ABC):
         # Create shifted features
         new_value.extend(self.shift_construction())
 
-        # Braila specific feature
-        new_value.extend(self.braila_fall_feature())
-
         # Create time features
         new_value.extend(self.time_features_construction(timestamp))
 
@@ -260,14 +261,6 @@ class AnomalyDetectionAbstract(ABC):
 
         return shifts
 
-    def braila_fall_feature(self) -> None:
-        fall = []
-        if(self.memory[-1] < self.memory[-2]):
-            fall.append(100*(self.memory[-1][0] - self.memory[-2][0]))
-        else:
-            fall.append(0)
-
-        return fall
 
     def time_features_construction(self, timestamp: str) -> None:
         time_features = []
@@ -855,7 +848,7 @@ class PCA(AnomalyDetectionAbstract):
             if("train_data" in conf):
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
                                                     skiprows=1,
-                                                    delimiter=",")
+                                                    delimiter=",", usecols = (0, 1,))
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
@@ -1191,3 +1184,227 @@ class Hampel(AnomalyDetectionAbstract):
         
         self.count += 1
         
+class GAN(AnomalyDetectionAbstract):
+    name: str = "GAN"
+
+    N_shifts: int
+    N_latent: int
+    GAN_error: List[float]
+
+    isolation_forest: "Isolation_forest"
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        if(conf is not None):
+            self.configure(conf)
+
+    def configure(self, conf: Dict[Any, Any] = None,
+                  configuration_location: str = None) -> None:
+        super().configure(conf, configuration_location=configuration_location)
+
+        # Train configuration
+        self.N_shifts = conf["train_conf"]["N_shifts"]
+        self.N_latent = conf["train_conf"]["N_latent"]
+        self.model_name = conf["train_conf"]["model_name"]
+        self.N = conf["train_conf"]["max_features"]
+        self.max_samples = conf["train_conf"]["max_samples"]
+
+        # Retrain configuration
+        if("retrain_interval" in conf):
+            self.retrain_interval = conf["retrain_interval"]
+            self.samples_from_retrain = 0
+            if("samples_for_retrain" in conf):
+                self.samples_for_retrain = conf["samples_for_retrain"]
+            else:
+                self.samples_for_retrain = None
+
+            # Retrain memory initialization
+            if("train_data" in conf):
+
+                df_ = pd.read_csv(conf["train_data"], skiprows=1, delimiter = ",", usecols = (0, 1,)).values
+                values = df_[:,1]
+            
+                values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+                timestamps = [df_[:,0][-len(values):]]
+                df = np.concatenate((np.array(timestamps).T,values), axis=1)
+
+                self.memory_dataframe = pd.DataFrame(df, index = None)
+                if(self.samples_for_retrain is not None):
+                    self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            else:
+                columns = ["timestamp"]
+                for i in range(self.input_vector_size):
+                    columns.append(str(i))
+                self.memory_dataframe = pd.DataFrame(columns=columns)
+        else:
+            self.retrain_interval = None
+            self.samples_for_retrain = None
+            self.memory_dataframe = None
+
+        # Initialize model
+        if("load_model_from" in conf):
+            self.load_model(conf["load_model_from"])
+        elif("train_data" in conf):
+            self.train_model(train_file = conf["train_data"])
+        else:
+            raise Exception("Model or train dataset must be specified to\
+                            initialize model.")
+
+    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        super().message_insert(message_value)
+
+        if(self.use_cols is not None):
+            value = []
+            for el in range(len(message_value["test_value"])):
+                if(el in self.use_cols):
+                    value.append(message_value["test_value"][el])
+        else:
+            value = message_value["test_value"]
+
+        timestamp = message_value["timestamp"]
+
+        feature_vector = value
+
+        if (feature_vector == False):
+            # If this happens the memory does not contain enough samples to
+            # create all additional features.
+
+            # Send undefined message to output
+            for output in self.outputs:
+                output.send_out(timestamp=message_value['timestamp'],
+                                value=None)
+            
+            # And to visualization
+            if(self.visualization is not None):
+                lines = [value[0]]
+                #self.visualization.update(value=[None], timestamp=timestamp,
+                #                          status_code=2)
+            return
+        else:
+            feature_vector = np.array(feature_vector)
+            # print(feature_vector)
+            #Model prediction
+            prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
+            GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
+            #print("GAN error: " + str(GAN_error))
+            IsolationForest_transformed =  self.IsolationForest.predict(GAN_error.reshape(1, -1))
+            if(GAN_error < 0.001):
+                status = self.OK
+                status_code = self.OK_CODE
+            elif(GAN_error >= 0.001):
+                status = "Error: outlier detected (GAN)"
+                status_code = -1
+            else:
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
+
+            self.normalization_output_visualization(status=status,
+                                                    status_code=status_code,
+                                                    value=value,
+                                                    timestamp=timestamp)
+
+        # Add to memory for retrain and execute retrain if needed 
+        if (self.retrain_interval is not None):
+            # print(self.samples_from_retrain)
+            #print(self.memory_dataframe[0])
+            # Add to memory
+            to_save = [timestamp] + value
+            samples_in_memory = self.memory_dataframe.shape[0]
+
+            self.memory_dataframe.loc[samples_in_memory] = to_save
+            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            self.samples_from_retrain += 1
+
+            # Retrain if needed (and possible)
+            if(self.samples_from_retrain >= self.retrain_interval and
+                self.samples_for_retrain == self.memory_dataframe.shape[0]):
+                self.samples_from_retrain = 0
+                self.train_model(train_dataframe=self.memory_dataframe)
+            return
+
+    @staticmethod
+    def mse(pre_GAN, post_GAN):
+        #mean squared error - loss
+        mse = np.sum((np.add(np.array(pre_GAN), -np.array(post_GAN))**2))
+        return(mse)
+
+    def save_model(self, filename):
+        self.GAN.save("models/" + filename + "_GAN")
+        print("Saving GAN")
+
+        with open("models/" + filename + "_IsolationForest", 'wb') as f:
+            print("Saving isolationForest")
+            pickle.dump(self.IsolationForest, f)
+        
+        
+
+    def load_model(self, filename):
+        self.GAN = keras.models.load_model(filename + "_GAN")
+        with open(filename + "_IsolationForest", 'rb') as f:
+            clf = pickle.load(f)
+        self.IsolationForest = clf
+
+    def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
+        print("TrainingModel")
+        if(train_dataframe is None):
+            df_ = pd.read_csv(train_file, skiprows=1, delimiter = ",", usecols = (0, 1,)).values
+            values = df_[:,1]
+            
+            values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+            timestamps = [df_[:,0][-len(values):]]
+            df = np.concatenate((np.array(timestamps).T,values), axis=1)
+        else:
+            df = train_dataframe
+        
+        #df = df.to_numpy()
+        timestamps = np.array(df[:,0])
+        data = np.array(df[:,1:(1 + self.input_vector_size)])
+
+        # Requires special feature construction so it does not mess with the
+        # feature-construction memory
+        features = self.training_feature_construction(data=data,
+                                                      timestamps=timestamps)
+
+
+        # Fit IsolationForest model to data (if there was enoug samples to
+        # construct at leat one feature)
+        if(len(features) > 0):
+
+            original_dim = np.prod(np.array(features).shape [1:]) # dimenzija vhodnih podatkov
+            hidden_dim = 10 # skriti sloj z 64 node -i
+            latent_dim = self.N_latent # 2D latentni prostor
+            inputs = keras.Input(shape =(original_dim ,))
+            h1 = keras.layers.Dense(hidden_dim, activation ='linear')(inputs)
+            h2 = keras.layers.Dense(hidden_dim, activation ='tanh')(h1)
+            h3 = keras.layers.Dense(hidden_dim, activation ='tanh')(h2)
+
+            h4 = keras.layers.Dense(latent_dim, activation ='tanh')(h3)
+
+            encoder = keras.Model(inputs, outputs = [h4, h4], name = 'encoder')
+            #latent_inputs = keras.Input(shape =(latent_dim,), name ='z_sampling')
+            latent_inputs = keras.Input(shape =latent_dim, name ='z_sampling')
+
+            x1 = keras.layers.Dense(hidden_dim , activation ='tanh')(latent_inputs)
+            x2 = keras.layers.Dense(hidden_dim , activation ='relu')(x1)
+            x3 = keras.layers.Dense(hidden_dim , activation ='relu')(x2)
+
+            outputs = keras.layers.Dense(original_dim , activation ='linear')(x3)
+            decoder = keras.Model(latent_inputs, outputs, name ='decoder')
+
+            outputs = decoder(encoder(inputs)[0])
+            self.GAN = keras.Model(inputs, outputs, name ='vae')
+            mse = tf.keras.losses.MeanSquaredError()
+
+            GAN_loss = mse(inputs, outputs)
+            self.GAN.add_loss(GAN_loss)
+            self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
+            features = np.array(features)
+            self.GAN.fit(features[:3000],features[:3000], epochs =100, batch_size = 10, validation_data = None, verbose = 2)
+            GAN_transformed = mse(features, self.GAN.predict(features))
+
+            self.IsolationForest = sklearn.ensemble.IsolationForest(
+                max_samples = self.max_samples,
+                max_features = self.N
+                ).fit(np.array(GAN_transformed).reshape(-1, 1))
+            print("Done training")
+            self.save_model(self.model_name)

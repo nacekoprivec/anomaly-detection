@@ -6,7 +6,7 @@ import sys
 from typing import Any, Dict, List
 
 from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
-        IsolationForest, Welford, Filtering, PCA, Hampel
+        IsolationForest, Welford, Filtering, PCA, Hampel, GAN
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
@@ -81,6 +81,7 @@ class ConsumerKafka(ConsumerAbstract):
         for message in self.consumer:
             value = message.value
             self.anomaly.message_insert(value)
+
 
 
 class ConsumerFile(ConsumerAbstract):
