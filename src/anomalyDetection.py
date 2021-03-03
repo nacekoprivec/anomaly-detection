@@ -947,9 +947,7 @@ class PCA(AnomalyDetectionAbstract):
 
         with open("models/" + filename + "_IsolationForest", 'wb') as f:
             print("Saving isolationForest")
-            pickle.dump(self.IsolationForest, f)
-        
-        
+            pickle.dump(self.IsolationForest, f) 
 
     def load_model(self, filename):
         with open(filename + "_PCA", 'rb') as f:
