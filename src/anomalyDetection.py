@@ -368,6 +368,9 @@ class BorderCheck(AnomalyDetectionAbstract):
                     status_code = 0
                 else:
                     break
+        
+        self.status = status
+        self.status_code = status_code
 
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status, value=message_value["test_value"],
@@ -457,6 +460,9 @@ class Welford(AnomalyDetectionAbstract):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
 
+        self.status = status
+        self.status_code = status_code
+
         # Outputs and visualizations
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status,
@@ -538,9 +544,13 @@ class EMA(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
-        self.numbers.append(message_value['test_value'][0])
+
+        value = message_value["test_value"]
+        value = value[0]
+
+        self.numbers.append(value)
         self.timestamps.append(message_value['timestamp'])
-        
+
         #Calculate exponential moving average
         if(len(self.EMA) == 0):
             self.EMA.append(self.numbers[-1])
@@ -581,6 +591,9 @@ class EMA(AnomalyDetectionAbstract):
                     status_code = 0
                 else:
                     break
+
+        self.status = status
+        self.status_code = status_code
 
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],

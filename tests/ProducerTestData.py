@@ -30,7 +30,7 @@ for i in range(len(values)):
     #    ran = np.random.choice([-1, 1])*5
     #else:
     #    ran = 0
-    value = list(values[i:i+10])
+    value = list(values[i:i+1])
     anomaly = 0
     if (i%20 == 0):
         anomaly = -0.03

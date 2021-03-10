@@ -15,24 +15,26 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 
 #Send random data to topic - sine with noise in range 2-4
 
-tab_data = []
+tab_data = [3, 4, 4, 4, 4, 5, 5, 5]
 tab_data_csv = []
 
-for e in range(1000):
+for e in range(9):
     timestamp = e
     # Normal distribution
-    # ran = float(np.random.normal(0, 0.1))
+    ran = float(np.random.normal(0, 0.1))
 
     # Sin with normal distribution error
-    ran = float(np.random.normal(0, 0.01) + np.sin(0.01*e))
+    #ran = float(np.random.normal(0, 0.01) + np.sin(0.01*e))
+    
+    
     if(e%10 == 0):
         ran += 0.4
-    data = {"test_value" : [3 + ran],
+    data = {"test_value" : [tab_data[e]],
 			"timestamp": str(datetime.now())}
     data_csv = {"test_value" : 3 + ran,
             "second": e,
 			"timestamp": str(datetime.now())}
-    tab_data.append(data)
+    #tab_data.append(data)
     tab_data_csv.append(data_csv)
 	
     producer.send('anomaly_detection1', value=data)
