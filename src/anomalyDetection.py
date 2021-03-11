@@ -368,6 +368,9 @@ class BorderCheck(AnomalyDetectionAbstract):
                     status_code = 0
                 else:
                     break
+        
+        self.status = status
+        self.status_code = status_code
 
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status, value=message_value["test_value"],
@@ -457,6 +460,9 @@ class Welford(AnomalyDetectionAbstract):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
 
+        self.status = status
+        self.status_code = status_code
+
         # Outputs and visualizations
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status,
@@ -538,9 +544,13 @@ class EMA(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
-        self.numbers.append(message_value['test_value'][0])
+
+        value = message_value["test_value"]
+        value = value[0]
+
+        self.numbers.append(value)
         self.timestamps.append(message_value['timestamp'])
-        
+
         #Calculate exponential moving average
         if(len(self.EMA) == 0):
             self.EMA.append(self.numbers[-1])
@@ -581,6 +591,9 @@ class EMA(AnomalyDetectionAbstract):
                     status_code = 0
                 else:
                     break
+
+        self.status = status
+        self.status_code = status_code
 
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
@@ -1285,11 +1298,11 @@ class GAN(AnomalyDetectionAbstract):
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
             GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
             #print("GAN error: " + str(GAN_error))
-            IsolationForest_transformed =  self.IsolationForest.predict(GAN_error.reshape(1, -1))
-            if(GAN_error < 0.001):
+            IsolationForest_transformed =  self.IsolationForest.predict(np.log(GAN_error).reshape(1, -1))
+            if(IsolationForest_transformed == 1):
                 status = self.OK
                 status_code = self.OK_CODE
-            elif(GAN_error >= 0.001):
+            elif(IsolationForest_transformed == 0):
                 status = "Error: outlier detected (GAN)"
                 status_code = -1
             else:
@@ -1397,12 +1410,12 @@ class GAN(AnomalyDetectionAbstract):
             self.GAN.add_loss(GAN_loss)
             self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
             features = np.array(features)
-            self.GAN.fit(features[:3000],features[:3000], epochs =100, batch_size = 10, validation_data = None, verbose = 2)
+            self.GAN.fit(features[:10000],features[:10000], epochs =100, batch_size = 10, validation_data = None, verbose = 2)
             GAN_transformed = mse(features, self.GAN.predict(features))
 
             self.IsolationForest = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
                 max_features = self.N
-                ).fit(np.array(GAN_transformed).reshape(-1, 1))
+                ).fit(np.array(np.log(GAN_transformed)).reshape(-1, 1))
             print("Done training")
             self.save_model(self.model_name)
