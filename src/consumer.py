@@ -16,7 +16,6 @@ import numpy as np
 
 
 class ConsumerAbstract(ABC):
-    anomaly: "AnomalyDetectionAbstract"
     configuration_location: str
 
     def __init__(self, configuration_location: str = None) -> None:
@@ -45,6 +44,9 @@ class ConsumerAbstract(ABC):
 
 
 class ConsumerKafka(ConsumerAbstract):
+    anomalies: List["AnomalyDetectionAbstract"]
+    anomaly_names: List[str]
+    anomaly_configurations: List[Any]
     consumer: KafkaConsumer
 
     def __init__(self, conf: Dict[Any, Any] = None,
@@ -73,18 +75,39 @@ class ConsumerKafka(ConsumerAbstract):
                         group_id=con['group_id'],
                         value_deserializer=eval(con['value_deserializer']))
         self.consumer.subscribe(self.topics)
-        self.anomaly = eval(con["anomaly_detection_alg"])
-        anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
 
+        # Initialize a list of anomaly detection algorithms, each for a
+        # seperate topic
+        self.anomaly_names = con["anomaly_detection_alg"]
+        self.anomaly_configurations = con["anomaly_detection_conf"]
+        # check if the lengths of configurations, algorithms and topics are
+        # the same
+        assert (len(self.anomaly_names) == len(self.topics) and
+                len(self.topics) == len(self.anomaly_configurations)),\
+                "Number of algorithms, configurations and topics does not match"
+        self.anomalies = []
+        algorithm_indx = 0
+        for anomaly_name in self.anomaly_names:
+            anomaly = eval(anomaly_name)
+            anomaly.configure(self.anomaly_configurations[algorithm_indx],
+                              configuration_location=self.configuration_location,
+                              algorithm_indx=algorithm_indx)
+            self.anomalies.append(anomaly)
+            algorithm_indx += 1
+            
     def read(self) -> None:
         for message in self.consumer:
-            value = message.value
-            self.anomaly.message_insert(value)
+            # Get topic and insert into correct algorithm
+            topic = message.topic
 
+            algorithm_indx = self.topics.index(topic)
+
+            value = message.value
+            self.anomalies[algorithm_indx].message_insert(value)
 
 
 class ConsumerFile(ConsumerAbstract):
+    anomaly: "AnomalyDetectionAbstract"
     file_name: str
     file_path: str
 
@@ -105,9 +128,12 @@ class ConsumerFile(ConsumerAbstract):
         self.file_name = con["file_name"]
         self.file_path = "./data/consumer/" + self.file_name
 
-        self.anomaly = eval(con["anomaly_detection_alg"])
-        anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
+        # Expects a list but only requires the first element
+        self.anomaly = eval(con["anomaly_detection_alg"][0])
+        anomaly_configuration = con["anomaly_detection_conf"][0]
+        self.anomaly.configure(anomaly_configuration,
+                               configuration_location=self.configuration_location,
+                               algorithm_indx=0)
 
     def read(self) -> None:
         if(self.file_name[-4:] == "json"):
@@ -155,6 +181,7 @@ class ConsumerFile(ConsumerAbstract):
 
 
 class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
+    anomaly: "AnomalyDetectionAbstract"
     file_name: str
     file_path: str
 
@@ -186,10 +213,17 @@ class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
                         value_deserializer=eval(con['value_deserializer']))
         self.consumer.subscribe(self.topics)
 
-        self.anomaly = eval(con["anomaly_detection_alg"])
-        anomaly_configuration = con["anomaly_detection_conf"]
-        self.anomaly.configure(anomaly_configuration, configuration_location=self.configuration_location)
+        # Expects a list but only requires the first element
+        self.anomaly = eval(con["anomaly_detection_alg"][0])
+        anomaly_configuration = con["anomaly_detection_conf"][0]
+        self.anomaly.configure(anomaly_configuration,
+                               configuration_location=self.configuration_location,
+                               algorithm_indx=0)
 
     def read(self) -> None:
         ConsumerFile.read(self)
-        ConsumerKafka.read(self)
+        
+        # expects only one topic
+        for message in self.consumer:
+            value = message.value
+            self.anomaly.message_insert(value)

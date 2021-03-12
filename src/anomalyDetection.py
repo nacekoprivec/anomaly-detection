@@ -13,10 +13,10 @@ from pandas.core.frame import DataFrame
 from scipy.signal.lti_conversion import _atleast_2d_or_none
 import sklearn.ensemble
 from scipy import signal
-import pandas as pd
 from tensorflow.keras import backend as K
 import tensorflow as tf
 from tensorflow import keras
+import pandas as pd
 
 sys.path.insert(0,'./src')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
@@ -28,6 +28,9 @@ from normalization import NormalizationAbstract, LastNAverage,\
 
 class AnomalyDetectionAbstract(ABC):
     configuration_location: str
+
+    # needed if there are more anomaly detection algorithms
+    algorithm_indx: int
 
     memory_size: int
     memory: List[List[Any]]
@@ -62,14 +65,22 @@ class AnomalyDetectionAbstract(ABC):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         # print("test value: " + str(message_value['test_value']))
         # print(message_value['test_value'])
-        print(len(message_value['test_value']))
+        # print(len(message_value['test_value']))
+
+        print(self.name, message_value['test_value'])
+
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any],
-                  configuration_location: str = None) -> None:
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
         self.configuration_location = configuration_location
+        
+        # If algorithm is initialized from consumer kafka it has this
+        # specified
+        self.algorithm_indx = algorithm_indx
         
         # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
@@ -331,8 +342,11 @@ class BorderCheck(AnomalyDetectionAbstract):
 
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
+
         self.LL = conf["LL"]
         self.UL = conf["UL"]
 
@@ -401,8 +415,11 @@ class Welford(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
+
         if ('N' in conf):
             self.N = conf['N']
             self.memory = [None] * self.N
@@ -529,8 +546,11 @@ class EMA(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
+
         self.LL = conf["LL"]
         self.UL = conf["UL"]
         self.warning_stages = conf["warning_stages"]
@@ -636,8 +656,10 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
 
         # Train configuration
         self.N = conf["train_conf"]["max_features"]
@@ -791,7 +813,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             # Change the config file so the next time the model will train from that file
             with open("configuration/" + self.configuration_location) as conf:
                 whole_conf = json.load(conf)
-                whole_conf["anomaly_detection_conf"]["train_data"] = path
+                whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
             
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
@@ -839,8 +861,10 @@ class PCA(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
 
         # Train configuration
         self.N = conf["train_conf"]["max_features"]
@@ -1018,8 +1042,11 @@ class Filtering(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
+
         self.mode = conf["mode"]
         self.LL = conf["LL"]
         self.UL = conf["UL"]
@@ -1122,8 +1149,10 @@ class Hampel(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
         if ('W' in conf):
             self.W = conf['W']
             self.memory = [None] * (2*self.W + 1)
@@ -1194,7 +1223,8 @@ class Hampel(AnomalyDetectionAbstract):
                                         status_code=status_code)
         
         self.count += 1
-        
+
+
 class GAN(AnomalyDetectionAbstract):
     name: str = "GAN"
 
@@ -1210,8 +1240,10 @@ class GAN(AnomalyDetectionAbstract):
             self.configure(conf)
 
     def configure(self, conf: Dict[Any, Any] = None,
-                  configuration_location: str = None) -> None:
-        super().configure(conf, configuration_location=configuration_location)
+                  configuration_location: str = None,
+                  algorithm_indx: int = None) -> None:
+        super().configure(conf, configuration_location=configuration_location,
+                          algorithm_indx=algorithm_indx)
 
         # Train configuration
         self.N_shifts = conf["train_conf"]["N_shifts"]

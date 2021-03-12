@@ -31,8 +31,8 @@ The program is configured through configuration file specified with -c flag (loc
     ...
     consumer configuration
     ...
-    "anomaly_detection_alg": "anomaly detection algorithm",
-    "anomaly_detection_conf": {
+    "anomaly_detection_alg": ["list of anomaly detection algorithms"],
+    "anomaly_detection_conf": [{
         ...
         anomaly detection configuration
         ...
@@ -46,7 +46,7 @@ The program is configured through configuration file specified with -c flag (loc
         "output_conf": ["list of output components configurations"],
         "visualization": "visualization component", # optional
         "visualization_conf": "visualization component configuration" # optional
-    }
+      }]
 }
 ```
 The specific configurations for components will be presented in following chapters
@@ -54,7 +54,7 @@ For more details see example configuration files in configuration folder.
 
 ### Consumer
 Consumer components differ in where the data is read from.
-1. **Kafka consumer:** Data is read from kafka stream from a specified topic. The conciguration file must specify following parameters:
+1. **Kafka consumer:** Data is read from one or more kafka topics. Each topic cooresponds to a seperate anomaly detection algorithm from field "anomaly_detection_alg" which has the configuration defined in a cooresponding object in the list under "anomaly_detection_conf" field. The conciguration file must specify following parameters:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
    * auto_offset_reset: Where the consumer starts to read messages. If "latest", when comsumer is started, it will continue reading from the message where it last left off. If "earliest" it will read from the oldest available message onwards. (example: "latest")
    * enable_auto_commit": If True , the consumer’s offset (the point in the topic where messages are read) will be periodically committed in the background. Otherwise offsets can be commited manually. (example: "True")
@@ -66,11 +66,11 @@ Consumer components differ in where the data is read from.
    * timestamp: Contains a timestamp of the data in datastream in datetime format.
    * test_value: Contains an array (a feature vector) of values.
 
-2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. The configuration file must specify the following parameters:
+2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
 
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
-The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. The configuration file must specify the following parameters:
+The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")\
 The following parameters are similar to ones in Kafka consumer:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
