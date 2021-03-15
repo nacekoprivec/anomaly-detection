@@ -81,6 +81,7 @@ class ConsumerKafka(ConsumerAbstract):
         for message in self.consumer:
             value = message.value
             self.anomaly.message_insert(value)
+            #TODO - MULTIPLE TOPICS
 
 
 

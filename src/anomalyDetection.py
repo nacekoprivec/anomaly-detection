@@ -19,6 +19,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 sys.path.insert(0,'./src')
+sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -62,7 +63,7 @@ class AnomalyDetectionAbstract(ABC):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         # print("test value: " + str(message_value['test_value']))
         # print(message_value['test_value'])
-        print(len(message_value['test_value']))
+        #print(len(message_value['test_value']))
         assert len(message_value['test_value']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
@@ -262,15 +263,15 @@ class AnomalyDetectionAbstract(ABC):
         return shifts
 
 
-    def time_features_construction(self, timestamp: str) -> None:
+    def time_features_construction(self, tmstp: Any) -> None:
         time_features = []
         
-        if(type(timestamp) is not str):
-            timestamp = datetime.utcfromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-        if(len(str(timestamp)) == 19):
-            dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+        if(type(tmstp) is not str):
+            tmstp = datetime.utcfromtimestamp(tmstp).strftime('%Y-%m-%d %H:%M:%S')
+        if(len(str(tmstp)) == 19):
+            dt = datetime.strptime(tmstp, '%Y-%m-%d %H:%M:%S')
         else:
-            dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S.%f')
+            dt = datetime.strptime(tmstp, '%Y-%m-%d %H:%M:%S.%f')
 
         # Requires datetime format
         # Check for keywords specified in time_features
@@ -640,7 +641,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         super().configure(conf, configuration_location=configuration_location)
 
         # Train configuration
-        self.N = conf["train_conf"]["max_features"]
+        self.max_features = conf["train_conf"]["max_features"]
         self.model_name = conf["train_conf"]["model_name"]
         self.max_samples = conf["train_conf"]["max_samples"]
         self.input_vector_size = conf["input_vector_size"]
@@ -679,7 +680,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.train_model(conf["train_data"])
         elif(self.retrain_interval is not None):
             self.model = sklearn.ensemble.IsolationForest(
-                max_samples=self.max_samples, max_features=self.N)
+                max_samples=self.max_samples, max_features=self.max_features)
         else:
             raise Exception("The configuration must specify either \
                             load_model_from, train_data or train_interval")
@@ -696,9 +697,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             value = message_value["test_value"]
 
         timestamp = message_value["timestamp"]
-
-        feature_vector = super().feature_construction(value=value,
-                                                      timestamp=timestamp)
+        feature_vector = super().feature_construction(value=value,timestamp=timestamp)
         # print("feature vector:", feature_vector)
 
         if (not feature_vector or not self.trained):
@@ -744,14 +743,17 @@ class IsolationForest(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
+        self.status = status
+        self.status_code = status_code
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
             # print(self.samples_from_retrain)
             # print(self.memory_dataframe.shape)
             # Add to memory
-            to_save = [timestamp] + value
+
             samples_in_memory = self.memory_dataframe.shape[0]
+            to_save = [timestamp] + value
             self.memory_dataframe.loc[samples_in_memory] = to_save
             if(self.samples_for_retrain is not None):
                 self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
@@ -816,7 +818,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         if(len(features) > 0):
             self.model = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
-                max_features = self.N
+                max_features = self.max_features
                 ).fit(features)
 
             self.save_model(self.model_name)
@@ -1011,7 +1013,7 @@ class Filtering(AnomalyDetectionAbstract):
     UL: float
     LL: float
     value_normalized: float
-    filtered: List[float]
+    filtered: float
     result: float
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -1023,6 +1025,8 @@ class Filtering(AnomalyDetectionAbstract):
                   configuration_location: str = None) -> None:
         super().configure(conf, configuration_location=configuration_location)
         self.mode = conf["mode"]
+        self.filter_order = conf["filter_order"]
+        self.cutoff_frequency = conf["cutoff_frequency"]
         self.LL = conf["LL"]
         self.UL = conf["UL"]
         self.warning_stages = conf["warning_stages"]
@@ -1032,7 +1036,7 @@ class Filtering(AnomalyDetectionAbstract):
         self.timestamps = []
 
         #Initalize the digital filter
-        self.b, self.a = signal.butter(conf["filter_order"], conf["cutoff_frequency"])
+        self.b, self.a = signal.butter(self.filter_order, self.cutoff_frequency)
         self.z = signal.lfilter_zi(self.b, self.a)
 
     def message_insert(self, message_value: Dict[Any, Any]):
@@ -1043,17 +1047,17 @@ class Filtering(AnomalyDetectionAbstract):
         #Update filter output after last measurement
         filtered_value, self.z = signal.lfilter(self.b, self.a, x = [self.last_measurement], zi = self.z)
 
-        self.filtered.append(filtered_value[0])
+        self.filtered = filtered_value[0]
         
         #Normalize filter outputs
-        value_normalized = 2*(self.filtered[-1] - (self.UL + self.LL)/2) / \
+        value_normalized = 2*(self.filtered - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
         status = "OK"
         status_code = 1
 
         #Perform error and warning checks
         if(self.mode == 1):
-            deviation = (self.last_measurement - self.filtered[-1])/(self.UL - self.LL)
+            deviation = (self.last_measurement - self.filtered)/(self.UL - self.LL)
             if(deviation > 1):
                 status = "Error: Large deviation"
                 status_code = -1
@@ -1091,18 +1095,21 @@ class Filtering(AnomalyDetectionAbstract):
                         status_code = 0
                     else:
                         break
+        
+        self.status = status
+        self.status_code = status_code
 
         if(self.mode == 0):
-            result = self.filtered[-1]
+            result = self.filtered
         else:
-            result = self.last_measurement - self.filtered[-1]
+            result = self.last_measurement - self.filtered
 
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             status=status, value=message_value['test_value'][0], 
                             status_code=status_code, algorithm=self.name)
 
-        
+        self.result = result
         lines = [result, self.last_measurement]
         #timestamp = self.timestamps[-1]
         if(self.visualization is not None):
