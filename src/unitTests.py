@@ -16,7 +16,7 @@ import shutil
 
 import unittest
 from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
-    GAN
+    GAN, AnomalyDetectionAbstract
 
 
 def create_model_instance(algorithm_str, configuration, save = False):
@@ -58,6 +58,17 @@ def create_testing_file(filepath):
 
     return filepath
 
+def create_testing_file_feature_construction(filepath):
+    timestamps = [1459926000 + 3600*x for x in range(20)]
+    values = [[x, x+100] for x in range(20)]
+    data = {
+        'timestamp': timestamps,
+        'test_value': values
+    }
+    testset = pd.DataFrame(data = data)
+    testset.to_csv(filepath, index = False)
+
+    return filepath
 
 class BCTestCase(unittest.TestCase):
 
@@ -353,7 +364,7 @@ class IsolForestTestFunctionality(IsolForestTestCase):
         self.assertEqual(os.path.isdir(self.f), False)
 
 class GANTestCase(unittest.TestCase):
- def setUp(self):
+    def setUp(self):
         create_testing_file("./unittest/GANTestData.csv")
 
         configuration = {
@@ -381,22 +392,12 @@ class GANTestCase(unittest.TestCase):
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
-    def test_MaxFeatures(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.max_features, 1)
-
-    def test_MaxSamples(self):
         self.assertEqual(self.model.max_samples, 5)
-
-    def test_NShifts(self):
         self.assertEqual(self.model.N_shifts, 9)
-
-    def test_NLatent(self):
         self.assertEqual(self.model.N_latent, 3)
-
-    def test_RetrainInterval(self):
         self.assertEqual(self.model.retrain_interval, 15)
-
-    def test_SamplesForRetrain(self):
         self.assertEqual(self.model.samples_for_retrain, 15)
 
 class GANTestFunctionality(GANTestCase):
@@ -405,6 +406,51 @@ class GANTestFunctionality(GANTestCase):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
         self.assertEqual(os.path.isdir(self.f), False)
+
+class FeatureConstructionTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        # Border check does not use feature construction (or vector size > 1) 
+        # but will be used because of simplicity
+        configuration = {
+            "input_vector_size": 2,
+            "averages": [[2, 3, 5], [2]],
+            "shifts": [[1, 2, 3, 4], []],
+            "time_features": ["day", "month", "weekday", "hour"],
+            "warning_stages": [0.7, 0.9],
+            "UL": 4,
+            "LL": 2,
+            "output": [],
+            "output_conf": [{}]
+        }
+        self.model = create_model_instance("BorderCheck()", configuration)
+
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("IsolationForest()", configuration)
+
+        # Execute feature constructions (FV-s are saved and will be checked in
+        # following tests)
+        test_data = [[x, x+100] for x in range(10)]
+        timestamps = timestamps = [1459926000 + 3600*x for x in range(20)]
+        self.feature_vectors = []
+        for sample_indx in range(10):
+            feature_vector = self.model.feature_construction(value=test_data[sample_indx],
+                                            timestamp=timestamps[sample_indx])
+            self.feature_vectors.append(feature_vector)
+        return super().setUp()
+    
+    def test_shifts(self):
+        pass
+
+    def test_averages(self):
+        pass
+
+    def test_time_features(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
