@@ -1269,9 +1269,11 @@ class GAN(AnomalyDetectionAbstract):
             if("train_data" in conf):
 
                 df_ = pd.read_csv(conf["train_data"], skiprows=1, delimiter = ",", usecols = (0, 1,)).values
-                values = df_[:,1]
+                vals = df_[:,1]
             
-                values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+                #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+                values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
+    
                 timestamps = [df_[:,0][-len(values):]]
                 df = np.concatenate((np.array(timestamps).T,values), axis=1)
 
@@ -1332,9 +1334,9 @@ class GAN(AnomalyDetectionAbstract):
             # print(feature_vector)
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
-            GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
+            self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
             #print("GAN error: " + str(GAN_error))
-            IsolationForest_transformed =  self.IsolationForest.predict(np.log(GAN_error).reshape(1, -1))
+            IsolationForest_transformed =  self.IsolationForest.predict(self.GAN_error.reshape(-1, 1))
             if(IsolationForest_transformed == 1):
                 status = self.OK
                 status_code = self.OK_CODE
@@ -1454,6 +1456,6 @@ class GAN(AnomalyDetectionAbstract):
             self.IsolationForest = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
                 max_features = self.max_features
-                ).fit(np.array(np.log(GAN_transformed)).reshape(-1, 1))
+                ).fit(np.array(GAN_transformed).reshape(-1, 1))
             print("Done training")
             self.save_model(self.model_name)

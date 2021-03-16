@@ -45,10 +45,11 @@ def create_message(timestamp, value):
     }
     return message
 
-def create_testing_file(filepath):
-    timestamps = [1459926000 + 3600*x for x in range(20)]
-    values = [1]*20
-    values[-1] = 0
+def create_testing_file(filepath, withzero = False):
+    timestamps = [1459926000 + 3600*x for x in range(50)]
+    values = [1]*50
+    if(withzero):
+        values[-1] = 0
     data = {
         'timestamp': timestamps,
         'test_value': values
@@ -288,7 +289,7 @@ class Filtering0TestFunctionality(Filtering0TestCase):
 
 class IsolForestTestCase(unittest.TestCase):
     def setUp(self):
-        create_testing_file("./unittest/IsolForestTestData.csv")
+        create_testing_file("./unittest/IsolForestTestData.csv", withzero = True)
 
         configuration = {
         "train_data": "./unittest/IsolForestTestData.csv",
@@ -354,7 +355,7 @@ class IsolForestTestFunctionality(IsolForestTestCase):
 
 class GANTestCase(unittest.TestCase):
  def setUp(self):
-        create_testing_file("./unittest/GANTestData.csv")
+        create_testing_file("./unittest/GANTestData.csv", withzero = True)
 
         configuration = {
         "train_data": "./unittest/GANTestData.csv",
@@ -381,25 +382,32 @@ class GANTestCase(unittest.TestCase):
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
-    def test_MaxFeatures(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.max_features, 1)
-
-    def test_MaxSamples(self):
         self.assertEqual(self.model.max_samples, 5)
-
-    def test_NShifts(self):
         self.assertEqual(self.model.N_shifts, 9)
-
-    def test_NLatent(self):
         self.assertEqual(self.model.N_latent, 3)
-
-    def test_RetrainInterval(self):
         self.assertEqual(self.model.retrain_interval, 15)
-
-    def test_SamplesForRetrain(self):
         self.assertEqual(self.model.samples_for_retrain, 15)
 
+
 class GANTestFunctionality(GANTestCase):
+    def test_OK(self):
+        #Insert same values as in train set (status should be 1).
+        test_array = [1]*10
+        for i in range(len(test_array)):
+            message = create_message(str(datetime.now()), test_array)
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, 1)
+
+    def test_errors(self):
+        #Insert same values as in train set (status should be 1).
+        test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+        for i in range(len(test_array)):
+            message = create_message(str(datetime.now()), test_array)
+            self.model.message_insert(message)
+            self.assertGreater(self.model.GAN_error, 1)
+    
     def test_cleanup(self):
         #Delete models folder and check.
         if os.path.isdir(self.f):
