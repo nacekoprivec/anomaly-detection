@@ -12,9 +12,12 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import json
+import shutil
 
 import unittest
-from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest
+from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
+    GAN
+
 
 def create_model_instance(algorithm_str, configuration, save = False):
         model =  eval(algorithm_str)
@@ -27,11 +30,11 @@ def create_model_instance(algorithm_str, configuration, save = False):
             filepath = "configuration/Test_config.txt"
 
             with open(filepath, 'w') as data_file:
-                json.dump({"anomaly_detection_conf":configuration}, data_file)
+                json.dump({"anomaly_detection_conf":[configuration]}, data_file)
 
-            model.configure(configuration, "Test_config.txt")
+            model.configure(configuration, "Test_config.txt", algorithm_indx = 0)
         else:
-            model.configure(configuration)
+            model.configure(configuration, algorithm_indx = 0)
 
         return model
 
@@ -43,15 +46,18 @@ def create_message(timestamp, value):
     return message
 
 def create_testing_file(filepath):
+    timestamps = [1459926000 + 3600*x for x in range(20)]
+    values = [1]*20
+    values[-1] = 0
     data = {
-        'timestamp': [1459926000, 1459929600, 1459933200, 1459936800,1459940400, 1459944000, 1459947600
-        , 1459947600, 1459947600, 1459947600, 1459947600, 1459947600],
-        'test_value': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+        'timestamp': timestamps,
+        'test_value': values
     }
     testset = pd.DataFrame(data = data)
     testset.to_csv(filepath, index = False)
 
     return filepath
+
 
 class BCTestCase(unittest.TestCase):
 
@@ -343,8 +349,61 @@ class IsolForestTestFunctionality(IsolForestTestCase):
     def test_cleanup(self):
         #Delete models folder and check.
         if os.path.isdir(self.f):
-            os.remove(self.f + "/IsolForestTestModel")
-            os.rmdir(self.f)
+            shutil.rmtree(self.f)
+        self.assertEqual(os.path.isdir(self.f), False)
+
+class GANTestCase(unittest.TestCase):
+ def setUp(self):
+        create_testing_file("./unittest/GANTestData.csv")
+
+        configuration = {
+        "train_data": "./unittest/GANTestData.csv",
+        "train_conf":{
+            "max_features": 1,
+            "max_samples": 5,
+            "contamination": "auto",
+            "model_name": "GAN_Test",
+            "N_shifts": 9,
+            "N_latent": 3
+        },
+        "retrain_interval": 15,
+        "samples_for_retrain": 15,
+        "input_vector_size": 10,
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("GAN()", configuration, save = True)
+
+class GANTestClassPropperties(GANTestCase):
+    #Check propperties setup.
+    def test_MaxFeatures(self):
+        self.assertEqual(self.model.max_features, 1)
+
+    def test_MaxSamples(self):
+        self.assertEqual(self.model.max_samples, 5)
+
+    def test_NShifts(self):
+        self.assertEqual(self.model.N_shifts, 9)
+
+    def test_NLatent(self):
+        self.assertEqual(self.model.N_latent, 3)
+
+    def test_RetrainInterval(self):
+        self.assertEqual(self.model.retrain_interval, 15)
+
+    def test_SamplesForRetrain(self):
+        self.assertEqual(self.model.samples_for_retrain, 15)
+
+class GANTestFunctionality(GANTestCase):
+    def test_cleanup(self):
+        #Delete models folder and check.
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
         self.assertEqual(os.path.isdir(self.f), False)
 
 if __name__ == '__main__':

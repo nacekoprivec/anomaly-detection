@@ -1253,7 +1253,7 @@ class GAN(AnomalyDetectionAbstract):
         self.N_shifts = conf["train_conf"]["N_shifts"]
         self.N_latent = conf["train_conf"]["N_latent"]
         self.model_name = conf["train_conf"]["model_name"]
-        self.N = conf["train_conf"]["max_features"]
+        self.max_features = conf["train_conf"]["max_features"]
         self.max_samples = conf["train_conf"]["max_samples"]
 
         # Retrain configuration
@@ -1349,6 +1349,9 @@ class GAN(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
+        
+        self.status = status
+        self.status_code = status_code
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
@@ -1428,7 +1431,6 @@ class GAN(AnomalyDetectionAbstract):
             h4 = keras.layers.Dense(latent_dim, activation ='tanh')(h3)
 
             encoder = keras.Model(inputs, outputs = [h4, h4], name = 'encoder')
-            #latent_inputs = keras.Input(shape =(latent_dim,), name ='z_sampling')
             latent_inputs = keras.Input(shape =latent_dim, name ='z_sampling')
 
             x1 = keras.layers.Dense(hidden_dim , activation ='tanh')(latent_inputs)
@@ -1451,7 +1453,7 @@ class GAN(AnomalyDetectionAbstract):
 
             self.IsolationForest = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
-                max_features = self.N
+                max_features = self.max_features
                 ).fit(np.array(np.log(GAN_transformed)).reshape(-1, 1))
             print("Done training")
             self.save_model(self.model_name)
