@@ -187,3 +187,6 @@ dmypy.json
 log/
 
 .vscode
+
+# files created by unittest
+/unittest

@@ -112,12 +112,24 @@ class AnomalyDetectionAbstract(ABC):
         if(len(self.shifts) == 0):
             max_shift = 0
         else:
-            max_shift = max(map(max, self.shifts))+1
+            max_shifts = []
+            for shifts in self.shifts:
+                if(len(shifts) == 0):
+                    max_shifts.append(0)
+                else:
+                    max_shifts.append(max(shifts))
+            max_shift = max(max_shifts)+1
 
         if (len(self.averages) == 0):
             max_average = 0
         else:
-            max_average = max(map(max, self.averages))
+            max_averages = []
+            for averages in self.averages:
+                if(len(averages) == 0):
+                    max_averages.append(0)
+                else:
+                    max_averages.append(max(averages))
+            max_average = max(max_averages)
 
         if (len(self.periodic_averages) == 0):
             max_periodic_average = 0
@@ -126,12 +138,15 @@ class AnomalyDetectionAbstract(ABC):
             for feature_avgs in self.periodic_averages:
                 for period_tuple in feature_avgs:
                     period = period_tuple[0]
+                    # assumes period specifies at least one average
                     max_avg = max(period_tuple[1])
-                    if(period * max_avg > max_periodic_average):
-                        max_periodic_average = period * max_avg
+                    # Memory required to calculate the average
+                    required_memory = 1+(period * (max_avg-1))
+                    if(required_memory > max_periodic_average):
+                        max_periodic_average = required_memory
 
-        self.memory_size = max(max_shift, max_average, max_periodic_average, 2)
-        # print(self.memory_size)
+        # one because of feature construction memory management
+        self.memory_size = max(max_shift, max_average, max_periodic_average, 1)
 
         # OUTPUT/VISUALIZATION INITIALIZATION & CONFIGURATION
         self.outputs = [eval(o) for o in conf["output"]]
@@ -983,11 +998,11 @@ class PCA(AnomalyDetectionAbstract):
 
     def save_model(self, filename):
         with open("models/" + filename + "_PCA", 'wb') as f:
-            print("Saving PCA")
+            #print("Saving PCA")
             pickle.dump(self.PCA, f)
 
         with open("models/" + filename + "_IsolationForest", 'wb') as f:
-            print("Saving isolationForest")
+            #print("Saving isolationForest")
             pickle.dump(self.IsolationForest, f) 
 
     def load_model(self, filename):
@@ -999,7 +1014,7 @@ class PCA(AnomalyDetectionAbstract):
         self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        print("TrainingModel")
+        #print("TrainingModel")
         if(train_dataframe is None):
             df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
         else:
@@ -1387,10 +1402,10 @@ class GAN(AnomalyDetectionAbstract):
 
     def save_model(self, filename):
         self.GAN.save("models/" + filename + "_GAN")
-        print("Saving GAN")
+        #print("Saving GAN")
 
         with open("models/" + filename + "_IsolationForest", 'wb') as f:
-            print("Saving isolationForest")
+            #print("Saving isolationForest")
             pickle.dump(self.IsolationForest, f)
         
         
@@ -1402,7 +1417,7 @@ class GAN(AnomalyDetectionAbstract):
         self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
-        print("TrainingModel")
+        #print("TrainingModel")
         if(train_dataframe is None):
             df_ = pd.read_csv(train_file, skiprows=1, delimiter = ",", usecols = (0, 1,)).values
             vals = df_[:,1]
@@ -1463,5 +1478,5 @@ class GAN(AnomalyDetectionAbstract):
                 max_samples = self.max_samples,
                 max_features = self.max_features
                 ).fit(np.array(GAN_transformed).reshape(-1, 1))
-            print("Done training")
+            #print("Done training")
             self.save_model(self.model_name)
