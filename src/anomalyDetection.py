@@ -866,7 +866,7 @@ class PCA(AnomalyDetectionAbstract):
                           algorithm_indx=algorithm_indx)
 
         # Train configuration
-        self.N = conf["train_conf"]["max_features"]
+        self.max_features = conf["train_conf"]["max_features"]
         self.model_name = conf["train_conf"]["model_name"]
         self.max_samples = conf["train_conf"]["max_samples"]
         self.N_components = conf["train_conf"]["N_components"]
@@ -921,11 +921,14 @@ class PCA(AnomalyDetectionAbstract):
 
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
+        
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
-
+            self.status = self.UNDEFINED
+            self.status_code = self.UNDEFIEND_CODE
+            
             # Send undefined message to output
             for output in self.outputs:
                 output.send_out(timestamp=message_value['timestamp'],
@@ -957,6 +960,8 @@ class PCA(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
+        self.status = status
+        self.status_code = status_code
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
@@ -1020,7 +1025,7 @@ class PCA(AnomalyDetectionAbstract):
 
             self.IsolationForest = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
-                max_features = self.N
+                max_features = self.max_features
                 ).fit(transformed)
 
             self.save_model(self.model_name)
@@ -1400,9 +1405,10 @@ class GAN(AnomalyDetectionAbstract):
         print("TrainingModel")
         if(train_dataframe is None):
             df_ = pd.read_csv(train_file, skiprows=1, delimiter = ",", usecols = (0, 1,)).values
-            values = df_[:,1]
+            vals = df_[:,1]
             
-            values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+            #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+            values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
             timestamps = [df_[:,0][-len(values):]]
             df = np.concatenate((np.array(timestamps).T,values), axis=1)
         else:

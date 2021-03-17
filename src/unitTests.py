@@ -16,7 +16,7 @@ import shutil
 
 import unittest
 from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
-    GAN
+    GAN, PCA, Hampel
 
 
 def create_model_instance(algorithm_str, configuration, save = False):
@@ -313,6 +313,10 @@ class IsolForestTestCase(unittest.TestCase):
         if not os.path.isdir(self.f):
             os.makedirs(self.f)
         self.model = create_model_instance("IsolationForest()", configuration, save = True)
+    
+    def tearDown(self):
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
 
 class IsolForestTestClassPropperties(IsolForestTestCase):
     #Check propperties setup.
@@ -347,14 +351,8 @@ class IsolForestTestFunctionality(IsolForestTestCase):
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
-    def test_cleanup(self):
-        #Delete models folder and check.
-        if os.path.isdir(self.f):
-            shutil.rmtree(self.f)
-        self.assertEqual(os.path.isdir(self.f), False)
-
 class GANTestCase(unittest.TestCase):
- def setUp(self):
+    def setUp(self):
         create_testing_file("./unittest/GANTestData.csv", withzero = True)
 
         configuration = {
@@ -380,6 +378,10 @@ class GANTestCase(unittest.TestCase):
             os.makedirs(self.f)
         self.model = create_model_instance("GAN()", configuration, save = True)
 
+    def tearDown(self):
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
+
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
     def test_Propperties(self):
@@ -389,7 +391,6 @@ class GANTestClassPropperties(GANTestCase):
         self.assertEqual(self.model.N_latent, 3)
         self.assertEqual(self.model.retrain_interval, 15)
         self.assertEqual(self.model.samples_for_retrain, 15)
-
 
 class GANTestFunctionality(GANTestCase):
     def test_OK(self):
@@ -407,12 +408,63 @@ class GANTestFunctionality(GANTestCase):
             message = create_message(str(datetime.now()), test_array)
             self.model.message_insert(message)
             self.assertGreater(self.model.GAN_error, 1)
-    
-    def test_cleanup(self):
-        #Delete models folder and check.
+
+class PCATestCase(unittest.TestCase):
+    def setUp(self):
+        create_testing_file("./unittest/PCATestData.csv", withzero = True)
+
+        configuration = {
+        "train_data": "./unittest/PCATestData.csv",
+        "train_conf":{
+            "max_features": 3,
+            "max_samples": 15,
+            "contamination": "0.01",
+            "model_name": "PCA_Test",
+            "N_components": 3
+        },
+        "shifts": [[1, 2, 3, 4, 5, 6]],
+        "retrain_interval": 15,
+        "samples_for_retrain": 15,
+        "input_vector_size": 1, 
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("PCA()", configuration, save = True)
+
+    def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
-        self.assertEqual(os.path.isdir(self.f), False)
+
+class PCATestClassPropperties(PCATestCase):
+    def test_Propperties(self):
+        self.assertEqual(self.model.max_features, 3)
+        self.assertEqual(self.model.max_samples, 15)
+        self.assertEqual(self.model.retrain_interval, 15)
+        self.assertEqual(self.model.samples_for_retrain, 15)
+
+class PCATestFunctionality(PCATestCase):
+    def test_OK(self):
+        #Insert same values as in train set (status should be 1).
+        test_array = [1]*10
+        expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1]
+        for i in range(len(test_array)):
+            message = create_message(str(datetime.now()), [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+
+    def test_errors(self):
+        #Insert same values as in train set (status should be 1).
+        test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+        expected_status = [2, 2, 2, 2, 2, 2, 1, -1, 1, -1]
+        for i in range(len(test_array)):
+            message = create_message(str(datetime.now()), [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
