@@ -344,6 +344,9 @@ class IsolForestTestCase(unittest.TestCase):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
 
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
 
 class IsolForestTestClassPropperties(IsolForestTestCase):
     #Check propperties setup.
@@ -415,6 +418,9 @@ class GANTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
+        
+        # Delete unittest folder
+        shutil.rmtree("unittest")
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
