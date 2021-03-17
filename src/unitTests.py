@@ -84,6 +84,7 @@ class BCTestCase(unittest.TestCase):
         }
         self.model = create_model_instance("BorderCheck()", configuration)
 
+
 class BCTestClassPropperties(BCTestCase):
     #Check propperties setup.
     def test_UL(self):
@@ -94,6 +95,7 @@ class BCTestClassPropperties(BCTestCase):
 
     def test_WarningStages(self):
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
+
 
 class BCTestFunctionality(BCTestCase):
 
@@ -118,6 +120,7 @@ class BCTestFunctionality(BCTestCase):
         message = create_message(str(datetime.now()), [2.1])
         self.model.message_insert(message)
         self.assertEqual(self.model.status_code, 0)
+
 
 class WelfordTestCase(unittest.TestCase):
 
@@ -145,6 +148,7 @@ class WelfordTestClassPropperties(WelfordTestCase):
     def test_WarningStages(self):
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
 
+
 class EMATestCase(unittest.TestCase):
 
     def setUp(self):
@@ -159,6 +163,7 @@ class EMATestCase(unittest.TestCase):
         }
         self.model = create_model_instance("EMA()", configuration)
 
+
 class EMATestClassPropperties(EMATestCase):
     #Check propperties setup.
     def test_UL(self):
@@ -172,6 +177,7 @@ class EMATestClassPropperties(EMATestCase):
 
     def test_WarningStages(self):
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
+
 
 class EMATestFunctionality(EMATestCase):
 
@@ -191,7 +197,8 @@ class EMATestFunctionality(EMATestCase):
             message = create_message(str(datetime.now()), [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
-            
+
+     
 class Filtering1TestCase(unittest.TestCase):
     #Test case for filtering - mode 1
     def setUp(self):
@@ -208,6 +215,7 @@ class Filtering1TestCase(unittest.TestCase):
         }
         self.model = create_model_instance("Filtering()", configuration)
 
+
 class Filtering0TestCase(unittest.TestCase):
     #Test case for filtering - mode 0
     def setUp(self):
@@ -223,6 +231,7 @@ class Filtering0TestCase(unittest.TestCase):
         "output_conf": [{}],
         }
         self.model = create_model_instance("Filtering()", configuration)
+
 
 class Filtering1TestClassPropperties(Filtering1TestCase):
     #Check propperties setup.
@@ -260,6 +269,7 @@ class Filtering1TestClassPropperties(Filtering1TestCase):
         self.assertAlmostEqual(self.model.z[1], 0.02863483, 8)
         self.assertAlmostEqual(self.model.z[2], 0.1548284, 8)
 
+
 class Filtering1TestFunctionality(Filtering1TestCase):
     def test_Constant(self):
         #Test constant datastream.
@@ -278,6 +288,7 @@ class Filtering1TestFunctionality(Filtering1TestCase):
             message = create_message(str(datetime.now), [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
+
 
 class Filtering0TestFunctionality(Filtering0TestCase):
     def test_Constant(self):
@@ -298,8 +309,12 @@ class Filtering0TestFunctionality(Filtering0TestCase):
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
+
 class IsolForestTestCase(unittest.TestCase):
     def setUp(self):
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
+
         create_testing_file("./unittest/IsolForestTestData.csv", withzero = True)
 
         configuration = {
@@ -325,6 +340,7 @@ class IsolForestTestCase(unittest.TestCase):
             os.makedirs(self.f)
         self.model = create_model_instance("IsolationForest()", configuration, save = True)
 
+
 class IsolForestTestClassPropperties(IsolForestTestCase):
     #Check propperties setup.
     def test_MaxFeatures(self):
@@ -338,6 +354,7 @@ class IsolForestTestClassPropperties(IsolForestTestCase):
 
     def test_SamplesForRetrain(self):
         self.assertEqual(self.model.samples_for_retrain, 5)
+
 
 class IsolForestTestFunctionality(IsolForestTestCase):
     def test_OK(self):
@@ -364,32 +381,38 @@ class IsolForestTestFunctionality(IsolForestTestCase):
             shutil.rmtree(self.f)
         self.assertEqual(os.path.isdir(self.f), False)
 
+
 class GANTestCase(unittest.TestCase):
- def setUp(self):
-        create_testing_file("./unittest/GANTestData.csv", withzero = True)
+    def setUp(self):
+            # Make unittest directory
+            if not os.path.isdir("unittest"):
+                os.makedirs("unittest")
 
-        configuration = {
-        "train_data": "./unittest/GANTestData.csv",
-        "train_conf":{
-            "max_features": 1,
-            "max_samples": 5,
-            "contamination": "auto",
-            "model_name": "GAN_Test",
-            "N_shifts": 9,
-            "N_latent": 3
-        },
-        "retrain_interval": 15,
-        "samples_for_retrain": 15,
-        "input_vector_size": 10,
-        "output": [],
-        "output_conf": [{}]
-        }
-        self.f = "models"
+            create_testing_file("./unittest/GANTestData.csv", withzero = True)
 
-        #Create a temporary /models folder.
-        if not os.path.isdir(self.f):
-            os.makedirs(self.f)
-        self.model = create_model_instance("GAN()", configuration, save = True)
+            configuration = {
+            "train_data": "./unittest/GANTestData.csv",
+            "train_conf":{
+                "max_features": 1,
+                "max_samples": 5,
+                "contamination": "auto",
+                "model_name": "GAN_Test",
+                "N_shifts": 9,
+                "N_latent": 3
+            },
+            "retrain_interval": 15,
+            "samples_for_retrain": 15,
+            "input_vector_size": 10,
+            "output": [],
+            "output_conf": [{}]
+            }
+            self.f = "models"
+
+            #Create a temporary /models folder.
+            if not os.path.isdir(self.f):
+                os.makedirs(self.f)
+            self.model = create_model_instance("GAN()", configuration, save = True)
+
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
@@ -431,9 +454,10 @@ class FeatureConstructionTestCase(unittest.TestCase):
         # but will be used because of simplicity
         configuration = {
             "input_vector_size": 2,
-            "averages": [[2, 3, 5], [2]],
+            "averages": [[2, 3], [2]],
+            "periodic_averages": [[[2, [3]], [3, [2]]], []],
             "shifts": [[1, 2, 3, 4], []],
-            "time_features": ["day", "month", "weekday", "hour"],
+            "time_features": ["day", "month", "weekday", "hour", "minute"],
             "warning_stages": [0.7, 0.9],
             "UL": 4,
             "LL": 2,
@@ -447,12 +471,13 @@ class FeatureConstructionTestCase(unittest.TestCase):
         #Create a temporary /models folder.
         if not os.path.isdir(self.f):
             os.makedirs(self.f)
-        self.model = create_model_instance("IsolationForest()", configuration)
+        self.model = create_model_instance("BorderCheck()", configuration)
 
         # Execute feature constructions (FV-s are saved and will be checked in
         # following tests)
-        test_data = [[x, x+100] for x in range(10)]
-        timestamps = timestamps = [1459926000 + 3600*x for x in range(20)]
+        test_data = [[x, x+101] for x in range(10)]
+        # timestamps are 1 day and 1 hour and 1 minute apart
+        timestamps = timestamps = [1459926000 + (24*3600+60+3600)*x for x in range(20)]
         self.feature_vectors = []
         for sample_indx in range(10):
             feature_vector = self.model.feature_construction(value=test_data[sample_indx],
@@ -461,13 +486,93 @@ class FeatureConstructionTestCase(unittest.TestCase):
         return super().setUp()
     
     def test_shifts(self):
-        pass
+        # First 4 feature vecotrs are undefined since memory does not contain
+        # enough samples to construct all features
+        for x in self.feature_vectors[:4]:
+            self.assertFalse(x)
+        
+        # Extract shifted features
+        #print(self.feature_vectors)
+        shifts = [fv[7:11] for fv in self.feature_vectors[4:]]
+        
+        # Test shifted features
+        self.assertListEqual(shifts[0], [3, 2, 1, 0])
+
+        self.assertListEqual(shifts[1], [4, 3, 2, 1])
+
+        self.assertListEqual(shifts[2], [5, 4, 3, 2])
+
+        self.assertListEqual(shifts[3], [6, 5, 4, 3])
+
+        self.assertListEqual(shifts[4], [7, 6, 5, 4])
+
+        self.assertListEqual(shifts[5], [8, 7, 6, 5])
 
     def test_averages(self):
-        pass
+        # First 4 feature vecotrs are undefined since memory does not contain
+        # enough samples to construct all features
+        for x in self.feature_vectors[:4]:
+            self.assertFalse(x)
+        
+        # Extract average features
+        averages = [fv[2:5] for fv in self.feature_vectors[4:]]
+        
+        # Test average features
+        self.assertListEqual(averages[0], [3.5, 3, 104.5])
+
+        self.assertListEqual(averages[1], [4.5, 4, 105.5])
+
+        self.assertListEqual(averages[2], [5.5, 5, 106.5])
+
+        self.assertListEqual(averages[3], [6.5, 6, 107.5])
+
+        self.assertListEqual(averages[4], [7.5, 7, 108.5])
+
+        self.assertListEqual(averages[5], [8.5, 8, 109.5])
+
+    def test_periodic_averages(self):
+        # First 4 feature vecotrs are undefined since memory does not contain
+        # enough samples to construct all features
+        for x in self.feature_vectors[:4]:
+            self.assertFalse(x)
+        
+        # Extract periodic average features
+        periodic_averages = [fv[5:7] for fv in self.feature_vectors[4:]]
+        
+        # Test periodic average features
+        self.assertListEqual(periodic_averages[0], [2, 2.5])
+
+        self.assertListEqual(periodic_averages[1], [3, 3.5])
+
+        self.assertListEqual(periodic_averages[2], [4, 4.5])
+
+        self.assertListEqual(periodic_averages[3], [5, 5.5])
+
+        self.assertListEqual(periodic_averages[4], [6, 6.5])
+
+        self.assertListEqual(periodic_averages[5], [7, 7.5])
 
     def test_time_features(self):
-        pass
+        # First 4 feature vecotrs are undefined since memory does not contain
+        # enough samples to construct all features
+        for x in self.feature_vectors[:4]:
+            self.assertFalse(x)
+        
+        # Extract time features
+        time_features = [fv[11:] for fv in self.feature_vectors[4:]]
+        
+        # Test time features
+        self.assertListEqual(time_features[0], [4, 10, 6, 7, 0])
+
+        self.assertListEqual(time_features[1], [4, 11, 0, 8, 1])
+
+        self.assertListEqual(time_features[2], [4, 12, 1, 9, 2])
+
+        self.assertListEqual(time_features[3], [4, 13, 2, 10, 3])
+
+        self.assertListEqual(time_features[4], [4, 14, 3, 11, 4])
+
+        self.assertListEqual(time_features[5], [4, 15, 4, 12, 5])
 
 
 if __name__ == '__main__':
