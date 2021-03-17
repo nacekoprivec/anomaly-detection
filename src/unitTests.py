@@ -492,7 +492,6 @@ class FeatureConstructionTestCase(unittest.TestCase):
             self.assertFalse(x)
         
         # Extract shifted features
-        #print(self.feature_vectors)
         shifts = [fv[7:11] for fv in self.feature_vectors[4:]]
         
         # Test shifted features
@@ -562,17 +561,17 @@ class FeatureConstructionTestCase(unittest.TestCase):
         time_features = [fv[11:] for fv in self.feature_vectors[4:]]
         
         # Test time features
-        self.assertListEqual(time_features[0], [4, 10, 6, 7, 0])
+        self.assertListEqual(time_features[0], [4, 10, 6, 11, 4])
 
-        self.assertListEqual(time_features[1], [4, 11, 0, 8, 1])
+        self.assertListEqual(time_features[1], [4, 11, 0, 12, 5])
 
-        self.assertListEqual(time_features[2], [4, 12, 1, 9, 2])
+        self.assertListEqual(time_features[2], [4, 12, 1, 13, 6])
 
-        self.assertListEqual(time_features[3], [4, 13, 2, 10, 3])
+        self.assertListEqual(time_features[3], [4, 13, 2, 14, 7])
 
-        self.assertListEqual(time_features[4], [4, 14, 3, 11, 4])
+        self.assertListEqual(time_features[4], [4, 14, 3, 15, 8])
 
-        self.assertListEqual(time_features[5], [4, 15, 4, 12, 5])
+        self.assertListEqual(time_features[5], [4, 15, 4, 16, 9])
 
 
 if __name__ == '__main__':
