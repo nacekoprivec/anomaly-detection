@@ -17,6 +17,7 @@ import shutil
 import unittest
 from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
     GAN, PCA, Hampel, AnomalyDetectionAbstract
+from normalization import LastNAverage, PeriodicLastNAverage
 
 
 def create_model_instance(algorithm_str, configuration, save = False):
@@ -459,6 +460,7 @@ class GANTestCase(unittest.TestCase):
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
 
+
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
     def test_Propperties(self):
@@ -468,6 +470,7 @@ class GANTestClassPropperties(GANTestCase):
         self.assertEqual(self.model.N_latent, 3)
         self.assertEqual(self.model.retrain_interval, 15)
         self.assertEqual(self.model.samples_for_retrain, 15)
+
 
 class GANTestFunctionality(GANTestCase):
     def test_OK(self):
@@ -485,6 +488,7 @@ class GANTestFunctionality(GANTestCase):
             message = create_message(str(datetime.now()), test_array)
             self.model.message_insert(message)
             self.assertGreater(self.model.GAN_error, 1)
+
 
 class PCATestCase(unittest.TestCase):
     def setUp(self):
@@ -527,12 +531,14 @@ class PCATestCase(unittest.TestCase):
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
 
+
 class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
         self.assertEqual(self.model.max_features, 3)
         self.assertEqual(self.model.max_samples, 15)
         self.assertEqual(self.model.retrain_interval, 15)
         self.assertEqual(self.model.samples_for_retrain, 15)
+
 
 class PCATestFunctionality(PCATestCase):
     def test_OK(self):
@@ -552,6 +558,7 @@ class PCATestFunctionality(PCATestCase):
             message = create_message(str(datetime.now()), [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
+
 
 class FeatureConstructionTestCase(unittest.TestCase):
     def setUp(self) -> None:
@@ -686,6 +693,102 @@ class FeatureConstructionTestCase(unittest.TestCase):
         self.assertListEqual(time_features[4], [4, 14, 3, 15, 8])
 
         self.assertListEqual(time_features[5], [4, 15, 4, 16, 9])
+
+
+class AverageNormalizationTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        configuration = {
+            "N": 4
+        }
+        self.normalization = LastNAverage()
+        self.normalization.configure(conf=configuration)
+        return super().setUp()
+
+
+class AverageNormalizationClassProperties(AverageNormalizationTestCase):
+    def test_properties(self):
+        # Test setup from configuration
+        self.assertEqual(self.normalization.N, 4)
+
+
+class AverageNormalizationFunctionality(AverageNormalizationTestCase):
+    def test_normalization(self):
+        # Testing data and expected results
+        test_data = [[x, 11+2*x] for x in range(9)]
+        result_data = [
+            [1, 10],
+            [1, 12.25],
+            [1.25, 12.5625],
+            [1.3125, 12.453125],
+            [1.1406, 11.81640625],
+            [1.17578, 12.27050781]
+        ]
+
+        # Test add_value function
+        self.normalization.add_value([1, 1])
+
+        normalized_data = []
+        for data in test_data:
+            response = self.normalization.get_normalized(data)
+            normalized_data.append(response)
+
+        for fail in normalized_data[:3]:
+            # First 3 entries must be False
+            self.assertFalse(fail)
+
+        # Test expected results
+        for response_indx in range(6):
+            self.assertAlmostEqual(normalized_data[3+response_indx][0], result_data[response_indx][0], 4)
+            self.assertAlmostEqual(normalized_data[3+response_indx][1], result_data[response_indx][1], 4)
+
+
+class PeriodicAverageNormalizationTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        configuration = {
+            "N": 4,
+            "period": 2
+        }
+        self.normalization = PeriodicLastNAverage()
+        self.normalization.configure(conf=configuration)
+        return super().setUp()
+
+
+class PeriodicAverageNormalizationClassProperties(PeriodicAverageNormalizationTestCase):
+    def test_properties(self):
+        # Test setup from configuration
+        self.assertEqual(self.normalization.N, 4)
+        self.assertEqual(self.normalization.period, 2)
+        self.assertEqual(self.normalization.memory_len, 7)
+
+
+class PeriodicAverageNormalizationFunctionality(PeriodicAverageNormalizationTestCase):
+    def test_normalization(self):
+        # Testing data and expected results
+        test_data = [[x, 11+2*x] for x in range(11)]
+        result_data = [
+            [2.5, 13],
+            [2.125, 14.5],
+            [2.78125, 16.375],
+            [2.8203125, 15.84375],
+            [3.236328125, 17.0859375]
+        ]
+
+        # Test add_value function
+        self.normalization.add_value([1, 1])
+
+        normalized_data = []
+        for data in test_data:
+            response = self.normalization.get_normalized(data)
+            normalized_data.append(response)
+
+        for fail in normalized_data[:6]:
+            # First 3 entries must be False
+            self.assertFalse(fail)
+
+        # Test expected results
+        for response_indx in range(5):
+            self.assertAlmostEqual(normalized_data[6+response_indx][0], result_data[response_indx][0], 4)
+            self.assertAlmostEqual(normalized_data[6+response_indx][1], result_data[response_indx][1], 4)
 
 
 if __name__ == '__main__':
