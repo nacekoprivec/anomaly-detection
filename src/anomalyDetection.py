@@ -1275,6 +1275,7 @@ class GAN(AnomalyDetectionAbstract):
         self.model_name = conf["train_conf"]["model_name"]
         self.max_features = conf["train_conf"]["max_features"]
         self.max_samples = conf["train_conf"]["max_samples"]
+        self.K = conf["train_conf"]["K"]
 
         # Retrain configuration
         if("retrain_interval" in conf):
@@ -1332,7 +1333,7 @@ class GAN(AnomalyDetectionAbstract):
 
         timestamp = message_value["timestamp"]
 
-        feature_vector = value
+        feature_vector = list((np.array(value) - self.avg)/(self.max - self.min))
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -1345,7 +1346,7 @@ class GAN(AnomalyDetectionAbstract):
             
             # And to visualization
             if(self.visualization is not None):
-                lines = [value[0]]
+                lines = [value[-1]]
                 #self.visualization.update(value=[None], timestamp=timestamp,
                 #                          status_code=2)
             return
@@ -1355,12 +1356,15 @@ class GAN(AnomalyDetectionAbstract):
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
             self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
-            #print("GAN error: " + str(GAN_error))
-            IsolationForest_transformed =  self.IsolationForest.predict(self.GAN_error.reshape(-1, 1))
-            if(IsolationForest_transformed == 1):
+
+
+            #print("GAN error: " + str(self.GAN_error))
+            #IsolationForest_transformed =  self.IsolationForest.predict(self.GAN_error.reshape(-1, 1))
+            
+            if(self.GAN_error < self.threshold):
                 status = self.OK
                 status_code = self.OK_CODE
-            elif(IsolationForest_transformed == 0):
+            elif(self.GAN_error >= self.threshold):
                 status = "Error: outlier detected (GAN)"
                 status_code = -1
             else:
@@ -1403,24 +1407,21 @@ class GAN(AnomalyDetectionAbstract):
     def save_model(self, filename):
         self.GAN.save("models/" + filename + "_GAN")
         #print("Saving GAN")
-
-        with open("models/" + filename + "_IsolationForest", 'wb') as f:
-            #print("Saving isolationForest")
-            pickle.dump(self.IsolationForest, f)
-        
         
 
     def load_model(self, filename):
         self.GAN = keras.models.load_model(filename + "_GAN")
-        with open(filename + "_IsolationForest", 'rb') as f:
-            clf = pickle.load(f)
-        self.IsolationForest = clf
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
         #print("TrainingModel")
         if(train_dataframe is None):
             df_ = pd.read_csv(train_file, skiprows=1, delimiter = ",", usecols = (0, 1,)).values
             vals = df_[:,1]
+            self.min = min(vals)
+            self.max = max(vals)
+            self.avg = np.average(vals)
+
+            vals = (np.array(vals) - self.avg)/(self.max - self.min)
             
             #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
             values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
@@ -1471,12 +1472,11 @@ class GAN(AnomalyDetectionAbstract):
             self.GAN.add_loss(GAN_loss)
             self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
             features = np.array(features)
-            self.GAN.fit(features[:10000],features[:10000], epochs =100, batch_size = 10, validation_data = None, verbose = 2)
-            GAN_transformed = mse(features, self.GAN.predict(features))
+            self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 2)
+            
+            predictions = self.GAN.predict(features.reshape(len(features), self.N_shifts+1))
+            
+            GAN_transformed = [mse(np.array(features[i]), predictions[i]) for i in range(len(features))]
+            self.threshold = self.K * max(GAN_transformed)
 
-            self.IsolationForest = sklearn.ensemble.IsolationForest(
-                max_samples = self.max_samples,
-                max_features = self.max_features
-                ).fit(np.array(GAN_transformed).reshape(-1, 1))
-            #print("Done training")
             self.save_model(self.model_name)
