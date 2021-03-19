@@ -129,14 +129,14 @@ class BCTestFunctionality(BCTestCase):
         self.assertEqual(self.model.status_code, 0)
 
 
-class WelfordTestCase(unittest.TestCase):
+class WelfordDefinedNTestCase(unittest.TestCase):
 
     def setUp(self):
         configuration = {
         "input_vector_size": 1,
         "warning_stages": [0.7, 0.9],
         "N": 4,
-        "X": 3,
+        "X": 2,
         "output": [],
         "output_conf": [
             {}
@@ -151,16 +151,101 @@ class WelfordTestCase(unittest.TestCase):
         return super().tearDown()
 
 
-class WelfordTestClassPropperties(WelfordTestCase):
+class WelfordDefinedNTestClassPropperties(WelfordDefinedNTestCase):
     #Check propperties setup.
     def test_N(self):
         self.assertEqual(self.model.N, 4)
 
     def test_X(self):
-        self.assertEqual(self.model.X, 3)
+        self.assertEqual(self.model.X, 2)
 
     def test_WarningStages(self):
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
+
+
+class WelfordDefinedNTestFunctionality(WelfordDefinedNTestCase):
+    def test_OK(self):
+        test_data = [1, 2, 3, 4, 1, 2]
+
+        for data_indx in range(len(test_data)):
+            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            self.model.message_insert(message)
+
+            if(data_indx < 4):
+                self.assertEqual(self.model.status_code, 2)
+            else:
+                self.assertEqual(self.model.status_code, 1)
+
+    def test_error(self):
+        test_data = [1, 2, 3, 4, -0.1, 5.73]
+
+        for data_indx in range(len(test_data)):
+            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            self.model.message_insert(message)
+
+            if(data_indx < 4):
+                self.assertEqual(self.model.status_code, 2)
+            else:
+                self.assertEqual(self.model.status_code, -1)
+
+
+class WelfordUndefinedNTestCase(unittest.TestCase):
+
+    def setUp(self):
+        configuration = {
+        "input_vector_size": 1,
+        "X": 2,
+        "warning_stages": [],
+        "output": [],
+        "output_conf": [
+            {}
+        ],
+        }
+        self.model = create_model_instance("Welford()", configuration)
+    
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
+
+
+class WelfordUndefinedNTestClassPropperties(WelfordUndefinedNTestCase):
+    #Check propperties setup.
+    def test_X(self):
+        self.assertEqual(self.model.X, 2)
+
+
+class WelfordUndefinedNTestFunctionality(WelfordUndefinedNTestCase):
+    def test_OK(self):
+        test_data = [1, 2, 2.4, 2.6, 1, 3.1]
+
+        for data_indx in range(len(test_data)):
+            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            self.model.message_insert(message)
+            
+            # Check memory length
+            self.assertEqual(self.model.count, data_indx+1)
+
+            if(data_indx < 2):
+                self.assertEqual(self.model.status_code, 2)
+            else:
+                self.assertEqual(self.model.status_code, 1)
+
+    def test_error(self):
+        test_data = [1, 2, 3, -1, 5, -2.5]
+
+        for data_indx in range(len(test_data)):
+            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            self.model.message_insert(message)
+
+            # Check memory length
+            self.assertEqual(self.model.count, data_indx+1)
+
+            if(data_indx < 2):
+                self.assertEqual(self.model.status_code, 2)
+            else:
+                self.assertEqual(self.model.status_code, -1)
 
 
 class EMATestCase(unittest.TestCase):
@@ -200,7 +285,6 @@ class EMATestClassPropperties(EMATestCase):
 
 
 class EMATestFunctionality(EMATestCase):
-
     def test_OK(self):
         #Insert values in the middle of the range. All should have no error.
         test_array = [3, 3, 3]
