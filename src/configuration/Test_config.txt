@@ -1,1 +1,0 @@
-{"anomaly_detection_conf": [{"train_data": "./unittest/PCATestData.csv", "train_conf": {"max_features": 3, "max_samples": 15, "contamination": "0.01", "model_name": "PCA_Test", "N_components": 3}, "shifts": [[1, 2, 3, 4, 5, 6]], "retrain_interval": 15, "samples_for_retrain": 15, "input_vector_size": 1, "output": [], "output_conf": [{}]}]}

@@ -84,6 +84,12 @@ class BCTestCase(unittest.TestCase):
         }
         self.model = create_model_instance("BorderCheck()", configuration)
 
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
+
 
 class BCTestClassPropperties(BCTestCase):
     #Check propperties setup.
@@ -136,6 +142,13 @@ class WelfordTestCase(unittest.TestCase):
         ],
         }
         self.model = create_model_instance("Welford()", configuration)
+    
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
+
 
 class WelfordTestClassPropperties(WelfordTestCase):
     #Check propperties setup.
@@ -162,6 +175,12 @@ class EMATestCase(unittest.TestCase):
         "output_conf": [{}],
         }
         self.model = create_model_instance("EMA()", configuration)
+
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
 
 
 class EMATestClassPropperties(EMATestCase):
@@ -215,6 +234,12 @@ class Filtering1TestCase(unittest.TestCase):
         }
         self.model = create_model_instance("Filtering()", configuration)
 
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
+
 
 class Filtering0TestCase(unittest.TestCase):
     #Test case for filtering - mode 0
@@ -231,6 +256,12 @@ class Filtering0TestCase(unittest.TestCase):
         "output_conf": [{}],
         }
         self.model = create_model_instance("Filtering()", configuration)
+
+    def tearDown(self) -> None:
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
 
 
 class Filtering1TestClassPropperties(Filtering1TestCase):
@@ -344,6 +375,12 @@ class IsolForestTestCase(unittest.TestCase):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
 
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
 
 class IsolForestTestClassPropperties(IsolForestTestCase):
     #Check propperties setup.
@@ -415,6 +452,12 @@ class GANTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
+        
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
@@ -445,6 +488,10 @@ class GANTestFunctionality(GANTestCase):
 
 class PCATestCase(unittest.TestCase):
     def setUp(self):
+        # Make unittest directory
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
+            
         create_testing_file("./unittest/PCATestData.csv", withzero = True)
 
         configuration = {
@@ -473,6 +520,12 @@ class PCATestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
+
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
 
 class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
@@ -536,6 +589,15 @@ class FeatureConstructionTestCase(unittest.TestCase):
                                             timestamp=timestamps[sample_indx])
             self.feature_vectors.append(feature_vector)
         return super().setUp()
+
+    def tearDown(self) -> None:
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+        return super().tearDown()
     
     def test_shifts(self):
         # First 4 feature vecotrs are undefined since memory does not contain
@@ -544,7 +606,6 @@ class FeatureConstructionTestCase(unittest.TestCase):
             self.assertFalse(x)
         
         # Extract shifted features
-        #print(self.feature_vectors)
         shifts = [fv[7:11] for fv in self.feature_vectors[4:]]
         
         # Test shifted features
@@ -614,17 +675,17 @@ class FeatureConstructionTestCase(unittest.TestCase):
         time_features = [fv[11:] for fv in self.feature_vectors[4:]]
         
         # Test time features
-        self.assertListEqual(time_features[0], [4, 10, 6, 7, 0])
+        self.assertListEqual(time_features[0], [4, 10, 6, 11, 4])
 
-        self.assertListEqual(time_features[1], [4, 11, 0, 8, 1])
+        self.assertListEqual(time_features[1], [4, 11, 0, 12, 5])
 
-        self.assertListEqual(time_features[2], [4, 12, 1, 9, 2])
+        self.assertListEqual(time_features[2], [4, 12, 1, 13, 6])
 
-        self.assertListEqual(time_features[3], [4, 13, 2, 10, 3])
+        self.assertListEqual(time_features[3], [4, 13, 2, 14, 7])
 
-        self.assertListEqual(time_features[4], [4, 14, 3, 11, 4])
+        self.assertListEqual(time_features[4], [4, 14, 3, 15, 8])
 
-        self.assertListEqual(time_features[5], [4, 15, 4, 12, 5])
+        self.assertListEqual(time_features[5], [4, 15, 4, 16, 9])
 
 
 if __name__ == '__main__':

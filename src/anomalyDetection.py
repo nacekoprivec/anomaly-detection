@@ -233,7 +233,12 @@ class AnomalyDetectionAbstract(ABC):
         for feature_index in range(len(self.averages)):
             # Loop through all horizons we want the average of
             for interval in self.averages[feature_index]:
-                values = np_memory[-interval:, feature_index]
+                # Add last interval numbers to values array
+                values = []
+                for sample_indx in range(len(self.memory)):
+                    if(sample_indx == interval):
+                        break
+                    values.append(self.memory[-(sample_indx+1)][feature_index])
                 averages.append(mean(values))
 
         return averages
