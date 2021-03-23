@@ -51,12 +51,12 @@ for i in range(1000):
     #    ran = np.random.choice([-1, 1])*5
     #else:
     #    ran = 0
-    value = list(values[i:i+10])
+    value = values[i]
     print(value)
     anomaly = 0
     if (i%20 == 0):
         anomaly = -0.03
-    data = {"test_value" : value,
+    data = {"test_value" : [value],
 			"timestamp": str(times[i])}
 
 	

@@ -6,7 +6,7 @@ import sys
 from typing import Any, Dict, List
 
 from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
-        IsolationForest, Welford, Filtering, PCA, Hampel, GAN
+        IsolationForest, Welford, Filtering, PCA, Hampel, GAN, LinearFit
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
