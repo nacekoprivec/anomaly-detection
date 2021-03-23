@@ -1,0 +1,135 @@
+{
+    "bootstrap_servers": ["localhost:9092"],
+    "auto_offset_reset": "latest",
+    "enable_auto_commit": "True",
+    "group_id": "my-group",
+    "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
+    "topics": [
+        "pressure topic 5770",
+        "pressure topic 5771",
+        "pressure topic 5772",
+        "pressure topic 5773",
+        "braila flow night 211306H360"
+    ],
+    "anomaly_detection_alg": [
+        "GAN()",
+        "GAN()",
+        "GAN()",
+        "GAN()",
+        "Welford()"
+    ],
+    "anomaly_detection_conf": [
+        {
+            "train_data": "data/training/braila_train.csv",
+            "train_conf":{
+                "max_features": 1,
+                "max_samples": 15000,
+                "contamination": "auto",
+                "model_name": "GAN_Braila_pressure_5770",
+                "N_shifts": 9,
+                "N_latent": 3,
+                "K": 0.95
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 2000,
+            "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5770"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_train.csv",
+            "train_conf":{
+                "max_features": 1,
+                "max_samples": 15000,
+                "contamination": "auto",
+                "model_name": "GAN_Braila_pressure_5771",
+                "N_shifts": 9,
+                "N_latent": 3,
+                "K": 0.95
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 2000,
+            "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5771"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_train.csv",
+            "train_conf":{
+                "max_features": 1,
+                "max_samples": 15000,
+                "contamination": "auto",
+                "model_name": "GAN_Braila_pressure_5772",
+                "N_shifts": 9,
+                "N_latent": 3,
+                "K": 0.95
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 2000,
+            "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5772"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_train.csv",
+            "train_conf":{
+                "max_features": 1,
+                "max_samples": 15000,
+                "contamination": "auto",
+                "model_name": "GAN_Braila_pressure_5773",
+                "N_shifts": 9,
+                "N_latent": 3,
+                "K": 0.95
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 2000,
+            "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5773"
+                }
+            ]
+        },
+        {
+            "input_vector_size": 1,
+            "warning_stages": [0.7, 0.9],
+            "N": 7,
+            "X": 6,
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_flow_211306H360"
+                }
+            ]
+        }
+    ]
+}

@@ -190,6 +190,13 @@ It requires the following arguments in the config file:\
     * W: Window size - in the calculations W points before and W after the point in question are used (example: 5)
     * K: A multiplier which is dependent on the distribution of input data. For gaussian it is 1.4826
 
+8. **GAN:** This model is built on the autoencoder principle. N dimensional data is given to the model which has a bottleneck of signifficantly fewer dimensions. The model is trained on "good" data, where it learns to reproduce the inputs very precisely. When the trained model is given an anomalous feature vector it cannot reproduce it exactly. The measure of how anomalous the datapoint is, is the reconstruction error, which is a mean squared error comparing the input and output feature vectors. Based on the reconstruction errors on the training set, a threshold is determined. When the model detects a high reconstruction error, the datapoint is labeled as an outlier.
+It requires the following arguments in the config file:\
+    * N_shifts: Number of past data, which are used to construct the feature vector. (example: 9)
+    * N_latent: Dimensionality of the latent space (example: 3)
+    * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95)
+
+
 ## Examples:
 For configuration examples see configuration folder and inside it READEME file. <br> <br>
 For example with Braila data run `python main.py -f -c braila/"configuration_file_name"`. The results will appear in log directory and can be analized with braila_data.ipynb notebook in notebooks directory.

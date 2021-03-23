@@ -72,7 +72,7 @@ class PeriodicLastNAverage(NormalizationAbstract):
         self.N = conf["N"]
         self.period = conf["period"]
 
-        self.memory_len = self.N * self.period
+        self.memory_len = ((self.N-1) * self.period)+1
         self.memory = []
 
     def add_value(self, value: Any) -> None:
