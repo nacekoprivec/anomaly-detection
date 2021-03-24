@@ -64,10 +64,10 @@ class AnomalyDetectionAbstract(ABC):
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        # print("test value: " + str(message_value['test_value']))
-        # print(message_value['test_value'])
-        #print(len(message_value['test_value']))
-        assert len(message_value['test_value']) == self.input_vector_size, \
+        # print("test value: " + str(message_value['ftr_vector']))
+        # print(message_value['ftr_vector'])
+        #print(len(message_value['ftr_vector']))
+        assert len(message_value['ftr_vector']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
     @abstractmethod
@@ -373,7 +373,7 @@ class BorderCheck(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
-        value = message_value["test_value"]
+        value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
@@ -405,7 +405,7 @@ class BorderCheck(AnomalyDetectionAbstract):
         self.status_code = status_code
 
         for output in self.outputs:
-            output.send_out(timestamp=timestamp, status=status, value=message_value["test_value"],
+            output.send_out(timestamp=timestamp, status=status, value=message_value["ftr_vector"],
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
@@ -454,7 +454,7 @@ class Welford(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
         # extract from message
-        value = message_value["test_value"]
+        value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
@@ -501,7 +501,7 @@ class Welford(AnomalyDetectionAbstract):
         # Outputs and visualizations
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status,
-                            value=message_value["test_value"],
+                            value=message_value["ftr_vector"],
                             status_code=status_code, algorithm=self.name)
 
         if(self.visualization is not None):
@@ -583,7 +583,7 @@ class EMA(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        value = message_value["ftr_vector"]
         value = value[0]
 
         self.numbers.append(value)
@@ -639,7 +639,7 @@ class EMA(AnomalyDetectionAbstract):
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             algorithm=self.name, status=status,
-                            value=message_value['test_value'],
+                            value=message_value['ftr_vector'],
                             status_code=status_code)
 
         #send EMA and +- sigma band to visualization
@@ -732,11 +732,11 @@ class IsolationForest(AnomalyDetectionAbstract):
 
         if(self.use_cols is not None):
             value = []
-            for el in range(len(message_value["test_value"])):
+            for el in range(len(message_value["ftr_vector"])):
                 if(el in self.use_cols):
-                    value.append(message_value["test_value"][el])
+                    value.append(message_value["ftr_vector"][el])
         else:
-            value = message_value["test_value"]
+            value = message_value["ftr_vector"]
 
         timestamp = message_value["timestamp"]
         feature_vector = super().feature_construction(value=value,timestamp=timestamp)
@@ -934,11 +934,11 @@ class PCA(AnomalyDetectionAbstract):
 
         if(self.use_cols is not None):
             value = []
-            for el in range(len(message_value["test_value"])):
+            for el in range(len(message_value["ftr_vector"])):
                 if(el in self.use_cols):
-                    value.append(message_value["test_value"][el])
+                    value.append(message_value["ftr_vector"][el])
         else:
-            value = message_value["test_value"]
+            value = message_value["ftr_vector"]
 
         timestamp = message_value["timestamp"]
 
@@ -1092,7 +1092,7 @@ class Filtering(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
 
-        self.last_measurement = message_value['test_value'][0]
+        self.last_measurement = message_value['ftr_vector'][0]
 
         #Update filter output after last measurement
         filtered_value, self.z = signal.lfilter(self.b, self.a, x = [self.last_measurement], zi = self.z)
@@ -1156,7 +1156,7 @@ class Filtering(AnomalyDetectionAbstract):
 
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
-                            status=status, value=message_value['test_value'][0], 
+                            status=status, value=message_value['ftr_vector'][0], 
                             status_code=status_code, algorithm=self.name)
 
         self.result = result
@@ -1199,7 +1199,7 @@ class Hampel(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
         # extract from message
-        value = message_value["test_value"]
+        value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
@@ -1333,11 +1333,11 @@ class GAN(AnomalyDetectionAbstract):
 
         if(self.use_cols is not None):
             value = []
-            for el in range(len(message_value["test_value"])):
+            for el in range(len(message_value["ftr_vector"])):
                 if(el in self.use_cols):
-                    value.append(message_value["test_value"][el])
+                    value.append(message_value["ftr_vector"][el])
         else:
-            value = message_value["test_value"]
+            value = message_value["ftr_vector"]
 
         timestamp = message_value["timestamp"]
 
@@ -1489,6 +1489,7 @@ class GAN(AnomalyDetectionAbstract):
 
             self.save_model(self.model_name)
 
+
 class LinearFit(AnomalyDetectionAbstract):
     name: str = "LinearFit"
     slope: float
@@ -1527,7 +1528,7 @@ class LinearFit(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
 
-        value = message_value["test_value"]
+        value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
@@ -1587,7 +1588,7 @@ class LinearFit(AnomalyDetectionAbstract):
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             algorithm=self.name, status=status,
-                            value=message_value['test_value'],
+                            value=message_value['ftr_vector'],
                             status_code=status_code)
 
         #send to visualization

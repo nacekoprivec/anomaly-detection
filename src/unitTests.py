@@ -42,7 +42,7 @@ def create_model_instance(algorithm_str, configuration, save = False):
 def create_message(timestamp, value):
     message = {
         "timestamp" : timestamp,
-        "test_value" : value
+        "ftr_vector" : value
     }
     return message
 
@@ -53,7 +53,7 @@ def create_testing_file(filepath, withzero = False):
         values[-1] = 0
     data = {
         'timestamp': timestamps,
-        'test_value': values
+        'ftr_vector': values
     }
     testset = pd.DataFrame(data = data)
     testset.to_csv(filepath, index = False)
@@ -65,7 +65,7 @@ def create_testing_file_feature_construction(filepath):
     values = [[x, x+100] for x in range(20)]
     data = {
         'timestamp': timestamps,
-        'test_value': values
+        'ftr_vector': values
     }
     testset = pd.DataFrame(data = data)
     testset.to_csv(filepath, index = False)

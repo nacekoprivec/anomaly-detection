@@ -64,13 +64,13 @@ Consumer components differ in where the data is read from.
 
    A message in kafka topic must contain two fields:
    * timestamp: Contains a timestamp of the data in datastream in datetime format.
-   * test_value: Contains an array (a feature vector) of values.
+   * ftr_vector: Contains an array (a feature vector) of values.
 
-2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
+2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., ftr_vector": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
 
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
-The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., test_value": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
+The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., ftr_vector": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")\
 The following parameters are similar to ones in Kafka consumer:
    * bootstrap_servers: Kafka server. (example: ["localhost:9092"])
@@ -104,12 +104,12 @@ Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undef
 
 ### Visualization
 An optional conponent intendet to visualize the inputted stream. 
-1. **Graph visualization:** The data is represented as points on graph. All anomaly detection component plot the test_value values and some plot additional values like running average, standard deviation... It requires the following arguments in the config file:
+1. **Graph visualization:** The data is represented as points on graph. All anomaly detection component plot the ftr_vector values and some plot additional values like running average, standard deviation... It requires the following arguments in the config file:
    * num_of_points: Maximum number of points of the same line that are visible on the graph at the same time. (example: 50)
    * num_of_lines: Number of lines plotted on the graph. (TODO: it depends on the anomaly detection algorithm so in future this component will be removed) (example: 4)
    * linestyles: A list, specifying the styles of the lines plotted. (example: ["wo", "r-", "b--", "b--"])
 
-2. **Histogram visualization:** It visualizes the quantity of values, from test_value stream. It requires the following arguments in the config file:
+2. **Histogram visualization:** It visualizes the quantity of values, from ftr_vector stream. It requires the following arguments in the config file:
    * num_of_bins: Number of bins in the histogram's range. (example: 50)
    * range: The interval shown on the histogram. (example: [0, 10])
    
@@ -136,14 +136,14 @@ The component that does the actual anomaly detection. It recieves data from a co
 * periodic_averages: A list (for different features) of lists (for different periods) of lists of length 2 where the first element is the period and the seconf is a list of N-s (number of samples of this periodic sequence from which we will calculate average). (example: [[[5, [2, 3]], [2, [4, 5]]] -> in this example we have one feature with two periods ( 5 and 2). The first one contains 2 and 3 elements of the sequence and the second one 4 and 5)
 * shifts: Specifies additional features to be constructed. In this case shifted values of a feature are included in the feature vector. (example: [[1, 2, 3], [4, 5]] -> this means that the first feature gets addtitonal features: value shifted for 1, value shifted for 2 and value shifted for 3 and the second feature gets value shifted for 4 and value shifted for 5)
 * "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires datetime format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]),
-1. **Border check:** A simple component that checks if the test_value falls within the specified interval and also gives warnings if it is close to the border. It requires the following arguments in the config file:
+1. **Border check:** A simple component that checks if the ftr_vector falls within the specified interval and also gives warnings if it is close to the border. It requires the following arguments in the config file:
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9])
    * UL: Upper limit of the specified interval. (example: 4)
    * LL: Lower limit of the specified interval. (example: 2)
 
 2. **EMA:** Calculates the exponential moving average of test values. It recieves data from a consumer component and sends output to output components. 
 EMA is calculated using past EMA values and the newest test value, giving more weigth to newer data. It is calculated in the following way:
-EMA_latest = test_value x smoothing + EMA_last x (1 - smoothing). Warnings are issued if the EMA approaches UL or LL.\
+EMA_latest = ftr_vector x smoothing + EMA_last x (1 - smoothing). Warnings are issued if the EMA approaches UL or LL.\
 It requires the following arguments in the config file:
    * N: Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5)
    * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9])
