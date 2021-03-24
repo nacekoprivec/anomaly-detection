@@ -6,6 +6,7 @@ from kafka import KafkaProducer
 import numpy as np
 import datetime
 import pandas as pd
+from ast import literal_eval
 
 #Define producer
 producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
@@ -16,14 +17,14 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 "load real data from Continental, send it to kafka topic"
 
 #df = pd.read_csv("../data/Braila_new_data/braila_flow211306H360.csv", delimiter = ",")
-df = pd.read_csv("../data/consumer/braila_test.csv", delimiter = ",")
+df = pd.read_csv("../data/consumer/braila_pressure5770.csv", delimiter = ",")
 
 #df['time'] = pd.to_datetime(df['time'],unit='s')
 #values = df['value']
 #times = df['time']
 
-values = df['analog2'].values
-times = df['timestamp']
+values = df['ftr_vector'].values
+times = df['timestamp'].values
 
 #df['time'] = pd.to_datetime(df['time'],unit='s')
 
@@ -51,14 +52,14 @@ for i in range(1000):
     #    ran = np.random.choice([-1, 1])*5
     #else:
     #    ran = 0
-    value = values[i]
+    value = literal_eval(values[i])
     print(value)
     anomaly = 0
     if (i%20 == 0):
         anomaly = -0.03
-    data = {"test_value" : [value],
+    data = {"ftr_vector" : value,
 			"timestamp": str(times[i])}
 
 	
-    producer.send('anomaly_detection1', value=data)
+    producer.send("pressure_topic_5770", value=data)
     sleep(1) #one data point each second

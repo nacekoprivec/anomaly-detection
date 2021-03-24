@@ -5,16 +5,21 @@
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": ["anomaly_detection1"],
+    "file_name":"Braila_nightly.csv",
     "anomaly_detection_alg": ["LinearFit()"],
     "anomaly_detection_conf": [{
         "input_vector_size": 1,
-        "warning_stages": [0.7, 0.9],
-        "N": 10,
-        "UL": 0.001,
-        "LL": -0.001,
+        "warning_stages": [0.5, 0.9],
+        "N": 7,
+        "UL": 5,
+        "LL": -5,
         "output": ["TerminalOutput()"],
+        "output": ["FileOutput()"],
         "output_conf": [
-            {}
+            {
+                "file_name": "Braila_nightly_LinearFits.csv",
+                "mode": "w"
+            }
         ],
         "visualization": "StatusPointsVisualization()",
         "visualization_conf":

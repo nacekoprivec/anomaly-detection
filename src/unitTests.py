@@ -518,7 +518,8 @@ class GANTestCase(unittest.TestCase):
                 "contamination": "auto",
                 "model_name": "GAN_Test",
                 "N_shifts": 9,
-                "N_latent": 3
+                "N_latent": 3,
+                "K": 0.95
             },
             "retrain_interval": 15,
             "samples_for_retrain": 15,

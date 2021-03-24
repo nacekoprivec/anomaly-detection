@@ -17,6 +17,7 @@ from tensorflow.keras import backend as K
 import tensorflow as tf
 from tensorflow import keras
 import pandas as pd
+from ast import literal_eval
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -66,7 +67,9 @@ class AnomalyDetectionAbstract(ABC):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         # print("test value: " + str(message_value['ftr_vector']))
         # print(message_value['ftr_vector'])
-        #print(len(message_value['ftr_vector']))
+        print(message_value['ftr_vector'])
+        print(len(message_value['ftr_vector']))
+        print(self.input_vector_size)
         assert len(message_value['ftr_vector']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
@@ -1423,18 +1426,23 @@ class GAN(AnomalyDetectionAbstract):
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:  
         #print("TrainingModel")
         if(train_dataframe is None):
-            df_ = pd.read_csv(train_file, skiprows=1, delimiter = ",", usecols = (0, 1,)).values
-            vals = df_[:,1]
-            self.min = min(vals)
-            self.max = max(vals)
-            self.avg = np.average(vals)
+            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
+            vals = df_['ftr_vector'].values
+            vals = np.array([np.array(xi) for xi in vals])
+            print(df_['ftr_vector'].values)
+            self.min = min(min(vals, key=min))
+            self.max = max(max(vals, key=max))
+            print(self.min)
+            print(self.max)
+            self.avg = (self.min + self.max)/2
 
-            vals = (np.array(vals) - self.avg)/(self.max - self.min)
+            values = (np.array(vals) - self.avg)/(self.max - self.min)
             
             #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
-            values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
-            timestamps = [df_[:,0][-len(values):]]
-            df = np.concatenate((np.array(timestamps).T,values), axis=1)
+            #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
+            timestamps = np.array(df_['timestamp'].values)
+            timestamps = np.reshape(timestamps, (-1, 1))
+            df = np.concatenate([timestamps,values], axis = 1)
         else:
             df = train_dataframe
         
