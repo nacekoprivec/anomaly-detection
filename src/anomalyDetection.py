@@ -671,6 +671,7 @@ class IsolationForest(AnomalyDetectionAbstract):
     samples_from_retrain: int
     retrain_interval: int
     samples_for_retrain: int
+    retrain_file: str
     trained: bool
     memory_dataframe: DataFrame
 
@@ -694,6 +695,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         # Retrain configuration
         if("retrain_interval" in conf):
             self.retrain_interval = conf["retrain_interval"]
+            self.retrain_file = conf["retrain_file"]
             self.samples_from_retrain = 0
             if("samples_for_retrain" in conf):
                 self.samples_for_retrain = conf["samples_for_retrain"]
@@ -826,13 +828,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             # print("RETRAIN")
             df = train_dataframe
 
-            # Save dataframe to csv file
-            name = "IsolationForest_last_" + str(self.samples_for_retrain)\
-                  + "_samples.csv"
-            dir = "./data"
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
-            path = dir + "/" + name
+            path = self.retrain_file
             df.to_csv(path,index=False)
 
             # Change the config file so the next time the model will train from that file
@@ -877,6 +873,9 @@ class PCA(AnomalyDetectionAbstract):
     N_components: int
     N_past_data: int
     PCA_transformed: List[float]
+
+    # Retrain information
+    retrain_file: str
 
     isolation_forest: "Isolation_forest"
 

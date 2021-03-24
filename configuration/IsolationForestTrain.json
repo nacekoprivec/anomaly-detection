@@ -18,6 +18,7 @@
         },
         "retrain_interval": 100,
         "samples_for_retrain": 2000,
+        "retrain_file": "./data/retrain/test.csv",
         "input_vector_size": 1,
         "shifts": [
             [

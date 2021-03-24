@@ -156,6 +156,7 @@ It requires the following arguments in the config file:
    * model_name: Name of the model, which will be saved in "models/" folder.
    * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100)
    * samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
+   * retrain_file: Path and file name of the file in which retrain data will be stored (example: "./data/retrain/test.csv").
 Example model train config: IsolationForestTrain.json
 Model train mode is activated if "load_model_from" is not in the config file, and "train_data" is defined. After training, the trained model will be used to continue with evaluation of data from consumer automatically.
 If we have a pre-trained model, we load it by specifying:

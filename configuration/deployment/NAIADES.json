@@ -18,7 +18,7 @@
     ],
     "anomaly_detection_conf": [
         {
-            "train_data": "data/training/braila_train.csv",
+            "train_data": "data/training/braila_pressure5770.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -30,6 +30,7 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
+            "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
@@ -47,7 +48,7 @@
             ]
         },
         {
-            "train_data": "data/training/braila_train.csv",
+            "train_data": "data/training/braila_pressure5771.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -59,6 +60,7 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
+            "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
@@ -76,7 +78,7 @@
             ]
         },
         {
-            "train_data": "data/training/braila_train.csv",
+            "train_data": "data/training/braila_pressure5772.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -88,6 +90,7 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
+            "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
@@ -105,7 +108,7 @@
             ]
         },
         {
-            "train_data": "data/training/braila_train.csv",
+            "train_data": "data/training/braila_pressure5773.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -117,6 +120,7 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
+            "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
