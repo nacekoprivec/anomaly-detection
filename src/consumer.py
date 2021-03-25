@@ -13,6 +13,8 @@ from json import loads
 import matplotlib.pyplot as plt
 from time import sleep
 import numpy as np
+import pandas as pd
+import datetime
 
 
 class ConsumerAbstract(ABC):
@@ -65,7 +67,9 @@ class ConsumerKafka(ConsumerAbstract):
     def configure(self, con: Dict[Any, Any] = None) -> None:
         if(con is None):
             print("No configuration was given")
-            return            
+            return 
+
+        self.filtering = con['filtering']
 
         self.topics = con['topics']
         self.consumer = KafkaConsumer(
@@ -100,11 +104,36 @@ class ConsumerKafka(ConsumerAbstract):
         for message in self.consumer:
             # Get topic and insert into correct algorithm
             topic = message.topic
-
             algorithm_indx = self.topics.index(topic)
+            
+            #check if this topic needs filtering
+            if(eval(self.filtering[algorithm_indx]) is not None):
+                #extract target time and tolerance
+                target_time, tolerance = eval(self.filtering[algorithm_indx])
+                message = self.filter_by_time(message, target_time, tolerance)
 
-            value = message.value
-            self.anomalies[algorithm_indx].message_insert(value)
+            
+            if message is not None:
+                value = message.value
+                self.anomalies[algorithm_indx].message_insert(value)
+
+    def filter_by_time(self, message, target_time, tolerance):
+        #onvert to timedelta objects
+        timestamp = pd.to_datetime(message.value['timestamp'])
+        time = timestamp.time()
+        target_time = datetime.time(target_time[0], target_time[1], target_time[2])
+        tol = datetime.timedelta(hours = tolerance[0], minutes = tolerance[1], seconds = tolerance[2])
+        date = datetime.date(1, 1, 1)
+        datetime1 = datetime.datetime.combine(date, time)
+        datetime2 = datetime.datetime.combine(date, target_time)
+
+        #return message only if timestamp is within tolerance
+        if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
+            return(message)
+        else:
+            return(None)
+
+
 
 
 class ConsumerFile(ConsumerAbstract):

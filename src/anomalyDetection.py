@@ -1438,11 +1438,8 @@ class GAN(AnomalyDetectionAbstract):
             df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
             vals = df_['ftr_vector'].values
             vals = np.array([np.array(xi) for xi in vals])
-            # print(df_['ftr_vector'].values)
             self.min = min(min(vals, key=min))
             self.max = max(max(vals, key=max))
-            # print(self.min)
-            # print(self.max)
             self.avg = (self.min + self.max)/2
 
             values = (np.array(vals) - self.avg)/(self.max - self.min)
