@@ -96,6 +96,7 @@ class ConsumerKafka(ConsumerAbstract):
             algorithm_indx += 1
             
     def read(self) -> None:
+        print("reading")
         for message in self.consumer:
             # Get topic and insert into correct algorithm
             topic = message.topic

@@ -11,31 +11,24 @@
         "features_braila_pressure5773_anomaly"
     ],
     "anomaly_detection_alg": [
-        "GAN()",
-        "GAN()",
-        "GAN()",
-        "GAN()"
+        "IsolationForest()",
+        "IsolationForest()",
+        "IsolationForest()",
+        "IsolationForest()"
     ],
     "anomaly_detection_conf": [
         {
             "train_data": "data/training/braila_pressure5770.csv",
-            "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "GAN_Braila_pressure_5770",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.95
+                "model_name": "IsolForestModel"
             },
             "retrain_interval": 2000,
-            "samples_for_retrain": 2000,
+            "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -49,23 +42,16 @@
         },
         {
             "train_data": "data/training/braila_pressure5771.csv",
-            "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "GAN_Braila_pressure_5771",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.95
+                "model_name": "IsolForestModel"
             },
             "retrain_interval": 2000,
-            "samples_for_retrain": 2000,
+            "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -79,23 +65,16 @@
         },
         {
             "train_data": "data/training/braila_pressure5772.csv",
-            "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "GAN_Braila_pressure_5772",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.95
+                "model_name": "IsolForestModel"
             },
             "retrain_interval": 2000,
-            "samples_for_retrain": 2000,
+            "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -109,23 +88,16 @@
         },
         {
             "train_data": "data/training/braila_pressure5773.csv",
-            "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "GAN_Braila_pressure_5773",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.95
+                "model_name": "IsolForestModel"
             },
             "retrain_interval": 2000,
-            "samples_for_retrain": 2000,
+            "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
