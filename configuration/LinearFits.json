@@ -14,7 +14,6 @@
         "UL": 5,
         "LL": -5,
         "output": ["TerminalOutput()"],
-        "output": ["FileOutput()"],
         "output_conf": [
             {
                 "file_name": "Braila_nightly_LinearFits.csv",

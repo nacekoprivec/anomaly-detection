@@ -6,6 +6,7 @@
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": ["pressure_topic_5770"],
     "anomaly_detection_alg": ["GAN()"],
+    "filtering":["[[4, 0, 0], [0, 0, 30]]"],
     "anomaly_detection_conf": [
         {
             "train_data": "data/training/braila_pressure5770.csv",
