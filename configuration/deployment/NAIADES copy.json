@@ -5,20 +5,22 @@
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": [
-        "features_braila_pressure5770_anomaly",
-        "features_braila_pressure5771_anomaly",
-        "features_braila_pressure5772_anomaly",
-        "features_braila_pressure5773_anomaly"
+        "pressure topic 5770",
+        "pressure topic 5771",
+        "pressure topic 5772",
+        "pressure topic 5773",
+        "braila flow night 211306H360"
     ],
     "anomaly_detection_alg": [
         "GAN()",
         "GAN()",
         "GAN()",
-        "GAN()"
+        "GAN()",
+        "Welford()"
     ],
     "anomaly_detection_conf": [
         {
-            "train_data": "data/training/braila_pressure5770.csv",
+            "train_data": "data/training/braila_train.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -30,25 +32,20 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
-            "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5770"
-                },
-                {
-                    "file_name": "braila_pressure_5770_anomalies.csv",
-                    "mode": "w"
                 }
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5771.csv",
+            "train_data": "data/training/braila_train.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -60,25 +57,20 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
-            "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5771"
-                },
-                {
-                    "file_name": "braila_pressure_5771_anomalies.csv",
-                    "mode": "w"
                 }
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5772.csv",
+            "train_data": "data/training/braila_train.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -90,25 +82,20 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
-            "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5772"
-                },
-                {
-                    "file_name": "braila_pressure_5772_anomalies.csv",
-                    "mode": "w"
                 }
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5773.csv",
+            "train_data": "data/training/braila_train.csv",
             "train_conf":{
                 "max_features": 1,
                 "max_samples": 15000,
@@ -120,20 +107,27 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
-            "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5773"
-                },
+                }
+            ]
+        },
+        {
+            "input_vector_size": 1,
+            "warning_stages": [0.7, 0.9],
+            "N": 7,
+            "X": 6,
+            "output": ["KafkaOutput()"],
+            "output_conf": [
                 {
-                    "file_name": "braila_pressure_5773_anomalies.csv",
-                    "mode": "w"
+                    "node_id": "braila_flow_211306H360"
                 }
             ]
         }

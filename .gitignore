@@ -193,3 +193,6 @@ log/
 
 # Directory containing retrain data
 src/data/
+
+# retrain data
+data/retrain
