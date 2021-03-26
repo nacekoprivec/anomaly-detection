@@ -69,7 +69,10 @@ class ConsumerKafka(ConsumerAbstract):
             print("No configuration was given")
             return 
 
-        self.filtering = con['filtering']
+        if("filtering" in con):
+            self.filtering = con['filtering']
+        else:
+            self.filtering = None
 
         self.topics = con['topics']
         self.consumer = KafkaConsumer(
@@ -107,7 +110,7 @@ class ConsumerKafka(ConsumerAbstract):
             algorithm_indx = self.topics.index(topic)
             
             #check if this topic needs filtering
-            if(eval(self.filtering[algorithm_indx]) is not None):
+            if(self.filtering is not None and eval(self.filtering[algorithm_indx]) is not None):
                 #extract target time and tolerance
                 target_time, tolerance = eval(self.filtering[algorithm_indx])
                 message = self.filter_by_time(message, target_time, tolerance)
