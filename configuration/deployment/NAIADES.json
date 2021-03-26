@@ -23,7 +23,7 @@
                 "max_features": 10,
                 "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "IsolForestModel"
+                "model_name": "IsolForestModelbraila_pressure5770"
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
@@ -32,7 +32,8 @@
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
-                    "node_id": "braila_pressure_5770"
+                    "node_id": "braila_pressure_5770",
+                    "send_ok": false
                 },
                 {
                     "file_name": "braila_pressure_5770_anomalies.csv",
@@ -46,7 +47,7 @@
                 "max_features": 10,
                 "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "IsolForestModel"
+                "model_name": "IsolForestModelbraila_pressure5771"
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
@@ -55,7 +56,8 @@
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
-                    "node_id": "braila_pressure_5771"
+                    "node_id": "braila_pressure_5771",
+                    "send_ok": false
                 },
                 {
                     "file_name": "braila_pressure_5771_anomalies.csv",
@@ -69,7 +71,7 @@
                 "max_features": 10,
                 "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "IsolForestModel"
+                "model_name": "IsolForestModelraila_pressure5772"
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
@@ -78,7 +80,8 @@
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
-                    "node_id": "braila_pressure_5772"
+                    "node_id": "braila_pressure_5772",
+                    "send_ok": false
                 },
                 {
                     "file_name": "braila_pressure_5772_anomalies.csv",
@@ -92,7 +95,7 @@
                 "max_features": 10,
                 "max_samples": 8000,
                 "contamination": "auto",
-                "model_name": "IsolForestModel"
+                "model_name": "IsolForestModelbraila_pressure5773"
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
@@ -101,7 +104,8 @@
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
-                    "node_id": "braila_pressure_5773"
+                    "node_id": "braila_pressure_5773",
+                    "send_ok": false
                 },
                 {
                     "file_name": "braila_pressure_5773_anomalies.csv",
