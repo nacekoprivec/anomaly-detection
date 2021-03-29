@@ -46,17 +46,24 @@ def create_message(timestamp, value):
     }
     return message
 
-def create_testing_file(filepath, withzero = False):
-    timestamps = [1459926000 + 3600*x for x in range(50)]
-    values = [1]*50
+def create_testing_file(filepath, withzero = False, FV_length = None):
+    timestamps = [1459926000 + 3600*x for x in range(100)]
+
+    values = [1.0]*100
     if(withzero):
-        values[-1] = 0
-    data = {
-        'timestamp': timestamps,
-        'ftr_vector': values
-    }
-    testset = pd.DataFrame(data = data)
-    testset.to_csv(filepath, index = False)
+        values[-1] = 0.0
+
+    vals = []
+    timest = []
+    if (FV_length is not None):
+        for i in range(FV_length, len(values)):
+            vals.append(values[i-FV_length+1:i+1])
+            timest.append(timestamps[i])
+        values = vals
+        timestamps = timest
+    
+    df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': values})
+    df.to_csv(filepath, index = False)
 
     return filepath
 
@@ -508,7 +515,7 @@ class GANTestCase(unittest.TestCase):
             if not os.path.isdir("unittest"):
                 os.makedirs("unittest")
 
-            create_testing_file("./unittest/GANTestData.csv", withzero = True)
+            create_testing_file("./unittest/GANTestData.csv", withzero = True, FV_length=10)
 
             configuration = {
             "train_data": "./unittest/GANTestData.csv",
@@ -519,7 +526,7 @@ class GANTestCase(unittest.TestCase):
                 "model_name": "GAN_Test",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 0.8
             },
             "retrain_interval": 15,
             "samples_for_retrain": 15,
@@ -572,7 +579,7 @@ class GANTestFunctionality(GANTestCase):
         for i in range(len(test_array)):
             message = create_message(str(datetime.now()), test_array)
             self.model.message_insert(message)
-            self.assertGreater(self.model.GAN_error, 1)
+            self.assertEqual(self.model.status_code, -1)
 
 
 class PCATestCase(unittest.TestCase):

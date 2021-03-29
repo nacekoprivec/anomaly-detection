@@ -67,9 +67,11 @@ class AnomalyDetectionAbstract(ABC):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         # print("test value: " + str(message_value['ftr_vector']))
         # print(message_value['ftr_vector'])
-        print(message_value['ftr_vector'])
-        print(len(message_value['ftr_vector']))
-        print(self.input_vector_size)
+        
+        
+        #print(message_value['ftr_vector'])
+        #print(len(message_value['ftr_vector']))
+        #print(self.input_vector_size)
         assert len(message_value['ftr_vector']) == self.input_vector_size, \
             "Given test value does not satisfy input vector size"
 
@@ -1331,6 +1333,9 @@ class GAN(AnomalyDetectionAbstract):
                             initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
+        if(self.min != self.max):
+            message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
+            print(message_value)
         super().message_insert(message_value)
 
         if(self.use_cols is not None):
@@ -1343,7 +1348,7 @@ class GAN(AnomalyDetectionAbstract):
 
         timestamp = message_value["timestamp"]
 
-        feature_vector = list((np.array(value) - self.avg)/(self.max - self.min))
+        feature_vector = list(value)
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -1411,7 +1416,7 @@ class GAN(AnomalyDetectionAbstract):
     @staticmethod
     def mse(pre_GAN, post_GAN):
         #mean squared error - loss
-        mse = np.sum((np.add(np.array(pre_GAN), -np.array(post_GAN))**2))
+        mse = np.sum((np.add(np.array(pre_GAN), -np.array(post_GAN))**2))/float(len(pre_GAN))
         return(mse)
 
     def save_model(self, filename):
@@ -1432,7 +1437,10 @@ class GAN(AnomalyDetectionAbstract):
             self.max = max(max(vals, key=max))
             self.avg = (self.min + self.max)/2
 
-            values = (np.array(vals) - self.avg)/(self.max - self.min)
+            if(self.min != self.max):
+                values = (np.array(vals) - self.avg)/(self.max - self.min)
+            else:
+                values = np.array(vals)
             
             #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
             #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]

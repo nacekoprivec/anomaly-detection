@@ -117,7 +117,10 @@ class ConsumerKafka(ConsumerAbstract):
                 self.anomalies[algorithm_indx].message_insert(value)
 
     def filter_by_time(self, message, target_time, tolerance):
-        #onvert to timedelta objects
+        #convert to timedelta objects
+
+        #datetime.fromtimestamp
+
         timestamp = pd.to_datetime(message.value['timestamp'])
         time = timestamp.time()
         target_time = datetime.time(target_time[0], target_time[1], target_time[2])
