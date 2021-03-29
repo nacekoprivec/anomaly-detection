@@ -448,6 +448,7 @@ class IsolForestTestCase(unittest.TestCase):
             "contamination": "0.1",
             "model_name": "IsolForestTestModel"
         },
+        "retrain_file": "./unittest/IsolationForestRetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 5,
         "input_vector_size": 1,
