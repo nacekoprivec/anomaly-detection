@@ -66,6 +66,9 @@ Consumer components differ in where the data is read from.
    * timestamp: Contains a timestamp of the data in datastream in datetime format.
    * ftr_vector: Contains an array (a feature vector) of values.
 
+Kafka consumer also has the option to filter data stored in the specified topic. To read only the messages with timestamps in a specific range, we can specify the field "filtering", with the target time and tolerance. Only the messages with time of day +- tolerance will be inserted into the algorithm. The configuration file must specify:
+   * filtering: An array of filtering parameters for each topic - either "None" or array of shape "[[target_time_hour, ...minute, second], [tolerance_hour, ...minute, ...second]]" . (example: ["[[1, 0, 0], [0, 0, 30]]"] - will read only data with time of day 00:59:30 - 01:00:30) 
+
 2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., ftr_vector": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
    * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv")
 
@@ -161,7 +164,8 @@ Example model train config: IsolationForestTrain.json
 Model train mode is activated if "load_model_from" is not in the config file, and "train_data" is defined. After training, the trained model will be used to continue with evaluation of data from consumer automatically.
 If we have a pre-trained model, we load it by specifying:
    * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be and vice versa. If neither of them are provided the retrain interval must be and the model will output undefiner results untill the first retrain.  (example: "models/IsolationForest")
-in the config file. Example config: IsolationForest.json
+in the config file. Example config: IsolationForest.json <br>
+If the model is to be trained from file, the file must have 2 columns, timestamp and ftr_vector where ftr_vector holds a feature vector in string format. 
 
 4. **PCA + Isolation forest:** PCA (Principal component analysis) projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). First, PCA is applied to the input data followed by the Isolation forest algorithm. In addition to the Isolation forest requirements, the following parameters must be specified in the config file: \
     * N_components: dimensionality of the PCA output space (example: 5)
@@ -197,6 +201,8 @@ It requires the following arguments in the config file:\
     * N_latent: Dimensionality of the latent space (example: 3)
     * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95)
 
+#### Training files:
+TODO section describing format of training files
 
 ## Examples:
 For configuration examples see configuration folder and inside it READEME file. <br> <br>

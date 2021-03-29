@@ -13,9 +13,9 @@ from pandas.core.frame import DataFrame
 from scipy.signal.lti_conversion import _atleast_2d_or_none
 import sklearn.ensemble
 from scipy import signal
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
+#from tensorflow.keras import backend as K
+#import tensorflow as tf
+#from tensorflow import keras
 import pandas as pd
 from ast import literal_eval
 
@@ -841,13 +841,23 @@ class IsolationForest(AnomalyDetectionAbstract):
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
 
+            df = df.to_numpy()
         elif(train_file is not None):
             # Load data from location stored in "filename"
-            df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+            
+            # Changed 25.3.
+            # df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+
+            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
+            vals = df_['ftr_vector'].values
+            vals = np.array([np.array(xi) for xi in vals])
+            
+            timestamps = np.array(df_['timestamp'].values)
+            timestamps = np.reshape(timestamps, (-1, 1))
+            df = np.concatenate([timestamps,vals], axis = 1)
         else:
             raise Exception("train_file or train_dataframe must be specified.")
         
-        df = df.to_numpy()
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])
 
