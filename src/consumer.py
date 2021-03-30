@@ -5,8 +5,16 @@ import sys
 
 from typing import Any, Dict, List
 
-from src.anomalyDetection import AnomalyDetectionAbstract, EMA, BorderCheck,\
-        IsolationForest, Welford, Filtering, PCA, Hampel, GAN, LinearFit
+# Algorithm imports
+from src.anomalyDetection import AnomalyDetectionAbstract
+from src.borderCheck import BorderCheck
+from src.welford import Welford
+from src.EMA import EMA
+from src.filtering import Filtering
+from src.isolationForest import IsolationForest
+from src.GAN import GAN
+from src.PCA import PCA
+from src.hampel import Hampel
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads

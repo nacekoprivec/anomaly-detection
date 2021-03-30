@@ -15,8 +15,19 @@ import json
 import shutil
 
 import unittest
-from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
-    GAN, PCA, Hampel, AnomalyDetectionAbstract
+
+# Algorithm imports
+from anomalyDetection import AnomalyDetectionAbstract
+from borderCheck import BorderCheck
+from welford import Welford
+from EMA import EMA
+from filtering import Filtering
+from isolationForest import IsolationForest
+from GAN import GAN
+from PCA import PCA
+from hampel import Hampel
+
+# Normalization imports
 from normalization import LastNAverage, PeriodicLastNAverage
 
 
