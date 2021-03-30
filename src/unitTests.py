@@ -15,6 +15,7 @@ import json
 import shutil
 
 import unittest
+import tensorflow as tf
 
 # Algorithm imports
 from anomalyDetection import AnomalyDetectionAbstract
@@ -428,6 +429,9 @@ class Filtering0TestFunctionality(Filtering0TestCase):
 
 class IsolForestTestCase(unittest.TestCase):
     def setUp(self):
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
 
@@ -502,35 +506,39 @@ class IsolForestTestFunctionality(IsolForestTestCase):
 
 class GANTestCase(unittest.TestCase):
     def setUp(self):
-            # Make unittest directory
-            if not os.path.isdir("unittest"):
-                os.makedirs("unittest")
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+        tf.random.set_seed(3241)
 
-            create_testing_file("./unittest/GANTestData.csv", withzero = True, FV_length=10)
+        # Make unittest directory
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
 
-            configuration = {
-            "train_data": "./unittest/GANTestData.csv",
-            "train_conf":{
-                "max_features": 1,
-                "max_samples": 5,
-                "contamination": "auto",
-                "model_name": "GAN_Test",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.8
-            },
-            "retrain_interval": 15,
-            "samples_for_retrain": 15,
-            "input_vector_size": 10,
-            "output": [],
-            "output_conf": [{}]
-            }
-            self.f = "models"
+        create_testing_file("./unittest/GANTestData.csv", withzero = True, FV_length=10)
 
-            #Create a temporary /models folder.
-            if not os.path.isdir(self.f):
-                os.makedirs(self.f)
-            self.model = create_model_instance("GAN()", configuration, save = True)
+        configuration = {
+        "train_data": "./unittest/GANTestData.csv",
+        "train_conf":{
+            "max_features": 1,
+            "max_samples": 5,
+            "contamination": "auto",
+            "model_name": "GAN_Test",
+            "N_shifts": 9,
+            "N_latent": 3,
+            "K": 0.8
+        },
+        "retrain_interval": 15,
+        "samples_for_retrain": 15,
+        "input_vector_size": 10,
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("GAN()", configuration, save = True)
 
 
     def tearDown(self):
