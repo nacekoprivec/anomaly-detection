@@ -63,7 +63,7 @@ Consumer components differ in where the data is read from.
    * topics: A list of topics streaming the data. (example ["anomaly_detection"])
 
    A message in kafka topic must contain two fields:
-   * timestamp: Contains a timestamp of the data in datastream in datetime format.
+   * timestamp: Contains a timestamp of the data in datastream in unix timestamp format.
    * ftr_vector: Contains an array (a feature vector) of values.
 
 Kafka consumer also has the option to filter data stored in the specified topic. To read only the messages with timestamps in a specific range, we can specify the field "filtering", with the target time and tolerance. Only the messages with time of day +- tolerance will be inserted into the algorithm. The configuration file must specify:

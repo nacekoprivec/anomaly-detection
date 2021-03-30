@@ -61,6 +61,8 @@ def create_testing_file(filepath, withzero = False, FV_length = None):
             timest.append(timestamps[i])
         values = vals
         timestamps = timest
+    else:
+        values = [[1.0]]*100
     
     df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': values})
     df.to_csv(filepath, index = False)
@@ -78,6 +80,7 @@ def create_testing_file_feature_construction(filepath):
     testset.to_csv(filepath, index = False)
 
     return filepath
+
 
 class BCTestCase(unittest.TestCase):
 
@@ -435,20 +438,21 @@ class Filtering0TestFunctionality(Filtering0TestCase):
 
 class IsolForestTestCase(unittest.TestCase):
     def setUp(self):
-        if not os.path.isdir("unittest"):
-            os.makedirs("unittest")
+        if not os.path.isdir("unittestIF"):
+            os.makedirs("unittestIF")
 
-        create_testing_file("./unittest/IsolForestTestData.csv", withzero = True)
+        create_testing_file("./unittestIF/IsolForestTestData.csv",
+                            withzero=True)
 
         configuration = {
-        "train_data": "./unittest/IsolForestTestData.csv",
+        "train_data": "./unittestIF/IsolForestTestData.csv",
         "train_conf": {
             "max_features": 3,
             "max_samples": 5,
             "contamination": "0.1",
             "model_name": "IsolForestTestModel"
         },
-        "retrain_file": "./unittest/IsolationForestRetrainData.csv",
+        "retrain_file": "./unittestIF/IsolationForestRetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 5,
         "input_vector_size": 1,
@@ -469,7 +473,7 @@ class IsolForestTestCase(unittest.TestCase):
             shutil.rmtree(self.f)
 
         # Delete unittest folder
-        shutil.rmtree("unittest")
+        #shutil.rmtree("unittestIF")
 
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
@@ -493,19 +497,22 @@ class IsolForestTestClassPropperties(IsolForestTestCase):
 class IsolForestTestFunctionality(IsolForestTestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1]*10
+        test_array = [1.0]*10
         expected_status = [2, 2, 2, 2, 1, 1, 1, 1, 1, 1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
     def test_errors(self):
         #insert different values as in train set (status should be -1).
-        test_array = [0]*10
+        test_array = [0.0]*10
         expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
+            print(message)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
