@@ -15,8 +15,20 @@ import json
 import shutil
 
 import unittest
-from anomalyDetection import BorderCheck, Welford, EMA, Filtering, IsolationForest,\
-    GAN, PCA, Hampel, AnomalyDetectionAbstract
+import tensorflow as tf
+
+# Algorithm imports
+from anomalyDetection import AnomalyDetectionAbstract
+from borderCheck import BorderCheck
+from welford import Welford
+from EMA import EMA
+from filtering import Filtering
+from isolationForest import IsolationForest
+from GAN import GAN
+from PCA import PCA
+from hampel import Hampel
+
+# Normalization imports
 from normalization import LastNAverage, PeriodicLastNAverage
 
 
@@ -417,21 +429,24 @@ class Filtering0TestFunctionality(Filtering0TestCase):
 
 class IsolForestTestCase(unittest.TestCase):
     def setUp(self):
-        if not os.path.isdir("unittestIF"):
-            os.makedirs("unittestIF")
+        # Set random seed so results are reproducable
+        np.random.seed(0)
 
-        create_testing_file("./unittestIF/IsolForestTestData.csv",
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
+
+        create_testing_file("./unittest/IsolForestTestData.csv",
                             withzero=True)
 
         configuration = {
-        "train_data": "./unittestIF/IsolForestTestData.csv",
+        "train_data": "./unittest/IsolForestTestData.csv",
         "train_conf": {
             "max_features": 7,
             "max_samples": 5,
             "contamination": "0.1",
             "model_name": "IsolForestTestModel"
         },
-        "retrain_file": "./unittestIF/IsolationForestRetrainData.csv",
+        "retrain_file": "./unittest/IsolationForestRetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 5,
         "input_vector_size": 1,
@@ -452,7 +467,7 @@ class IsolForestTestCase(unittest.TestCase):
             shutil.rmtree(self.f)
 
         # Delete unittest folder
-        #shutil.rmtree("unittestIF")
+        shutil.rmtree("unittest")
 
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
@@ -491,32 +506,36 @@ class IsolForestTestFunctionality(IsolForestTestCase):
 
 class GANTestCase(unittest.TestCase):
     def setUp(self):
-            # Make unittest directory
-            if not os.path.isdir("unittest"):
-                os.makedirs("unittest")
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+        tf.random.set_seed(3241)
 
-            create_testing_file("./unittest/GANTestData.csv", withzero = True, FV_length=10)
+        # Make unittest directory
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
 
-            configuration = {
-            "train_data": "./unittest/GANTestData.csv",
-            "train_conf":{
-                "model_name": "GAN_Test",
-                "N_shifts": 9,
-                "N_latent": 3,
-                "K": 0.8
-            },
-            "retrain_interval": 15,
-            "samples_for_retrain": 15,
-            "input_vector_size": 10,
-            "output": [],
-            "output_conf": [{}]
-            }
-            self.f = "models"
+        create_testing_file("./unittest/GANTestData.csv", withzero = True, FV_length=10)
 
-            #Create a temporary /models folder.
-            if not os.path.isdir(self.f):
-                os.makedirs(self.f)
-            self.model = create_model_instance("GAN()", configuration, save = True)
+        configuration = {
+        "train_data": "./unittest/GANTestData.csv",
+        "train_conf":{
+            "model_name": "GAN_Test",
+            "N_shifts": 9,
+            "N_latent": 3,
+            "K": 0.8
+        },
+        "retrain_interval": 15,
+        "samples_for_retrain": 15,
+        "input_vector_size": 10,
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("GAN()", configuration, save = True)
 
 
     def tearDown(self):
