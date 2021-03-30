@@ -63,6 +63,9 @@ def create_testing_file(filepath, withzero = False, FV_length = None):
         timestamps = timest
     else:
         values = [[1.0]]*100
+        if(withzero):
+            values[-1] = [0.0]
+
     
     df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': values})
     df.to_csv(filepath, index = False)
@@ -447,7 +450,7 @@ class IsolForestTestCase(unittest.TestCase):
         configuration = {
         "train_data": "./unittestIF/IsolForestTestData.csv",
         "train_conf": {
-            "max_features": 3,
+            "max_features": 7,
             "max_samples": 5,
             "contamination": "0.1",
             "model_name": "IsolForestTestModel"
@@ -507,12 +510,11 @@ class IsolForestTestFunctionality(IsolForestTestCase):
 
     def test_errors(self):
         #insert different values as in train set (status should be -1).
-        test_array = [0.0]*10
+        test_array = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0]
         expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_array[i]])
-            print(message)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 

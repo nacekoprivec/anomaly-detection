@@ -776,8 +776,9 @@ class IsolationForest(AnomalyDetectionAbstract):
         else:
             feature_vector = np.array(feature_vector)
             # Model prediction
+            #print(feature_vector)
             isolation_score = self.model.predict(feature_vector.reshape(1, -1))
-            print(isolation_score)
+            #print(isolation_score)
             if(isolation_score == 1):
                 status = self.OK
                 status_code = self.OK_CODE
@@ -1486,7 +1487,6 @@ class GAN(AnomalyDetectionAbstract):
             timestamps = np.array(df_['timestamp'].values)
             timestamps = np.reshape(timestamps, (-1, 1))
             df = np.concatenate([timestamps,values], axis = 1)
-            print(df)
         elif(train_dataframe is not None):
             # This is in case of retrain
             df = train_dataframe
