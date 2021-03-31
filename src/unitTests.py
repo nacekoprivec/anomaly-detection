@@ -527,8 +527,9 @@ class GANTestCase(unittest.TestCase):
             "N_latent": 3,
             "K": 0.8
         },
-        "retrain_interval": 15,
-        "samples_for_retrain": 15,
+        "retrain_file": "./unittest/GANRetrainData.csv",
+        "retrain_interval": 10,
+        "samples_for_retrain": 10,
         "input_vector_size": 10,
         "output": [],
         "output_conf": [{}]
@@ -559,8 +560,8 @@ class GANTestClassPropperties(GANTestCase):
         self.assertEqual(self.model.max_samples, 5)
         self.assertEqual(self.model.N_shifts, 9)
         self.assertEqual(self.model.N_latent, 3)
-        self.assertEqual(self.model.retrain_interval, 15)
-        self.assertEqual(self.model.samples_for_retrain, 15)
+        self.assertEqual(self.model.retrain_interval, 10)
+        self.assertEqual(self.model.samples_for_retrain, 10)
 
 
 class GANTestFunctionality(GANTestCase):
@@ -568,7 +569,8 @@ class GANTestFunctionality(GANTestCase):
         #Insert same values as in train set (status should be 1).
         test_array = [1]*10
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), test_array)
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, 1)
 
@@ -576,7 +578,8 @@ class GANTestFunctionality(GANTestCase):
         #Insert same values as in train set (status should be 1).
         test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), test_array)
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, -1)
 

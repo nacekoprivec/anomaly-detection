@@ -76,6 +76,7 @@ class IsolationForest(AnomalyDetectionAbstract):
                 self.samples_for_retrain = None
 
             # Retrain memory initialization
+            # Retrain memory is of shape [timestamp, ftr_vector]
             if("train_data" in conf):
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
                                                     skiprows=0,
@@ -84,9 +85,7 @@ class IsolationForest(AnomalyDetectionAbstract):
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
-                columns = ["timestamp"]
-                for i in range(self.input_vector_size):
-                    columns.append(str(i))
+                columns = ["timestamp", "ftr_vector"]
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
             self.retrain_interval = None
