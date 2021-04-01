@@ -129,23 +129,27 @@ class BCTestFunctionality(BCTestCase):
 
     def test_OK(self):
         #Test a value at the center of the range. Should give OK status.
-        message = create_message(str(datetime.now()), [3])
+        message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                 [3])
         self.model.message_insert(message)
         self.assertEqual(self.model.status_code, 1)
 
     def test_outliers(self):
         #Above UL. Should give Error (-1 status code).
-        message = create_message(str(datetime.now()), [5])
+        message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                 [5])
         self.model.message_insert(message)
         self.assertEqual(self.model.status_code, -1)
 
         #Below LL. Should give Error.
-        message = create_message(str(datetime.now()), [1])
+        message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                 [1])
         self.model.message_insert(message)
         self.assertEqual(self.model.status_code, -1)
 
         #Close to LL. Should give warning (0 status code)
-        message = create_message(str(datetime.now()), [2.1])
+        message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                 [2.1])
         self.model.message_insert(message)
         self.assertEqual(self.model.status_code, 0)
 
@@ -185,7 +189,8 @@ class WelfordDefinedNTestFunctionality(WelfordDefinedNTestCase):
         test_data = [1, 2, 3, 4, 1, 2]
 
         for data_indx in range(len(test_data)):
-            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_data[data_indx]])
             self.model.message_insert(message)
 
             if(data_indx < 4):
@@ -197,7 +202,8 @@ class WelfordDefinedNTestFunctionality(WelfordDefinedNTestCase):
         test_data = [1, 2, 3, 4, -0.1, 5.73]
 
         for data_indx in range(len(test_data)):
-            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_data[data_indx]])
             self.model.message_insert(message)
 
             if(data_indx < 4):
@@ -238,7 +244,8 @@ class WelfordUndefinedNTestFunctionality(WelfordUndefinedNTestCase):
         test_data = [1, 2, 2.4, 2.6, 1, 3.1]
 
         for data_indx in range(len(test_data)):
-            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_data[data_indx]])
             self.model.message_insert(message)
             
             # Check memory length
@@ -253,7 +260,8 @@ class WelfordUndefinedNTestFunctionality(WelfordUndefinedNTestCase):
         test_data = [1, 2, 3, -1, 5, -2.5]
 
         for data_indx in range(len(test_data)):
-            message = create_message(str(datetime.now()), [test_data[data_indx]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_data[data_indx]])
             self.model.message_insert(message)
 
             # Check memory length
@@ -300,7 +308,8 @@ class EMATestFunctionality(EMATestCase):
         #Insert values in the middle of the range. All should have no error.
         test_array = [3, 3, 3]
         for i in test_array:
-            message = create_message(str(datetime.now()), [i])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, 1)
 
@@ -309,7 +318,8 @@ class EMATestFunctionality(EMATestCase):
         test_array = [3, 4, 4, 4, 4, 5, 5, 5]
         expected_status = [1, 1, 1, 0, 0, -1, -1, -1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
@@ -586,6 +596,9 @@ class GANTestFunctionality(GANTestCase):
 
 class PCATestCase(unittest.TestCase):
     def setUp(self):
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+
         # Make unittest directory
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
@@ -602,8 +615,8 @@ class PCATestCase(unittest.TestCase):
             "N_components": 3
         },
         "shifts": [[1, 2, 3, 4, 5, 6]],
-        "retrain_interval": 15,
-        "samples_for_retrain": 15,
+        "retrain_interval": 10,
+        "samples_for_retrain": 10,
         "input_vector_size": 1, 
         "output": [],
         "output_conf": [{}]
@@ -630,8 +643,8 @@ class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
         self.assertEqual(self.model.max_features, 3)
         self.assertEqual(self.model.max_samples, 15)
-        self.assertEqual(self.model.retrain_interval, 15)
-        self.assertEqual(self.model.samples_for_retrain, 15)
+        self.assertEqual(self.model.retrain_interval, 10)
+        self.assertEqual(self.model.samples_for_retrain, 10)
 
 
 class PCATestFunctionality(PCATestCase):
@@ -640,7 +653,8 @@ class PCATestFunctionality(PCATestCase):
         test_array = [1]*10
         expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
@@ -649,7 +663,8 @@ class PCATestFunctionality(PCATestCase):
         test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
         expected_status = [2, 2, 2, 2, 2, 2, 1, -1, 1, -1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now()), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 

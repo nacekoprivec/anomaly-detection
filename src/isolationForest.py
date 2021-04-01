@@ -145,9 +145,7 @@ class IsolationForest(AnomalyDetectionAbstract):
         else:
             feature_vector = np.array(feature_vector)
             # Model prediction
-            #print(feature_vector)
             isolation_score = self.model.predict(feature_vector.reshape(1, -1))
-            #print(isolation_score)
             if(isolation_score == 1):
                 status = self.OK
                 status_code = self.OK_CODE
@@ -229,7 +227,6 @@ class IsolationForest(AnomalyDetectionAbstract):
         # Extract list of ftr_vectors and list of timestamps
         ftr_vector_list = df["ftr_vector"].tolist()
         timestamp_list = df["timestamp"].tolist()
-
         # Create a new  dataframe with features as columns
         df = pd.DataFrame.from_records(ftr_vector_list)
         df.insert(loc=0, column="timestamp", value=timestamp_list)

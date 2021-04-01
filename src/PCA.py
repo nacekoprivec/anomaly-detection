@@ -28,6 +28,8 @@ from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
 from normalization import NormalizationAbstract, LastNAverage,\
     PeriodicLastNAverage
+from isolationForest import IsolationForest
+
 
 class PCA(AnomalyDetectionAbstract):
     name: str = "PCA"
@@ -39,8 +41,6 @@ class PCA(AnomalyDetectionAbstract):
 
     # Retrain information
     retrain_file: str
-
-    isolation_forest: "Isolation_forest"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -69,16 +69,15 @@ class PCA(AnomalyDetectionAbstract):
                 self.samples_for_retrain = None
 
             # Retrain memory initialization
+            # Retrain memory is of shape [timestamp, ftr_vector]
             if("train_data" in conf):
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
-                                                    skiprows=1,
+                                                    skiprows=0,
                                                     delimiter=",", usecols = (0, 1,))
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
-                columns = ["timestamp"]
-                for i in range(self.input_vector_size):
-                    columns.append(str(i))
+                columns = ["timestamp", "ftr_vector"]
                 self.memory_dataframe = pd.DataFrame(columns=columns)
         else:
             self.retrain_interval = None
@@ -153,13 +152,16 @@ class PCA(AnomalyDetectionAbstract):
 
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
-            # print(self.samples_from_retrain)
-            # print(self.memory_dataframe.shape)
-            # Add to memory
-            to_save = [timestamp] + value
+            # Add to memory (timestamp and ftr_vector seperate so it does not
+            # ceuse error)
+
             samples_in_memory = self.memory_dataframe.shape[0]
-            self.memory_dataframe.loc[samples_in_memory] = to_save
-            self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
+            self.memory_dataframe.at[samples_in_memory, "timestamp"] = timestamp
+            self.memory_dataframe.at[samples_in_memory, "ftr_vector"] = value
+            
+            # Cut if needed
+            if(self.samples_for_retrain is not None):
+                self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             self.samples_from_retrain += 1
 
             # Retrain if needed (and possible)
@@ -188,35 +190,36 @@ class PCA(AnomalyDetectionAbstract):
 
     def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:
         if(train_dataframe is not None):
-            # This is in case of retrain (not yet operational)
-            # TODO
+            # This is in case of retrain
             df = train_dataframe
 
-            """# Save train_dataframe to file and change the config file so the
+            # Save train_dataframe to file and change the config file so the
             # next time the model will train from that file
             path = self.retrain_file
             df.to_csv(path,index=False)
+
             with open("configuration/" + self.configuration_location) as conf:
                 whole_conf = json.load(conf)
                 whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
             
             with open("configuration/" + self.configuration_location, "w") as conf:
-                json.dump(whole_conf, conf)"""
+                json.dump(whole_conf, conf)
+
         elif(train_file is not None):
             df_ = pd.read_csv(train_file, skiprows=0, delimiter=",",
                              usecols=(0, 1,),
                              converters={"ftr_vector": literal_eval})
-            
-            # Extract list of ftr_vectors and list of timestamps
-            ftr_vector_list = df_["ftr_vector"].tolist()
-            timestamp_list = df_["timestamp"].tolist()
 
-            # Create a new  dataframe with features as columns
-            df = pd.DataFrame.from_records(ftr_vector_list)
-            df.insert(loc=0, column="timestamp", value=timestamp_list)
         else:
             raise Exception("train_file or train_dataframe must be specified.")
         
+        # Extract list of ftr_vectors and list of timestamps
+        ftr_vector_list = df_["ftr_vector"].tolist()
+        timestamp_list = df_["timestamp"].tolist()
+        # Create a new  dataframe with features as columns
+        df = pd.DataFrame.from_records(ftr_vector_list)
+        df.insert(loc=0, column="timestamp", value=timestamp_list)
+        # Transfer to numpy and extract data and timestamps
         df = df.to_numpy()
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])

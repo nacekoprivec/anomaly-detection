@@ -165,10 +165,12 @@ Model train mode is activated if "load_model_from" is not in the config file, an
 If we have a pre-trained model, we load it by specifying:
    * load_model_from: location of pre-trained iForest model. This is an optional parameter. If it is not provided train_data must be and vice versa. If neither of them are provided the retrain interval must be and the model will output undefiner results untill the first retrain.  (example: "models/IsolationForest")
 in the config file. Example config: IsolationForest.json <br>
-If the model is to be trained from file, the file must have 2 columns, timestamp and ftr_vector where ftr_vector holds a feature vector in string format. 
+If the model is to be trained from file, the file must have 2 columns, timestamp and ftr_vector where ftr_vector holds a feature vector in string format.<br>
+To see the train and retrain file formats see [Training files](#training-files).
 
 4. **PCA + Isolation forest:** PCA (Principal component analysis) projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). First, PCA is applied to the input data followed by the Isolation forest algorithm. In addition to the Isolation forest requirements, the following parameters must be specified in the config file: \
-    * N_components: dimensionality of the PCA output space (example: 5)
+    * N_components: dimensionality of the PCA output space (example: 5)<br>
+To see the train and retrain file formats see [Training files](#training-files).
     
 5. **Welfords algorithm:** Very simmilar to border check only in this case UL and LL are calculated with every new sample (with equations: UL=online_mean_consumption+X*online_standard_+deviation and LL=online_mean_consumption-X*online_standard_+deviation). There are two modes for this method. Frist one calculates mean and standard deviation of the previous N samples and the second one calculates them for all the datasamples so far.
 It requires the following arguments in the config file:
@@ -199,11 +201,13 @@ It requires the following arguments in the config file:\
 It requires the following arguments in the config file:\
     * N_shifts: Number of past data, which are used to construct the feature vector. (example: 9)
     * N_latent: Dimensionality of the latent space (example: 3)
-    * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95)
+    * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95)<br>
+To see the train and retrain file formats see [Training files](#training-files).
 
 #### Training files:
-TODO section describing format of training files
+Training files for the algorithms that need training (GAN, isolationForest and PCA) must be provided in csv format with two specified columns: timestamp and ftr_vector. The first field contains a timestamp (in unix timestamp format) of the sample and the second one contains a string, representing the feature vector (of the same format as the une that would be recieved from consumer). <br>
+Same holds for retrain files (generated automatically by the algorithm).
 
 ## Examples:
-For configuration examples see configuration folder and inside it READEME file. <br> <br>
+For configuration examples see configuration folder. <br> <br>
 For example with Braila data run `python main.py -f -c braila/"configuration_file_name"`. The results will appear in log directory and can be analized with braila_data.ipynb notebook in notebooks directory.
