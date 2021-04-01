@@ -176,7 +176,9 @@ class AnomalyDetectionAbstract(ABC):
 
         # check vector length
         if(len(message_value["ftr_vector"]) != self.input_vector_size):
-            logging.warning("%s: Given test value does not satisfy input vector size.", self.name)
+            logging.warning("%s: Given test value does not satisfy input vector size. Feature vector: %s",
+                            self.name,
+                            ",".join([str(elem) for elem in message_value["ftr_vector"]]))
             return False
         
         return True
