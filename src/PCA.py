@@ -59,8 +59,11 @@ class PCA(AnomalyDetectionAbstract):
         self.max_samples = conf["train_conf"]["max_samples"]
         self.N_components = conf["train_conf"]["N_components"]
 
+
         # Retrain configuration
         if("retrain_interval" in conf):
+            self.retrain_counter = 0
+            self.retrain_file = conf["retrain_file"]
             self.retrain_interval = conf["retrain_interval"]
             self.samples_from_retrain = 0
             if("samples_for_retrain" in conf):
@@ -169,6 +172,7 @@ class PCA(AnomalyDetectionAbstract):
                 self.samples_for_retrain == self.memory_dataframe.shape[0]):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
+                self.retrain_counter +=1
             return
 
     def save_model(self, filename):
@@ -206,7 +210,7 @@ class PCA(AnomalyDetectionAbstract):
                 json.dump(whole_conf, conf)
 
         elif(train_file is not None):
-            df_ = pd.read_csv(train_file, skiprows=0, delimiter=",",
+            df = pd.read_csv(train_file, skiprows=0, delimiter=",",
                              usecols=(0, 1,),
                              converters={"ftr_vector": literal_eval})
 
@@ -214,8 +218,8 @@ class PCA(AnomalyDetectionAbstract):
             raise Exception("train_file or train_dataframe must be specified.")
         
         # Extract list of ftr_vectors and list of timestamps
-        ftr_vector_list = df_["ftr_vector"].tolist()
-        timestamp_list = df_["timestamp"].tolist()
+        ftr_vector_list = df["ftr_vector"].tolist()
+        timestamp_list = df["timestamp"].tolist()
         # Create a new  dataframe with features as columns
         df = pd.DataFrame.from_records(ftr_vector_list)
         df.insert(loc=0, column="timestamp", value=timestamp_list)

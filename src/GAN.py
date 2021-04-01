@@ -58,6 +58,7 @@ class GAN(AnomalyDetectionAbstract):
 
         # Retrain configuration
         if("retrain_interval" in conf):
+            self.retrain_counter = 0
             self.retrain_interval = conf["retrain_interval"]
             self.retrain_file = conf["retrain_file"]
             self.samples_from_retrain = 0
@@ -186,6 +187,7 @@ class GAN(AnomalyDetectionAbstract):
                 self.samples_for_retrain == self.memory_dataframe.shape[0]):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
+                self.retrain_counter +=1
             return
 
     @staticmethod

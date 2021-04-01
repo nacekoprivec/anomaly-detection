@@ -402,7 +402,7 @@ class Filtering1TestFunctionality(Filtering1TestCase):
         #Test constant datastream.
         test_array = np.ones(10)
         for i in test_array:
-            message = create_message(str(datetime.now), [i])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [i])
             self.model.message_insert(message)
             self.assertAlmostEqual(self.model.filtered, 1, 8)
             self.assertAlmostEqual(self.model.result, 0, 8)
@@ -412,7 +412,7 @@ class Filtering1TestFunctionality(Filtering1TestCase):
         test_array = [0, 0, 0, 1, 2, 2, 2]
         expected_status = [0, 1, 1, -1, -1, 1, 1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
@@ -422,7 +422,7 @@ class Filtering0TestFunctionality(Filtering0TestCase):
         #Test constant datastream.
         test_array = np.ones(10)
         for i in test_array:
-            message = create_message(str(datetime.now), [i])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [i])
             self.model.message_insert(message)
             self.assertAlmostEqual(self.model.filtered, 1, 8)
             self.assertAlmostEqual(self.model.result, 1, 8)
@@ -432,7 +432,7 @@ class Filtering0TestFunctionality(Filtering0TestCase):
         test_array = [0.5, 0.5, 0.5, 1, 1, 1, 2, 2, 2]
         expected_status = [0, 1, 1, 1, 1, 0, -1, -1, -1]
         for i in range(len(test_array)):
-            message = create_message(str(datetime.now), [test_array[i]])
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
@@ -458,7 +458,7 @@ class IsolForestTestCase(unittest.TestCase):
         },
         "retrain_file": "./unittest/IsolationForestRetrainData.csv",
         "retrain_interval": 10,
-        "samples_for_retrain": 5,
+        "samples_for_retrain": 100,
         "input_vector_size": 1,
         "shifts": [[1,2,3,4]],
         "averages": [[1,2]],
@@ -489,29 +489,31 @@ class IsolForestTestClassPropperties(IsolForestTestCase):
         self.assertEqual(self.model.max_features, 7)
         self.assertEqual(self.model.max_samples, 5)
         self.assertEqual(self.model.retrain_interval, 10)
-        self.assertEqual(self.model.samples_for_retrain, 5)
+        self.assertEqual(self.model.samples_for_retrain, 100)
 
 
 class IsolForestTestFunctionality(IsolForestTestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1.0]*10
-        expected_status = [2, 2, 2, 2, 1, 1, 1, 1, 1, 1]
+        test_array = [1.0]*15
+        expected_status = [2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
 
     def test_errors(self):
         #insert different values as in train set (status should be -1).
         test_array = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0]
-        expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1]
+        expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
 
 
 class GANTestCase(unittest.TestCase):
@@ -536,7 +538,7 @@ class GANTestCase(unittest.TestCase):
         },
         "retrain_file": "./unittest/GANRetrainData.csv",
         "retrain_interval": 10,
-        "samples_for_retrain": 10,
+        "samples_for_retrain": 90,
         "input_vector_size": 10,
         "output": [],
         "output_conf": [{}]
@@ -566,27 +568,36 @@ class GANTestClassPropperties(GANTestCase):
         self.assertEqual(self.model.N_shifts, 9)
         self.assertEqual(self.model.N_latent, 3)
         self.assertEqual(self.model.retrain_interval, 10)
-        self.assertEqual(self.model.samples_for_retrain, 10)
+        self.assertEqual(self.model.samples_for_retrain, 90)
 
 
 class GANTestFunctionality(GANTestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
         test_array = [1]*10
-        for i in range(len(test_array)):
+        for i in range(15):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, 1)
+        self.assertEqual(self.model.retrain_counter, 1)
 
     def test_errors(self):
         #Insert same values as in train set (status should be 1).
         test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-        for i in range(len(test_array)):
+        for i in range(10):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, -1)
+        
+        test_array1 = [1, 1, 0, 0, 1, 1, 0, 0, 1, 1]
+        for i in range(5):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array1)
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, -1)
+        self.assertEqual(self.model.retrain_counter, 1)
 
 
 class PCATestCase(unittest.TestCase):
@@ -603,15 +614,16 @@ class PCATestCase(unittest.TestCase):
         configuration = {
         "train_data": "./unittest/PCATestData.csv",
         "train_conf":{
-            "max_features": 3,
-            "max_samples": 15,
+            "max_features": 5,
+            "max_samples": 25,
             "contamination": "0.01",
             "model_name": "PCA_Test",
-            "N_components": 3
+            "N_components": 5
         },
         "shifts": [[1, 2, 3, 4, 5, 6]],
+        "retrain_file": "./unittest/PCARetrainData.csv",
         "retrain_interval": 10,
-        "samples_for_retrain": 10,
+        "samples_for_retrain": 90,
         "input_vector_size": 1, 
         "output": [],
         "output_conf": [{}]
@@ -636,32 +648,35 @@ class PCATestCase(unittest.TestCase):
 
 class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
-        self.assertEqual(self.model.max_features, 3)
+        self.assertEqual(self.model.max_features, 5)
         self.assertEqual(self.model.max_samples, 15)
         self.assertEqual(self.model.retrain_interval, 10)
-        self.assertEqual(self.model.samples_for_retrain, 10)
+        self.assertEqual(self.model.samples_for_retrain, 90)
 
 
 class PCATestFunctionality(PCATestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1]*10
-        expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1]
-        for i in range(len(test_array)):
+        test_array = [1]*20
+        expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        for i in range(20):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_array[i]])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
 
     def test_errors(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-        expected_status = [2, 2, 2, 2, 2, 2, 1, -1, 1, -1]
+        test_array = [0.5, 1, 0.5, 0, 0.5, 1, 0.5, 0, -0.5, -0-5, 0.5, 0, -0.5, -1, -0.5]
+        expected_status = [2, 2, 2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_array[i]])
             self.model.message_insert(message)
+            print(self.model.status_code)
             self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
 
 
 class FeatureConstructionTestCase(unittest.TestCase):
