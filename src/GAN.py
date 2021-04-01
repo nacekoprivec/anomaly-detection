@@ -54,8 +54,6 @@ class GAN(AnomalyDetectionAbstract):
         self.N_shifts = conf["train_conf"]["N_shifts"]
         self.N_latent = conf["train_conf"]["N_latent"]
         self.model_name = conf["train_conf"]["model_name"]
-        self.max_features = conf["train_conf"]["max_features"]
-        self.max_samples = conf["train_conf"]["max_samples"]
         self.K = conf["train_conf"]["K"]
 
         # Retrain configuration

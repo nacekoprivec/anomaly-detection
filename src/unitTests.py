@@ -178,7 +178,7 @@ class WelfordDefinedNTestCase(unittest.TestCase):
 
 class WelfordDefinedNTestClassPropperties(WelfordDefinedNTestCase):
     #Check propperties setup.
-    def test_propperties(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.N, 4)
         self.assertEqual(self.model.X, 2)
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
@@ -235,7 +235,7 @@ class WelfordUndefinedNTestCase(unittest.TestCase):
 
 class WelfordUndefinedNTestClassPropperties(WelfordUndefinedNTestCase):
     #Check propperties setup.
-    def test_propperties(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.X, 2)
 
 
@@ -296,7 +296,7 @@ class EMATestCase(unittest.TestCase):
 
 class EMATestClassPropperties(EMATestCase):
     #Check propperties setup.
-    def test_propperties(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.UL, 4)
         self.assertEqual(self.model.LL, 2)
         self.assertEqual(self.model.N, 5)
@@ -372,13 +372,13 @@ class Filtering0TestCase(unittest.TestCase):
 
 class Filtering1TestClassPropperties(Filtering1TestCase):
     #Check propperties setup.
-    def test_propperties(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.UL, 1)
         self.assertEqual(self.model.LL, 0)
         self.assertEqual(self.model.filter_order, 3)
         self.assertEqual(self.model.cutoff_frequency, 0.4)
         self.assertEqual(self.model.warning_stages, [0.7, 0.9])
-        self.assertEqual(self.model.mode, 1)        
+        self.assertEqual(self.model.mode, 1)
 
     def test_Kernel(self):
         #Test kernel coefficients
@@ -485,7 +485,7 @@ class IsolForestTestCase(unittest.TestCase):
 
 class IsolForestTestClassPropperties(IsolForestTestCase):
     #Check propperties setup.
-    def test_propperties(self):
+    def test_Propperties(self):
         self.assertEqual(self.model.max_features, 7)
         self.assertEqual(self.model.max_samples, 5)
         self.assertEqual(self.model.retrain_interval, 10)
@@ -529,9 +529,6 @@ class GANTestCase(unittest.TestCase):
         configuration = {
         "train_data": "./unittest/GANTestData.csv",
         "train_conf":{
-            "max_features": 1,
-            "max_samples": 5,
-            "contamination": "auto",
             "model_name": "GAN_Test",
             "N_shifts": 9,
             "N_latent": 3,
@@ -565,9 +562,7 @@ class GANTestCase(unittest.TestCase):
 
 class GANTestClassPropperties(GANTestCase):
     #Check propperties setup.
-    def test_propperties(self):
-        self.assertEqual(self.model.max_features, 1)
-        self.assertEqual(self.model.max_samples, 5)
+    def test_Propperties(self):
         self.assertEqual(self.model.N_shifts, 9)
         self.assertEqual(self.model.N_latent, 3)
         self.assertEqual(self.model.retrain_interval, 10)
