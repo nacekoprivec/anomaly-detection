@@ -1,24 +1,5 @@
-from abc import abstractmethod, ABC
-from typing import Any, Dict, List, Tuple, Union
-import numpy as np
-import statistics
+from typing import Any, Dict, List
 import sys
-import math
-import os
-import json
-import ast
-from statistics import mean
-from datetime import datetime, time
-import pickle
-from pandas.core.frame import DataFrame
-from scipy.signal.lti_conversion import _atleast_2d_or_none
-import sklearn.ensemble
-from scipy import signal
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
-import pandas as pd
-from ast import literal_eval
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -58,42 +39,57 @@ class BorderCheck(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         super().message_insert(message_value)
+
+        # Check feature vector
+        if(not self.check_ftr_vector(message_value=message_value)):
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+            self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=message_value["ftr_vector"],
+                                                timestamp=message_value["timestamp"])
+            
+            # Remenber status for unittests
+            self.status = status
+            self.status_code = status_code
+            return
+
+        # Extract value and timestamp
         value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
+        # Normalize value
         value_normalized = 2*(value - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
-        status = "OK"
-        status_code = 1
+        status = self.OK
+        status_code = self.OK_CODE
 
+        # Check limits
         if(value_normalized > 1):
             status = "Error: measurement above upper limit"
             status_code = -1
         elif(value_normalized < -1):
             status = "Error: measurement below lower limit"
-            status_code = -1
+            status_code = self.ERROR_CODE
         else:
             for stage in range(len(self.warning_stages)):
                 if(value_normalized > self.warning_stages[stage]):
                     status = "Warning" + str(stage) + \
                         ": measurement close to upper limit."
-                    status_code = 0
+                    status_code = self.WARNING_CODE
                 elif(value_normalized < -self.warning_stages[stage]):
                     status = "Warning" + str(stage) + \
                         ": measurement close to lower limit."
-                    status_code = 0
+                    status_code = self.WARNING_CODE
                 else:
                     break
         
+        # Remenber status for unittests
         self.status = status
         self.status_code = status_code
 
-        for output in self.outputs:
-            output.send_out(timestamp=timestamp, status=status, value=message_value["ftr_vector"],
-                            status_code=status_code, algorithm=self.name)
-
-        if(self.visualization is not None):
-            lines = [value]
-            self.visualization.update(value=lines, timestamp=timestamp,
-                                      status_code=status_code)
+        self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=message_value["ftr_vector"],
+                                                timestamp=timestamp)

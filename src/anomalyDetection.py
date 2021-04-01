@@ -1,24 +1,10 @@
 from abc import abstractmethod, ABC
 from typing import Any, Dict, List, Tuple, Union
 import numpy as np
-import statistics
 import sys
-import math
-import os
-import json
-import ast
+import logging
 from statistics import mean
-from datetime import datetime, time
-import pickle
-from pandas.core.frame import DataFrame
-from scipy.signal.lti_conversion import _atleast_2d_or_none
-import sklearn.ensemble
-from scipy import signal
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
-import pandas as pd
-from ast import literal_eval
+from datetime import datetime
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -62,19 +48,16 @@ class AnomalyDetectionAbstract(ABC):
     OK_CODE = 1
 
     def __init__(self) -> None:
+        # Logging configuration
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        
         self.memory = []
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        # print("test value: " + str(message_value['ftr_vector']))
-        # print(message_value['ftr_vector'])
-        
-        
-        #print(message_value['ftr_vector'])
-        #print(len(message_value['ftr_vector']))
-        #print(self.input_vector_size)
-        assert len(message_value['ftr_vector']) == self.input_vector_size, \
-            "Given test value does not satisfy input vector size"
+        # logging when message recieved (this line can be commented)
+        logging.info("%s recieved message.", self.name)
+        pass
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any],
@@ -180,6 +163,26 @@ class AnomalyDetectionAbstract(ABC):
         else:
             self.use_cols = None
     
+    def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
+        # Check for ftr_vector field
+        if(not "ftr_vector" in message_value):
+            logging.warning(f"{self.name}: ftr_vector field was not contained in message.")
+            return False
+
+        # Check for timestamp field
+        if(not "timestamp" in message_value):
+            logging.warning(f"{self.name}: timestamp field was not contained in message.")
+            return False
+
+        # check vector length
+        if(len(message_value["ftr_vector"]) != self.input_vector_size):
+            logging.warning("%s: Given test value does not satisfy input vector size. Feature vector: %s",
+                            self.name,
+                            ",".join([str(elem) for elem in message_value["ftr_vector"]]))
+            return False
+        
+        return True
+
     def change_last_record(self, value: List[Any]) -> None:
         self.memory[-1] = value
 
@@ -295,7 +298,6 @@ class AnomalyDetectionAbstract(ABC):
                 shifts.append(self.memory[self.memory_size-(look_back+1)][feature_index])
 
         return shifts
-
 
     def time_features_construction(self, tmstp: Any) -> None:
         time_features = []

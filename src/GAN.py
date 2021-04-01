@@ -1,19 +1,8 @@
-from abc import abstractmethod, ABC
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List
 import numpy as np
-import statistics
 import sys
-import math
-import os
 import json
-import ast
-from statistics import mean
-from datetime import datetime, time
-import pickle
 from pandas.core.frame import DataFrame
-from scipy.signal.lti_conversion import _atleast_2d_or_none
-import sklearn.ensemble
-from scipy import signal
 from tensorflow.keras import backend as K
 import tensorflow as tf
 from tensorflow import keras
@@ -109,8 +98,25 @@ class GAN(AnomalyDetectionAbstract):
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
         if(self.min != self.max):
             message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
-            # print(message_value)
+
         super().message_insert(message_value)
+
+        # Check feature vector
+        if(not self.check_ftr_vector(message_value=message_value)):
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+            self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=message_value["ftr_vector"],
+                                                timestamp=message_value["timestamp"])
+            
+            # Remenber status for unittests
+            self.status = status
+            self.status_code = status_code
+            return
+
+        value = message_value["ftr_vector"]
+        value = value[0]
 
         if(self.use_cols is not None):
             value = []

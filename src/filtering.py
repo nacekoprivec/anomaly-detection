@@ -1,24 +1,6 @@
-from abc import abstractmethod, ABC
-from typing import Any, Dict, List, Tuple, Union
-import numpy as np
-import statistics
+from typing import Any, Dict
 import sys
-import math
-import os
-import json
-import ast
-from statistics import mean
-from datetime import datetime, time
-import pickle
-from pandas.core.frame import DataFrame
-from scipy.signal.lti_conversion import _atleast_2d_or_none
-import sklearn.ensemble
 from scipy import signal
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
-import pandas as pd
-from ast import literal_eval
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -66,6 +48,23 @@ class Filtering(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
+
+        # Check feature vector
+        if(not self.check_ftr_vector(message_value=message_value)):
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+            self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=message_value["ftr_vector"],
+                                                timestamp=message_value["timestamp"])
+            
+            # Remenber status for unittests
+            self.status = status
+            self.status_code = status_code
+            return
+
+        value = message_value["ftr_vector"]
+        value = value[0]
 
         self.last_measurement = message_value['ftr_vector'][0]
 
@@ -129,6 +128,8 @@ class Filtering(AnomalyDetectionAbstract):
         else:
             result = self.last_measurement - self.filtered
 
+        # Does not use general normalization_output_visualization method
+        # because of custom visualization
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
                             status=status, value=message_value['ftr_vector'][0], 
