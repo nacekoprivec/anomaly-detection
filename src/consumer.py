@@ -113,6 +113,7 @@ class ConsumerKafka(ConsumerAbstract):
     def read(self) -> None:
         for message in self.consumer:
             # Get topic and insert into correct algorithm
+            #print(message)
             topic = message.topic
             algorithm_indx = self.topics.index(topic)
             
@@ -122,7 +123,6 @@ class ConsumerKafka(ConsumerAbstract):
                 target_time, tolerance = eval(self.filtering[algorithm_indx])
                 message = self.filter_by_time(message, target_time, tolerance)
 
-            
             if message is not None:
                 value = message.value
                 self.anomalies[algorithm_indx].message_insert(value)

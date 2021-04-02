@@ -165,6 +165,7 @@ class AnomalyDetectionAbstract(ABC):
     
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
+
         if(not "ftr_vector" in message_value):
             logging.warning(f"{self.name}: ftr_vector field was not contained in message.")
             return False
@@ -179,6 +180,15 @@ class AnomalyDetectionAbstract(ABC):
             logging.warning("%s: Given test value does not satisfy input vector size. Feature vector: %s",
                             self.name,
                             ",".join([str(elem) for elem in message_value["ftr_vector"]]))
+            return False
+
+        if(any(type(x)==str for x in message_value["ftr_vector"])):
+            logging.warning(f"{self.name}: Feature vector contains a string.")
+            return False
+
+        if(any(x==None for x in message_value["ftr_vector"])):
+ 
+            logging.warning(f"{self.name}: Feature vector contains a None.")
             return False
         
         return True

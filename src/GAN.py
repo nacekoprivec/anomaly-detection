@@ -96,12 +96,6 @@ class GAN(AnomalyDetectionAbstract):
                             initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> None:
-        if(self.min != self.max):
-            message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
-
-        super().message_insert(message_value)
-
-        # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
@@ -114,6 +108,14 @@ class GAN(AnomalyDetectionAbstract):
             self.status = status
             self.status_code = status_code
             return
+        
+        if(self.min != self.max):
+            message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
+
+        super().message_insert(message_value)
+
+        # Check feature vector
+        
 
         value = message_value["ftr_vector"]
         value = value[0]
