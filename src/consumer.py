@@ -11,10 +11,11 @@ from src.borderCheck import BorderCheck
 from src.welford import Welford
 from src.EMA import EMA
 from src.filtering import Filtering
-from src.isolationForest import IsolationForest
-from src.GAN import GAN
-from src.PCA import PCA
+#from src.isolationForest import IsolationForest
+#from src.GAN import GAN
+#from src.PCA import PCA
 from src.hampel import Hampel
+from src.linearFit import LinearFit
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
@@ -216,9 +217,9 @@ class ConsumerFile(ConsumerAbstract):
                     except ValueError:
                         pass
                     d["timestamp"] = timestamp
-                test_value = [float(row[i]) for i in other_indicies]
+                ftr_vector = [float(row[i]) for i in other_indicies]
 
-                d["test_value"] = test_value
+                d["ftr_vector"] = ftr_vector
 
                 self.anomaly.message_insert(d)
 

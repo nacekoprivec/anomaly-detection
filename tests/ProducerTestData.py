@@ -17,7 +17,7 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 "load real data from Continental, send it to kafka topic"
 
 #df = pd.read_csv("../data/Braila_new_data/braila_flow211306H360.csv", delimiter = ",")
-df = pd.read_csv("../data/consumer/braila_pressure5770.csv", delimiter = ",")
+df = pd.read_csv("../data/consumer/conductivity_data.csv", delimiter = ",")
 
 #df['time'] = pd.to_datetime(df['time'],unit='s')
 #values = df['value']
@@ -57,7 +57,7 @@ for i in range(1000):
     anomaly = 0
     if (i%20 == 0):
         anomaly = -0.03
-    data = {"ftr_vector" : value,
+    data = {"ftr_vector" : [values[i]],
 			"timestamp": str(times[i])}
 
 	

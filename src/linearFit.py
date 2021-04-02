@@ -34,6 +34,7 @@ class LinearFit(AnomalyDetectionAbstract):
 
         self.LL = conf["LL"]
         self.UL = conf["UL"]
+        self.confidence_norm = conf["confidence_norm"]
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
         self.timestamps = []
@@ -48,7 +49,6 @@ class LinearFit(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]):
         super().message_insert(message_value)
-
         # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
@@ -78,12 +78,13 @@ class LinearFit(AnomalyDetectionAbstract):
 
         slope = None
         #Calculate the fit coefficients
-        if(self.count < 1):
+        if(self.count < self.N):
             pass
         else:
             x = np.array(range(len(self.memory)))
             y = self.memory
-            slope, average = np.polyfit(x, y, deg = 1)
+            a, residuals, rank, singular_values, rcond = np.polyfit(x, y, deg = 1, full = True)
+            slope, average = a
         
 
         #Normalize the slope to the range LL - UL
@@ -98,8 +99,16 @@ class LinearFit(AnomalyDetectionAbstract):
             status = self.OK
             status_code = self.OK_CODE
 
+
+            print(residuals/value)
+
+            #only post errors and warnings if the quality of the fit is good (mse)
+            if(residuals/value > self.confidence_norm):
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
+            
             #Perform error and warning checks
-            if(value_normalized > 1):
+            elif(value_normalized > 1):
                 status = "Error: slope above upper limit"
                 status_code = -1
             elif(value_normalized < -1):
@@ -130,7 +139,7 @@ class LinearFit(AnomalyDetectionAbstract):
                             status_code=status_code)
 
         # Send to visualization
-        lines = [value_normalized]
+        lines = [message_value['ftr_vector']]
         timestamp = self.timestamps[-1]
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
