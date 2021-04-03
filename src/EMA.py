@@ -45,7 +45,7 @@ class EMA(AnomalyDetectionAbstract):
         self.numbers = []
         self.timestamps = []
 
-    def message_insert(self, message_value: Dict[Any, Any]):
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
 
         # Check feature vector
@@ -60,7 +60,7 @@ class EMA(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -131,3 +131,5 @@ class EMA(AnomalyDetectionAbstract):
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
             status_code = status_code)
+
+        return status, status_code

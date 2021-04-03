@@ -95,7 +95,7 @@ class GAN(AnomalyDetectionAbstract):
             raise Exception("Model or train dataset must be specified to\
                             initialize model.")
 
-    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
@@ -107,7 +107,7 @@ class GAN(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
         
         if(self.min != self.max):
             message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
@@ -135,18 +135,8 @@ class GAN(AnomalyDetectionAbstract):
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
-
-            # Send undefined message to output
-            for output in self.outputs:
-                output.send_out(timestamp=message_value['timestamp'],
-                                value=None)
-            
-            # And to visualization
-            if(self.visualization is not None):
-                lines = [value[-1]]
-                #self.visualization.update(value=[None], timestamp=timestamp,
-                #                          status_code=2)
-            return
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
         else:
             feature_vector = np.array(feature_vector)
             # print(feature_vector)
@@ -196,7 +186,8 @@ class GAN(AnomalyDetectionAbstract):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
-            return
+        
+        return status, status_code
 
     @staticmethod
     def mse(pre_GAN, post_GAN):

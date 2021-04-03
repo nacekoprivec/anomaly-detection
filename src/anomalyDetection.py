@@ -54,7 +54,7 @@ class AnomalyDetectionAbstract(ABC):
         self.memory = []
 
     @abstractmethod
-    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         # logging when message recieved (this line can be commented)
         logging.info("%s recieved message.", self.name)
         pass

@@ -46,7 +46,7 @@ class LinearFit(AnomalyDetectionAbstract):
         else:
             self.N = None
 
-    def message_insert(self, message_value: Dict[Any, Any]):
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
 
         # Check feature vector
@@ -61,7 +61,7 @@ class LinearFit(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -136,3 +136,5 @@ class LinearFit(AnomalyDetectionAbstract):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
             status_code = status_code)
         self.count += 1
+
+        return status, status_code

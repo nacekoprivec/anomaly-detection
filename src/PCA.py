@@ -84,7 +84,7 @@ class PCA(AnomalyDetectionAbstract):
             raise Exception("Model or train dataset must be specified to\
                             initialize model.")
 
-    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
 
         # Check feature vector
@@ -99,7 +99,7 @@ class PCA(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -121,20 +121,8 @@ class PCA(AnomalyDetectionAbstract):
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
-            self.status = self.UNDEFINED
-            self.status_code = self.UNDEFIEND_CODE
-            
-            # Send undefined message to output
-            for output in self.outputs:
-                output.send_out(timestamp=message_value['timestamp'],
-                                value=None)
-            
-            # And to visualization
-            if(self.visualization is not None):
-                lines = [value[0]]
-                #self.visualization.update(value=[None], timestamp=timestamp,
-                #                          status_code=2)
-            return
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
         else:
             feature_vector = np.array(feature_vector)
             # print(feature_vector)
@@ -151,10 +139,10 @@ class PCA(AnomalyDetectionAbstract):
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
 
-            self.normalization_output_visualization(status=status,
-                                                    status_code=status_code,
-                                                    value=value,
-                                                    timestamp=timestamp)
+        self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=value,
+                                                timestamp=timestamp)
         self.status = status
         self.status_code = status_code
 
@@ -178,7 +166,8 @@ class PCA(AnomalyDetectionAbstract):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
-            return
+
+        return status, status_code
 
     def save_model(self, filename):
         with open("models/" + filename + "_PCA", 'wb') as f:
