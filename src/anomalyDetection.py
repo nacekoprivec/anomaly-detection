@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import Any, Dict, List, Tuple, Union
 import numpy as np
+import pandas as pd
 import sys
 import logging
 from statistics import mean
@@ -165,7 +166,6 @@ class AnomalyDetectionAbstract(ABC):
     
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
-
         if(not "ftr_vector" in message_value):
             logging.warning(f"{self.name}: ftr_vector field was not contained in message.")
             return False
@@ -175,20 +175,43 @@ class AnomalyDetectionAbstract(ABC):
             logging.warning(f"{self.name}: timestamp field was not contained in message.")
             return False
 
-        # check vector length
+        # Check vector length
         if(len(message_value["ftr_vector"]) != self.input_vector_size):
             logging.warning("%s: Given test value does not satisfy input vector size. Feature vector: %s",
                             self.name,
                             "[" + ",".join([str(elem) for elem in message_value["ftr_vector"]]) + "]")
             return False
 
+        # Check if feature vector contains a string
         if(any(type(x)==str for x in message_value["ftr_vector"])):
             logging.warning(f"{self.name}: Feature vector contains a string.")
             return False
 
+        # Check if feature vector contains None
         if(any(x==None for x in message_value["ftr_vector"])):
- 
             logging.warning(f"{self.name}: Feature vector contains a None.")
+            return False
+
+        # Test if timestamp is of type int
+        if(isinstance(message_value["timestamp"], int)):
+            logging.warning("%s: Timestamp not in correct format: %s",
+                            self.name, message_value["timestamp"])
+            return False
+
+        # Test if timestamp is valid
+        timestamp_ok = False
+        try:
+            pd.to_datetime(message_value["timestamp"], unit="s")
+            timestamp_ok = True
+        except():
+            try:
+                pd.to_datetime(message_value["timestamp"], unit="ms")
+                timestamp_ok = True
+            except():
+                pass
+        if(not timestamp_ok):
+            logging.warning("%s: Invalid timestamp: %s", self.name,
+                            message_value["timestamp"])
             return False
         
         return True
@@ -311,13 +334,11 @@ class AnomalyDetectionAbstract(ABC):
 
     def time_features_construction(self, tmstp: Any) -> None:
         time_features = []
-        
-        if(type(tmstp) is not str):
-            tmstp = datetime.utcfromtimestamp(tmstp).strftime('%Y-%m-%d %H:%M:%S')
-        if(len(str(tmstp)) == 19):
-            dt = datetime.strptime(tmstp, '%Y-%m-%d %H:%M:%S')
-        else:
-            dt = datetime.strptime(tmstp, '%Y-%m-%d %H:%M:%S.%f')
+
+        try:
+            dt = pd.to_datetime(tmstp, unit="s")
+        except():
+            dt = pd.to_datetime(tmstp, unit="ms")
 
         # Requires datetime format
         # Check for keywords specified in time_features
