@@ -679,6 +679,14 @@ class PCATestFunctionality(PCATestCase):
         self.assertEqual(self.model.retrain_counter, 1)
 
 
+class combinationTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+
 class FeatureConstructionTestCase(unittest.TestCase):
     def setUp(self) -> None:
         # Border check does not use feature construction (or vector size > 1) 
