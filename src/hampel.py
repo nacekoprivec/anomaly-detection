@@ -40,7 +40,7 @@ class Hampel(AnomalyDetectionAbstract):
         self.count = 0
 
 
-    def message_insert(self, message_value: Dict[Any, Any]):
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
         
         # Check feature vector
@@ -55,7 +55,7 @@ class Hampel(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -117,3 +117,5 @@ class Hampel(AnomalyDetectionAbstract):
                                         status_code=status_code)
         
         self.count += 1
+
+        return status, status_code

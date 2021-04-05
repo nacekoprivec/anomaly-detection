@@ -94,7 +94,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             raise Exception("The configuration must specify either \
                             load_model_from, train_data or train_interval")
 
-    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
 
         # Check feature vector
@@ -109,7 +109,7 @@ class IsolationForest(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -131,23 +131,6 @@ class IsolationForest(AnomalyDetectionAbstract):
             # create all additional features.
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
-            # Send undefined message to output
-            for output in self.outputs:
-                output.send_out(timestamp=message_value['timestamp'],
-                                value=value, status=status,
-                                status_code=status_code,
-                                algorithm=self.name)
-            
-            # And to visualization
-            if(self.visualization is not None):
-                lines = [value[0]]
-                self.visualization.update(value=lines, timestamp=timestamp,
-                                          status_code=2)
-
-            # Add to normalization
-            if(self.normalization is not None):
-                self.normalization.add_value(value=value)
-
         else:
             feature_vector = np.array(feature_vector)
             # Model prediction
@@ -162,10 +145,10 @@ class IsolationForest(AnomalyDetectionAbstract):
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
 
-            self.normalization_output_visualization(status=status,
-                                                    status_code=status_code,
-                                                    value=value,
-                                                    timestamp=timestamp)
+        self.normalization_output_visualization(status=status,
+                                                status_code=status_code,
+                                                value=value,
+                                                timestamp=timestamp)
         self.status = status
         self.status_code = status_code
 
@@ -189,6 +172,7 @@ class IsolationForest(AnomalyDetectionAbstract):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
+        return status, status_code
 
     def save_model(self, filename: str) -> None:
         with open("models/" + filename, 'wb') as f:

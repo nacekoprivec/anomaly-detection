@@ -37,7 +37,7 @@ class BorderCheck(AnomalyDetectionAbstract):
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
 
-    def message_insert(self, message_value: Dict[Any, Any]) -> None:
+    def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
 
         # Check feature vector
@@ -52,7 +52,7 @@ class BorderCheck(AnomalyDetectionAbstract):
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
-            return
+            return status, status_code
 
         # Extract value and timestamp
         value = message_value["ftr_vector"]
@@ -93,3 +93,5 @@ class BorderCheck(AnomalyDetectionAbstract):
                                                 status_code=status_code,
                                                 value=message_value["ftr_vector"],
                                                 timestamp=timestamp)
+
+        return status, status_code
