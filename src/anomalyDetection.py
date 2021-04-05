@@ -193,7 +193,7 @@ class AnomalyDetectionAbstract(ABC):
             return False
 
         # Test if timestamp is of type int
-        if(isinstance(message_value["timestamp"], int)):
+        if(not isinstance(message_value["timestamp"], int)):
             logging.warning("%s: Timestamp not in correct format: %s",
                             self.name, message_value["timestamp"])
             return False
@@ -203,11 +203,11 @@ class AnomalyDetectionAbstract(ABC):
         try:
             pd.to_datetime(message_value["timestamp"], unit="s")
             timestamp_ok = True
-        except():
+        except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
             try:
                 pd.to_datetime(message_value["timestamp"], unit="ms")
                 timestamp_ok = True
-            except():
+            except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
                 pass
         if(not timestamp_ok):
             logging.warning("%s: Invalid timestamp: %s", self.name,
@@ -337,7 +337,7 @@ class AnomalyDetectionAbstract(ABC):
 
         try:
             dt = pd.to_datetime(tmstp, unit="s")
-        except():
+        except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
             dt = pd.to_datetime(tmstp, unit="ms")
 
         # Requires datetime format
