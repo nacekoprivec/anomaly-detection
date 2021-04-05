@@ -609,7 +609,7 @@ class PCATestCase(unittest.TestCase):
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
             
-        create_testing_file("./unittest/PCATestData.csv", withzero = True)
+        create_testing_file("./unittest/PCATestData.csv", withzero = True, FV_length = 10)
 
         configuration = {
         "train_data": "./unittest/PCATestData.csv",
@@ -620,11 +620,10 @@ class PCATestCase(unittest.TestCase):
             "model_name": "PCA_Test",
             "N_components": 5
         },
-        "shifts": [[1, 2, 3, 4, 5, 6]],
         "retrain_file": "./unittest/PCARetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 90,
-        "input_vector_size": 1, 
+        "input_vector_size": 10, 
         "output": [],
         "output_conf": [{}]
         }
@@ -649,7 +648,7 @@ class PCATestCase(unittest.TestCase):
 class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
         self.assertEqual(self.model.max_features, 5)
-        self.assertEqual(self.model.max_samples, 15)
+        self.assertEqual(self.model.max_samples, 25)
         self.assertEqual(self.model.retrain_interval, 10)
         self.assertEqual(self.model.samples_for_retrain, 90)
 
@@ -657,25 +656,23 @@ class PCATestClassPropperties(PCATestCase):
 class PCATestFunctionality(PCATestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1]*20
-        expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        for i in range(20):
+        test_array = [1]*10
+        for i in range(15):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array)
             self.model.message_insert(message)
-            self.assertEqual(self.model.status_code, expected_status[i])
+            self.assertEqual(self.model.status_code, 1)
         self.assertEqual(self.model.retrain_counter, 1)
 
     def test_errors(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [0.5, 1, 0.5, 0, 0.5, 1, 0.5, 0, -0.5, -0-5, 0.5, 0, -0.5, -1, -0.5]
-        expected_status = [2, 2, 2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-        for i in range(len(test_array)):
+        test_array = [0.5, 1, 0.5, 0, 0.5, 1, 0.5, 0, -0.5, -0-5]
+        for i in range(15):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array)
             self.model.message_insert(message)
             print(self.model.status_code)
-            self.assertEqual(self.model.status_code, expected_status[i])
+            self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
 
 
