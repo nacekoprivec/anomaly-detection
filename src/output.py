@@ -47,7 +47,7 @@ class TerminalOutput(OutputAbstract):
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
         if(status_code != 1 or self.send_ok):    
-            o = timestamp + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
+            o = str(timestamp) + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
             if(suggested_value is not None):
                 o = o + ", Suggested value: " + str(suggested_value)
             print(o)
