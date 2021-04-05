@@ -64,7 +64,8 @@ class PCA(AnomalyDetectionAbstract):
             if("train_data" in conf):
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
                                                     skiprows=0,
-                                                    delimiter=",", usecols = (0, 1,))
+                                                    delimiter=",",
+                                                    converters={"ftr_vector": literal_eval})
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
@@ -203,22 +204,30 @@ class PCA(AnomalyDetectionAbstract):
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
 
-        elif(train_file is not None):
-            df = pd.read_csv(train_file, skiprows=0, delimiter=",",
-                             usecols=(0, 1,),
-                             converters={"ftr_vector": literal_eval})
+            # Extract list of ftr_vectors and list of timestamps
+            ftr_vector_list = df["ftr_vector"].tolist()
+            timestamp_list = df["timestamp"].tolist()
 
+            # Create a new  dataframe with features as columns
+            df = pd.DataFrame.from_records(ftr_vector_list)
+            df.insert(loc=0, column="timestamp", value=timestamp_list)
+            # Transfer to numpy
+            df = df.to_numpy()
+
+        elif(train_file is not None):
+            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
+            vals = df_['ftr_vector'].values
+            vals = np.array([np.array(xi) for xi in vals])
+            values = np.array(vals)
+            
+            #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+            #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
+            timestamps = np.array(df_['timestamp'].values)
+            timestamps = np.reshape(timestamps, (-1, 1))
+            df = np.concatenate([timestamps,values], axis = 1)
         else:
             raise Exception("train_file or train_dataframe must be specified.")
-        
-        # Extract list of ftr_vectors and list of timestamps
-        ftr_vector_list = df["ftr_vector"].tolist()
-        timestamp_list = df["timestamp"].tolist()
-        # Create a new  dataframe with features as columns
-        df = pd.DataFrame.from_records(ftr_vector_list)
-        df.insert(loc=0, column="timestamp", value=timestamp_list)
-        # Transfer to numpy and extract data and timestamps
-        df = df.to_numpy()
+
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])
 
