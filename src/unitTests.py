@@ -18,7 +18,7 @@ import unittest
 import tensorflow as tf
 
 # Algorithm imports
-from anomalyDetection import AnomalyDetectionAbstract
+from src.anomalyDetection import AnomalyDetectionAbstract
 from src.borderCheck import BorderCheck
 from src.welford import Welford
 from src.EMA import EMA
@@ -44,7 +44,11 @@ def create_model_instance(algorithm_str, configuration, save = False):
             filepath = "configuration/Test_config.txt"
 
             with open(filepath, 'w') as data_file:
-                json.dump({"anomaly_detection_conf":[configuration]}, data_file)
+                full_conf = {
+                    "anomaly_detection_alg": [algorithm_str],
+                    "anomaly_detection_conf":[configuration]
+                }
+                json.dump(full_conf, data_file)
 
             model.configure(configuration, "Test_config.txt", algorithm_indx = 0)
         else:
@@ -672,7 +676,7 @@ class PCATestFunctionality(PCATestCase):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
-            print(self.model.status_code)
+            #print(self.model.status_code)
             self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
 
