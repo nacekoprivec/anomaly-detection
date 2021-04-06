@@ -18,19 +18,19 @@ import unittest
 import tensorflow as tf
 
 # Algorithm imports
-from src.anomalyDetection import AnomalyDetectionAbstract
-from src.borderCheck import BorderCheck
-from src.welford import Welford
-from src.EMA import EMA
-from src.filtering import Filtering
-from src.isolationForest import IsolationForest
-from src.GAN import GAN
-from src.PCA import PCA
-from src.hampel import Hampel
-from src.combination import Combination, AND, OR
+from anomalyDetection import AnomalyDetectionAbstract
+from borderCheck import BorderCheck
+from welford import Welford
+from EMA import EMA
+from filtering import Filtering
+from isolationForest import IsolationForest
+from GAN import GAN
+from PCA import PCA
+from hampel import Hampel
+from combination import Combination, AND, OR
 
 # Normalization imports
-from src.normalization import LastNAverage, PeriodicLastNAverage
+from normalization import LastNAverage, PeriodicLastNAverage
 
 
 def create_model_instance(algorithm_str, configuration, save = False):
