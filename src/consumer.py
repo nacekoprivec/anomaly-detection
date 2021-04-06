@@ -15,6 +15,7 @@ from src.isolationForest import IsolationForest
 from src.GAN import GAN
 from src.PCA import PCA
 from src.hampel import Hampel
+from src.linearFit import LinearFit
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
@@ -132,7 +133,7 @@ class ConsumerKafka(ConsumerAbstract):
 
         #datetime.fromtimestamp
 
-        timestamp = pd.to_datetime(message.value['timestamp'])
+        timestamp = pd.to_datetime(message.value['timestamp'], unit='s')
         time = timestamp.time()
         target_time = datetime.time(target_time[0], target_time[1], target_time[2])
         tol = datetime.timedelta(hours = tolerance[0], minutes = tolerance[1], seconds = tolerance[2])
@@ -141,6 +142,8 @@ class ConsumerKafka(ConsumerAbstract):
         datetime2 = datetime.datetime.combine(date, target_time)
 
         #return message only if timestamp is within tolerance
+        print((max(datetime2, datetime1) - min(datetime2, datetime1)))
+        print(tol)
         if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
             return(message)
         else:
@@ -216,9 +219,9 @@ class ConsumerFile(ConsumerAbstract):
                     except ValueError:
                         pass
                     d["timestamp"] = timestamp
-                test_value = [float(row[i]) for i in other_indicies]
+                ftr_vector = [float(row[i]) for i in other_indicies]
 
-                d["test_value"] = test_value
+                d["ftr_vector"] = ftr_vector
 
                 self.anomaly.message_insert(d)
 

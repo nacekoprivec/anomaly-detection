@@ -16,15 +16,19 @@
         "GAN()",
         "GAN()",
         "GAN()",
-        "Welford()"
+        "OR()"
+    ],
+    "filtering": [
+        "None",
+        "None",
+        "None",
+        "None",
+        "[[2, 0, 0], [0, 0, 30]]"
     ],
     "anomaly_detection_conf": [
         {
             "train_data": "data/training/braila_train.csv",
             "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
-                "contamination": "auto",
                 "model_name": "GAN_Braila_pressure_5770",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -33,10 +37,6 @@
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()"],
             "output_conf": [
                 {
@@ -47,9 +47,6 @@
         {
             "train_data": "data/training/braila_train.csv",
             "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
-                "contamination": "auto",
                 "model_name": "GAN_Braila_pressure_5771",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -58,10 +55,6 @@
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()"],
             "output_conf": [
                 {
@@ -72,9 +65,6 @@
         {
             "train_data": "data/training/braila_train.csv",
             "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
-                "contamination": "auto",
                 "model_name": "GAN_Braila_pressure_5772",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -83,10 +73,6 @@
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()"],
             "output_conf": [
                 {
@@ -97,9 +83,6 @@
         {
             "train_data": "data/training/braila_train.csv",
             "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
-                "contamination": "auto",
                 "model_name": "GAN_Braila_pressure_5773",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -108,10 +91,6 @@
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
             "input_vector_size": 10,
-            "normalization_conf":
-            {
-                "N": 3
-            },
             "output": ["KafkaOutput()"],
             "output_conf": [
                 {
@@ -120,15 +99,32 @@
             ]
         },
         {
+            "anomaly_algorithms": ["Welford()", "LinearFit()"],
+            "output": ["KafkaOutput()"],
+            "output_conf": [
+                {
+                "node_id": "braila_flow_211306H360"
+                }
+            ],
+            "anomaly_algorithms_configurations":[
+            {
             "input_vector_size": 1,
             "warning_stages": [0.7, 0.9],
             "N": 7,
             "X": 6,
-            "output": ["KafkaOutput()"],
-            "output_conf": [
-                {
-                    "node_id": "braila_flow_211306H360"
-                }
+            "output": [],
+            "output_conf": [{}]
+            },
+            {
+                "input_vector_size": 1,
+                "warning_stages": [0.5, 0.9],
+                "N": 10,
+                "UL": 4,
+                "LL": -4,
+                "confidence_norm": 6,
+                "output": [],
+                "output_conf": [{}]
+            }
             ]
         }
     ]

@@ -6,7 +6,6 @@
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": ["pressure_topic_5770"],
     "anomaly_detection_alg": ["GAN()"],
-    "filtering":["[[1, 0, 0], [0, 0, 30]]"],
     "anomaly_detection_conf": [
         {
             "train_data": "data/training/braila_pressure5770.csv",
@@ -21,6 +20,7 @@
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,
+            "retrain_file": "./data/retrain/GANTest_retrain.csv",
             "input_vector_size": 10,
             "normalization_conf":
             {

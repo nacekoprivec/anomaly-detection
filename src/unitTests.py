@@ -19,17 +19,18 @@ import tensorflow as tf
 
 # Algorithm imports
 from anomalyDetection import AnomalyDetectionAbstract
-from borderCheck import BorderCheck
-from welford import Welford
-from EMA import EMA
-from filtering import Filtering
-from isolationForest import IsolationForest
-from GAN import GAN
-from PCA import PCA
-from hampel import Hampel
+from src.borderCheck import BorderCheck
+from src.welford import Welford
+from src.EMA import EMA
+from src.filtering import Filtering
+from src.isolationForest import IsolationForest
+from src.GAN import GAN
+from src.PCA import PCA
+from src.hampel import Hampel
+from src.combination import Combination, AND, OR
 
 # Normalization imports
-from normalization import LastNAverage, PeriodicLastNAverage
+from src.normalization import LastNAverage, PeriodicLastNAverage
 
 
 def create_model_instance(algorithm_str, configuration, save = False):
@@ -609,7 +610,7 @@ class PCATestCase(unittest.TestCase):
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
             
-        create_testing_file("./unittest/PCATestData.csv", withzero = True)
+        create_testing_file("./unittest/PCATestData.csv", withzero = True, FV_length = 10)
 
         configuration = {
         "train_data": "./unittest/PCATestData.csv",
@@ -620,11 +621,10 @@ class PCATestCase(unittest.TestCase):
             "model_name": "PCA_Test",
             "N_components": 5
         },
-        "shifts": [[1, 2, 3, 4, 5, 6]],
         "retrain_file": "./unittest/PCARetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 90,
-        "input_vector_size": 1, 
+        "input_vector_size": 10, 
         "output": [],
         "output_conf": [{}]
         }
@@ -649,7 +649,7 @@ class PCATestCase(unittest.TestCase):
 class PCATestClassPropperties(PCATestCase):
     def test_Propperties(self):
         self.assertEqual(self.model.max_features, 5)
-        self.assertEqual(self.model.max_samples, 15)
+        self.assertEqual(self.model.max_samples, 25)
         self.assertEqual(self.model.retrain_interval, 10)
         self.assertEqual(self.model.samples_for_retrain, 90)
 
@@ -657,34 +657,98 @@ class PCATestClassPropperties(PCATestCase):
 class PCATestFunctionality(PCATestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1]*20
-        expected_status = [2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        for i in range(20):
+        test_array = [1]*10
+        for i in range(15):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array)
             self.model.message_insert(message)
-            self.assertEqual(self.model.status_code, expected_status[i])
+            self.assertEqual(self.model.status_code, 1)
         self.assertEqual(self.model.retrain_counter, 1)
 
     def test_errors(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [0.5, 1, 0.5, 0, 0.5, 1, 0.5, 0, -0.5, -0-5, 0.5, 0, -0.5, -1, -0.5]
-        expected_status = [2, 2, 2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1]
-        for i in range(len(test_array)):
+        test_array = [0.5, 1, 0.5, 0, 0.5, 1, 0.5, 0, -0.5, -0-5]
+        for i in range(15):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array)
             self.model.message_insert(message)
             print(self.model.status_code)
-            self.assertEqual(self.model.status_code, expected_status[i])
+            self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
 
 
-class combinationTestCase(unittest.TestCase):
+class CombinationTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        self.configuration = {
+            "anomaly_detection_alg": ["Combination()"],
+            "status_determiner": "AND()",
+            "anomaly_algorithms": ["BorderCheck()", "BorderCheck()"],
+            "output": [],
+            "output_conf": [{}],
+            "input_vector_size": 1,
+            "anomaly_algorithms_configurations":[
+            {
+            "input_vector_size": 1,
+            "warning_stages": [0.9],
+            "UL": 0.5,
+            "LL": 0,
+            "output": [],
+            "output_conf": [{}]
+            },
+            {
+                "input_vector_size": 1,
+                "warning_stages": [0.9],
+                "UL": 1,
+                "LL": 0,
+                "output": [],
+                "output_conf": [{}]
+            }
+            ]
+        }
+        self.f = "models"
+
+        #self.model = create_model_instance("Combination()", configuration, save = True)
         return super().setUp()
     
     def tearDown(self) -> None:
         return super().tearDown()
+
+class CombinationTestClassPropperties(CombinationTestCase):
+    def test_ANDPropperties(self):
+        #check algorithms and determiner setup
+        self.configuration["status_determiner"] = "AND()"
+        self.model = create_model_instance("Combination()", self.configuration)
+        self.assertIsInstance(self.model.anomaly_algorithms[0], BorderCheck)
+        self.assertIsInstance(self.model.anomaly_algorithms[1], BorderCheck)
+        self.assertIsInstance(self.model.status_determiner,AND)
+    
+    def test_ORPropperties(self):
+        self.configuration["status_determiner"] = "OR()"
+        self.model = create_model_instance("Combination()", self.configuration)
+        self.assertIsInstance(self.model.anomaly_algorithms[0], BorderCheck)
+        self.assertIsInstance(self.model.anomaly_algorithms[1], BorderCheck)
+        self.assertIsInstance(self.model.status_determiner,OR)
+
+class CombinationTestFunctionality(CombinationTestCase):
+    def test_AND(self):
+        self.configuration["status_determiner"] = "AND()"
+        self.model = create_model_instance("Combination()", self.configuration)
+        test_array = [0.2, 1, 1.5]
+        expected_status = [1, 0, -1]
+        for i in range(3):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+
+    def test_OR(self):
+        self.configuration["status_determiner"] = "OR()"
+        self.model = create_model_instance("Combination()", self.configuration)
+        test_array = [0.2, 0.5, 1.5]
+        expected_status = [1, 0, -1]
+        for i in range(3):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(), [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
 
 
 class FeatureConstructionTestCase(unittest.TestCase):

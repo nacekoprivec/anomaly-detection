@@ -192,6 +192,8 @@ class AnomalyDetectionAbstract(ABC):
             logging.warning(f"{self.name}: Feature vector contains a None.")
             return False
 
+        
+        
         # Test if timestamp is of type int
         if(not (isinstance(message_value["timestamp"], int) or isinstance(message_value["timestamp"], float))):
             logging.warning("%s: Timestamp not in correct format: %s",
@@ -200,6 +202,7 @@ class AnomalyDetectionAbstract(ABC):
 
         # Test if timestamp is valid
         timestamp_ok = False
+       
         try:
             pd.to_datetime(message_value["timestamp"], unit="s")
             timestamp_ok = True
