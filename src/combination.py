@@ -27,6 +27,7 @@ class Combination(AnomalyDetectionAbstract):
     output based on all of them
     """
 
+    name: str = "Combination"
     anomaly_algorithms: List["AnomalyDetectionAbstract"]
     status_determiner: "StatusDeterminer"
 
@@ -44,7 +45,7 @@ class Combination(AnomalyDetectionAbstract):
 
         # ALGORITHMS
         anomaly_algorithm_names = conf["anomaly_algorithms"]
-        anomaly_algorithms_configurations: conf["anomaly_algorithms_configurations"]
+        anomaly_algorithms_configurations = conf["anomaly_algorithms_configurations"]
 
         # Check number of algorithms and configurations
         assert len(anomaly_algorithm_names) == len(anomaly_algorithms_configurations), "Number of anomaly detection algorithms does not match the number of configurations."
@@ -76,6 +77,9 @@ class Combination(AnomalyDetectionAbstract):
         
         # Get fina status
         final_status_code, status = self.status_determiner.determine_status(statuses=statuses)
+
+        self.status_code = final_status_code
+        self.status = status
 
         # Output
         self.normalization_output_visualization(status_code=final_status_code,
