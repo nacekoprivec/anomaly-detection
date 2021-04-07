@@ -92,10 +92,12 @@ class PCA(AnomalyDetectionAbstract):
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
-            self.normalization_output_visualization(status=status,
-                                                status_code=status_code,
-                                                value=message_value["ftr_vector"],
-                                                timestamp=message_value["timestamp"])
+
+            # if the names in the msg are wrong, there would be an error here
+            #self.normalization_output_visualization(status=status,
+            #                                    status_code=status_code,
+            #                                    value=message_value["ftr_vector"],
+            #                                    timestamp=message_value["timestamp"])
             
             # Remenber status for unittests
             self.status = status
