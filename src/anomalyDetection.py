@@ -195,7 +195,7 @@ class AnomalyDetectionAbstract(ABC):
         
         
         # Test if timestamp is of type int
-        if(not isinstance(message_value["timestamp"], float)):
+        if(not (isinstance(message_value["timestamp"], int) or isinstance(message_value["timestamp"], float))):
             logging.warning("%s: Timestamp not in correct format: %s",
                             self.name, message_value["timestamp"])
             return False

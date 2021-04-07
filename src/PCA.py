@@ -201,7 +201,10 @@ class PCA(AnomalyDetectionAbstract):
 
             with open("configuration/" + self.configuration_location) as conf:
                 whole_conf = json.load(conf)
-                whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
+                if(whole_conf["anomaly_detection_alg"][self.algorithm_indx] == "Combination()"):
+                    whole_conf["anomaly_detection_conf"][self.algorithm_indx]["anomaly_algorithms_configurations"][self.index_in_combination]["train_data"] = path
+                else:
+                    whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
             
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
