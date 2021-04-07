@@ -981,6 +981,54 @@ class PeriodicAverageNormalizationFunctionality(PeriodicAverageNormalizationTest
             self.assertAlmostEqual(normalized_data[6+response_indx][0], result_data[response_indx][0], 4)
             self.assertAlmostEqual(normalized_data[6+response_indx][1], result_data[response_indx][1], 4)
 
+class MsgCheckTestFunctionality(BCTestCase):
+    def test_OK(self):
+        message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vector" : [1]}
+
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), True)
+    
+    def test_NOK(self):
+        #wrong name
+        message = {"timestap" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vector" : [1]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+
+        print("a")
+        message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vect" : [1]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+        print("a")
+
+        #wrong ftr_vector length
+        message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vector" : [1, 1]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+
+        #wrong ftr_vector type
+        message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vector" : ["Im a string"]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+
+        #None in ftr_vector
+        message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
+                    "ftr_vector" : [None]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+
+        #wrong timestamp
+        message = {"timestamp" : datetime.now(),
+                    "ftr_vector" : [1]}
+        self.model.message_insert(message)
+        self.assertEqual(self.model.check_ftr_vector(message), False)
+
+
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
