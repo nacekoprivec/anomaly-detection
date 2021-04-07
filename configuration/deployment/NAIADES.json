@@ -9,12 +9,15 @@
         "features_braila_pressure5771_anomaly",
         "features_braila_pressure5772_anomaly",
         "features_braila_pressure5773_anomaly"
+        
     ],
+    "filtering": ["None", "None", "None", "None", "[[2, 0, 0], [0, 0, 30]]"],
     "anomaly_detection_alg": [
         "IsolationForest()",
         "IsolationForest()",
         "IsolationForest()",
-        "IsolationForest()"
+        "IsolationForest()",
+        "Combination()"
     ],
     "anomaly_detection_conf": [
         {
@@ -112,6 +115,41 @@
                     "mode": "w"
                 }
             ]
+        },
+        {
+            "anomaly_algorithms": ["Welford()", "LinearFit()"],
+            "anomaly_algorithms_configurations":[
+                {
+                "input_vector_size": 1,
+                "warning_stages": [0.7, 0.9],
+                "N": 7,
+                "X": 6,
+                "output": [],
+                "output_conf": [{}]
+                },
+                {
+                    "input_vector_size": 1,
+                    "warning_stages": [0.5, 0.9],
+                    "N": 10,
+                    "UL": 4,
+                    "LL": -4,
+                    "confidence_norm": 6,
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ],
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                "node_id": "braila_flow_night_211306H360",
+                "send_ok": false
+                },
+                {
+                    "file_name": "braila_flow_night_211306H360_anomalies.csv",
+                    "mode": "w"
+                }
+            ],
+            "status_determiner": "OR()"
         }
     ]
 }
