@@ -4,7 +4,7 @@ import json
 import sys
 
 from typing import Any, Dict, List
-
+sys.path.insert(0,'./src')
 # Algorithm imports
 from anomalyDetection import AnomalyDetectionAbstract
 from borderCheck import BorderCheck
