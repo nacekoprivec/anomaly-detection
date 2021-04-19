@@ -16,6 +16,7 @@ from GAN import GAN
 from PCA import PCA
 from hampel import Hampel
 from linearFit import LinearFit
+from combination import Combination
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads

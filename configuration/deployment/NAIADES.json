@@ -123,6 +123,7 @@
         },
         {
             "status_determiner": "OR()",
+            "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
@@ -158,6 +159,7 @@
         },
         {
             "status_determiner": "OR()",
+            "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
@@ -193,6 +195,7 @@
         },
         {
             "status_determiner": "OR()",
+            "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
@@ -228,6 +231,7 @@
         },
         {
             "status_determiner": "OR()",
+            "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
