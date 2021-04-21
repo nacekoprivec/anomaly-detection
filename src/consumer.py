@@ -4,7 +4,7 @@ import json
 import sys
 
 from typing import Any, Dict, List
-
+sys.path.insert(0,'./src')
 # Algorithm imports
 from src.anomalyDetection import AnomalyDetectionAbstract
 from borderCheck import BorderCheck
@@ -16,6 +16,7 @@ from GAN import GAN
 from PCA import PCA
 from hampel import Hampel
 from linearFit import LinearFit
+from combination import Combination
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads

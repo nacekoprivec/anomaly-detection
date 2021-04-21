@@ -1,0 +1,155 @@
+{
+    "bootstrap_servers": ["localhost:9092"],
+    "auto_offset_reset": "latest",
+    "enable_auto_commit": "True",
+    "group_id": "my-group",
+    "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
+    "topics": [
+        "features_braila_pressure5770_anomaly",
+        "features_braila_pressure5771_anomaly",
+        "features_braila_pressure5772_anomaly",
+        "features_braila_pressure5773_anomaly"
+        
+    ],
+    "filtering": ["None", "None", "None", "None", "[[2, 0, 0], [0, 0, 30]]"],
+    "anomaly_detection_alg": [
+        "IsolationForest()",
+        "IsolationForest()",
+        "IsolationForest()",
+        "IsolationForest()",
+        "Combination()"
+    ],
+    "anomaly_detection_conf": [
+        {
+            "train_data": "data/training/braila_pressure5770.csv",
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
+                "contamination": "auto",
+                "model_name": "IsolForestModelbraila_pressure5770"
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
+            "input_vector_size": 10,
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5770",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_pressure_5770_anomalies.csv",
+                    "mode": "w"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_pressure5771.csv",
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
+                "contamination": "auto",
+                "model_name": "IsolForestModelbraila_pressure5771"
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
+            "input_vector_size": 10,
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5771",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_pressure_5771_anomalies.csv",
+                    "mode": "w"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_pressure5772.csv",
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
+                "contamination": "auto",
+                "model_name": "IsolForestModelraila_pressure5772"
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
+            "input_vector_size": 10,
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5772",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_pressure_5772_anomalies.csv",
+                    "mode": "w"
+                }
+            ]
+        },
+        {
+            "train_data": "data/training/braila_pressure5773.csv",
+            "train_conf": {
+                "max_features": 10,
+                "max_samples": 8000,
+                "contamination": "auto",
+                "model_name": "IsolForestModelbraila_pressure5773"
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
+            "input_vector_size": 10,
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_pressure_5773",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_pressure_5773_anomalies.csv",
+                    "mode": "w"
+                }
+            ]
+        },
+        {
+            "anomaly_algorithms": ["Welford()", "LinearFit()"],
+            "anomaly_algorithms_configurations":[
+                {
+                "input_vector_size": 1,
+                "warning_stages": [0.7, 0.9],
+                "N": 7,
+                "X": 6,
+                "output": [],
+                "output_conf": [{}]
+                },
+                {
+                    "input_vector_size": 1,
+                    "warning_stages": [0.5, 0.9],
+                    "N": 10,
+                    "UL": 4,
+                    "LL": -4,
+                    "confidence_norm": 6,
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ],
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                "node_id": "braila_flow_night_211306H360",
+                "send_ok": false
+                },
+                {
+                    "file_name": "braila_flow_night_211306H360_anomalies.csv",
+                    "mode": "w"
+                }
+            ],
+            "status_determiner": "OR()"
+        }
+    ]
+}
