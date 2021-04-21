@@ -10,13 +10,11 @@
         {
             "train_data": "data/training/braila_pressure5770.csv",
             "train_conf":{
-                "max_features": 1,
-                "max_samples": 15000,
-                "contamination": "auto",
                 "model_name": "GAN_Braila_pressure_5770",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 8,
+                "len_window": 500
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 2000,

@@ -9,9 +9,9 @@ from tensorflow import keras
 import pandas as pd
 from ast import literal_eval
 
-sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+#sys.path.insert(0,'./src')
+#sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
+from src.anomalyDetection import AnomalyDetectionAbstract
 from isolationForest import IsolationForest
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
@@ -44,6 +44,10 @@ class GAN(AnomalyDetectionAbstract):
         self.N_latent = conf["train_conf"]["N_latent"]
         self.model_name = conf["train_conf"]["model_name"]
         self.K = conf["train_conf"]["K"]
+        self.len_window = conf["train_conf"]["len_window"]
+
+        self.window = []
+        self.weights = np.exp(np.linspace(0, 1, self.len_window))
 
         # Retrain configuration
         if("retrain_interval" in conf):
@@ -141,10 +145,22 @@ class GAN(AnomalyDetectionAbstract):
             status_code = self.UNDEFIEND_CODE
         else:
             feature_vector = np.array(feature_vector)
+
+
             # print(feature_vector)
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
             self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
+
+            self.window.append(self.GAN_error)
+            if(len(self.window) > self.len_window):
+                self.window = self.window[-self.len_window:]
+                self.threshold = self.K * np.ma.average(self.window, weights = self.weights)
+            else:
+                self.threshold = self.K * np.ma.average(self.window, weights = self.weights[-len(self.window):])
+
+            print(self.threshold)
+            print(self.GAN_error)
 
 
             #print("GAN error: " + str(self.GAN_error))
@@ -296,11 +312,11 @@ class GAN(AnomalyDetectionAbstract):
             self.GAN.add_loss(GAN_loss)
             self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
             features = np.array(features)
-            self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 0)
+            self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 1)
             
             predictions = self.GAN.predict(features.reshape(len(features), self.N_shifts+1))
             
             GAN_transformed = [mse(np.array(features[i]), predictions[i]) for i in range(len(features))]
-            self.threshold = self.K * max(GAN_transformed)
+            self.threshold = max(GAN_transformed)
 
             self.save_model(self.model_name)

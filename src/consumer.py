@@ -6,7 +6,7 @@ import sys
 from typing import Any, Dict, List
 
 # Algorithm imports
-from anomalyDetection import AnomalyDetectionAbstract
+from src.anomalyDetection import AnomalyDetectionAbstract
 from borderCheck import BorderCheck
 from welford import Welford
 from EMA import EMA

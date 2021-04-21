@@ -53,7 +53,7 @@ for i in range(1000):
     #else:
     #    ran = 0
     value = literal_eval(values[i])
-    print(value[0])
+    print(value)
     anomaly = 0
     if (i%20 == 0):
         anomaly = -0.03
@@ -61,5 +61,5 @@ for i in range(1000):
 			"timestamp": times[i]}
 
 	
-    producer.send("anomaly_detection1", value=data)
+    producer.send("pressure_topic_5770", value=data)
     sleep(1) #one data point each second
