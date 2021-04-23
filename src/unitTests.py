@@ -539,10 +539,11 @@ class GANTestCase(unittest.TestCase):
             "model_name": "GAN_Test",
             "N_shifts": 9,
             "N_latent": 3,
-            "K": 0.8
+            "K": 1.5,
+            "len_window": 1000
         },
         "retrain_file": "./unittest/GANRetrainData.csv",
-        "retrain_interval": 10,
+        "retrain_interval": 3,
         "samples_for_retrain": 90,
         "input_vector_size": 10,
         "output": [],
@@ -572,7 +573,7 @@ class GANTestClassPropperties(GANTestCase):
     def test_Propperties(self):
         self.assertEqual(self.model.N_shifts, 9)
         self.assertEqual(self.model.N_latent, 3)
-        self.assertEqual(self.model.retrain_interval, 10)
+        self.assertEqual(self.model.retrain_interval, 3)
         self.assertEqual(self.model.samples_for_retrain, 90)
 
 
@@ -580,7 +581,7 @@ class GANTestFunctionality(GANTestCase):
     def test_OK(self):
         #Insert same values as in train set (status should be 1).
         test_array = [1]*10
-        for i in range(15):
+        for i in range(3):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
@@ -589,20 +590,28 @@ class GANTestFunctionality(GANTestCase):
 
     def test_errors(self):
         #Insert same values as in train set (status should be 1).
-        test_array = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-        for i in range(10):
+        test_array = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+        for i in range(3):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array)
+            self.model.message_insert(message)
+
+        test_array = [1, 2, 4, 100, 1, 1, 5, 1, 1, 1]
+
+        for i in range(3):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, -1)
         
         test_array1 = [1, 1, 0, 0, 1, 1, 0, 0, 1, 1]
-        for i in range(5):
+        for i in range(1):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     test_array1)
+                                     test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, -1)
-        self.assertEqual(self.model.retrain_counter, 1)
+        self.assertEqual(self.model.retrain_counter, 2)
 
 
 class PCATestCase(unittest.TestCase):

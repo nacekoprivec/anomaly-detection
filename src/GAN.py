@@ -312,7 +312,7 @@ class GAN(AnomalyDetectionAbstract):
             self.GAN.add_loss(GAN_loss)
             self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
             features = np.array(features)
-            self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 1)
+            self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 0)
             
             predictions = self.GAN.predict(features.reshape(len(features), self.N_shifts+1))
             
