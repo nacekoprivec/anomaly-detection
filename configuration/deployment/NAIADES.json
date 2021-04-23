@@ -31,12 +31,17 @@
                 "model_name": "GAN_Braila_pressure_5770",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 8,
+                "len_window": 500
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
             "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -55,12 +60,17 @@
                 "model_name": "GAN_Braila_pressure_5771",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 8,
+                "len_window": 500
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
             "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -79,12 +89,17 @@
                 "model_name": "GAN_Braila_pressure_5772",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 8,
+                "len_window": 500
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
             "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
@@ -103,12 +118,17 @@
                 "model_name": "GAN_Braila_pressure_5773",
                 "N_shifts": 9,
                 "N_latent": 3,
-                "K": 0.95
+                "K": 8,
+                "len_window": 500
             },
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
             "input_vector_size": 10,
+            "normalization_conf":
+            {
+                "N": 3
+            },
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
