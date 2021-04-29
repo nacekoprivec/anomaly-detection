@@ -17,6 +17,8 @@ from PCA import PCA
 from hampel import Hampel
 from linearFit import LinearFit
 from combination import Combination
+from trend_classification import Trend_Classification
+from Cumulative import Cumulative
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
