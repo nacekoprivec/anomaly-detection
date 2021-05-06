@@ -16,6 +16,7 @@ from GAN import GAN
 from PCA import PCA
 from hampel import Hampel
 from linearFit import LinearFit
+from MACD import MACD
 
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
