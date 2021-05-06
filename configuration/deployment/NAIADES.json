@@ -12,13 +12,15 @@
         "features_braila_flow211206H360_night_anomaly",
         "features_braila_flow211106H360_night_anomaly",
         "features_braila_flow211306H360_night_anomaly",
-        "features_braila_flow318505H498_night_anomaly"
+        "features_braila_flow318505H498_night_anomaly",
+        "features_alicante_salinity_EA003_36_conductivity"
     ],
     "anomaly_detection_alg": [
         "GAN()",
         "GAN()",
         "GAN()",
         "GAN()",
+        "Combination()",
         "Combination()",
         "Combination()",
         "Combination()",
@@ -280,6 +282,43 @@
                     "UL": 4,
                     "LL": -4,
                     "confidence_norm": 6,
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "status_determiner": "OR()",
+            "input_vector_size": 1,
+            "anomaly_algorithms": ["MACD()", "Welford()"],
+            "output": ["KafkaOutput()", "FileOutput()"],
+            "output_conf": [
+                {
+                    "node_id": "braila_salinity_EA003_36_conductivity",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_salinity_EA003_36_conductivity_anomalies.csv",
+                    "mode": "w"
+                }
+            ],
+            "anomaly_algorithms_configurations":[
+                {
+                    "input_vector_size": 1,
+                    "warning_stages": [0.5, 0.9],
+                    "period1": 20000,
+                    "period2": 30000,
+                    "UL": 500.0,
+                    "LL": -500.0,
+                    "output": [],
+                    "output_conf": []
+                
+                },
+                {
+                    "input_vector_size": 1,
+                    "warning_stages": [0.9],
+                    "N": 1440,
+                    "X": 3,
                     "output": [],
                     "output_conf": [{}]
                 }

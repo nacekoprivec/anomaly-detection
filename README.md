@@ -86,6 +86,7 @@ The following parameters are similar to ones in Kafka consumer:
 ### Output
 Output component differs in where the data is outputted to. more than one output conmonent can be specified. It recieves three arguments from the anomaly detection component: value (the last value of the stream), timestamp and status (wether data is anomalous). The following arguments of configuration file are general for all outputs:
 * send_ok: A boolean telling the component if OK samples are to be sent to output. This is an optional parameter. If it is not specified True is taken.
+
 1. **Terminal output:** Timestamp, value and status are outputed to the terminal. It does not require any parameters in the configuration file.
 
 2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: 
