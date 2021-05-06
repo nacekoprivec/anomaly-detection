@@ -15,6 +15,17 @@
         "features_braila_flow318505H498_night_anomaly",
         "features_alicante_salinity_EA003_36_conductivity"
     ],
+    "filtering": [
+        "None",
+        "None",
+        "None",
+        "None",
+        "[[2, 0, 0], [0, 0, 30]]",
+        "[[2, 0, 0], [0, 0, 30]]",
+        "[[2, 0, 0], [0, 0, 30]]",
+        "[[2, 0, 0], [0, 0, 30]]",
+        "None"
+    ],
     "anomaly_detection_alg": [
         "GAN()",
         "GAN()",
@@ -294,11 +305,11 @@
             "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
-                    "node_id": "braila_salinity_EA003_36_conductivity",
+                    "node_id": "alicante_salinity_EA003_36_conductivity",
                     "send_ok": false
                 },
                 {
-                    "file_name": "braila_salinity_EA003_36_conductivity_anomalies.csv",
+                    "file_name": "alicante_salinity_EA003_36_conductivity_anomalies.csv",
                     "mode": "w"
                 }
             ],
