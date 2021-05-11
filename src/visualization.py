@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 plt.style.use('dark_background')
 
 
@@ -46,7 +47,6 @@ class GraphVisualization(VisualizationAbstract):
         # current_moving_average-sigma] how many of those you actually need
         # depends on num of lines
         y_data = [None]*self.num_of_lines
-        print(value)
 
         # define or update lines
         if(self.lines[0] == []):
@@ -140,6 +140,8 @@ class StatusPointsVisualization(VisualizationAbstract):
         # current_moving_average-sigma] how many of those you actually need
         # depends on num of lines
 
+        start = time.time()
+
         self.colors.append(self.get_color(status_code=status_code))
         self.colors = self.colors[-self.num_of_points:]
 
@@ -208,6 +210,7 @@ class StatusPointsVisualization(VisualizationAbstract):
                 y_data[i] = np.append(y_data[i], value[i])
                 y_data[i] = y_data[i][-self.num_of_points:]
 
+
         for i in range(1, self.num_of_lines):
             self.lines[i].set_ydata(y_data[i])
             self.lines[i].set_xdata(self.x_data)
@@ -219,12 +222,16 @@ class StatusPointsVisualization(VisualizationAbstract):
         self.lines[0] = self.ax_graph[0].scatter(self.x_data, y_data, c=self.colors)
 
         # plot limits correction
-        if(value is not None):
-            if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
-                self.ax_graph[0].set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) - 1,
-                                          max(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) + 1])
+        #if(value is not None):
+            #if (min(value) <= self.lines[0].axes.get_ylim()[0]) or (max(value) >= self.lines[0].axes.get_ylim()[1]):
 
-            plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
+        #a new object is added to the figure each cycle, remove the previous line
+        plt.gca().get_children()[0].remove()
+        
+        self.ax_graph[0].set_ylim([min(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) - 1,
+                                        max(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) + 1])
+        
+        plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
         plt.pause(0.1)
 
         self.count += 1
