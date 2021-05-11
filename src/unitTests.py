@@ -27,6 +27,7 @@ from isolationForest import IsolationForest
 from GAN import GAN
 from PCA import PCA
 from hampel import Hampel
+from MACD import MACD
 from combination import Combination, AND, OR
 
 # Normalization imports
@@ -688,6 +689,57 @@ class PCATestFunctionality(PCATestCase):
             #print(self.model.status_code)
             self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
+
+class MACDTestCase(unittest.TestCase):
+    def setUp(self):
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+
+        configuration = {
+        "input_vector_size": 1,
+        "warning_stages": [0.5],
+        "period1": 10,
+        "period2": 30,
+        "UL": 1.0,
+        "LL": -1.0,
+        "output": [],
+        "output_conf": [{}]
+    }
+        self.model = create_model_instance("MACD()", configuration, save = True)
+
+class MACDTestPropperties(MACDTestCase):
+    def test_Propperties(self):
+        self.assertEqual(self.model.warning_stages, [0.5])
+        self.assertEqual(self.model.period1, 10)
+        self.assertEqual(self.model.period2, 30)
+        self.assertEqual(self.model.UL, 1)
+        self.assertEqual(self.model.LL, -1)
+
+
+class MACDTestFunctionality(MACDTestCase):
+    def  test_OK(self):
+        for i in range(30):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [1])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, 1)
+    
+    def test_NOK(self):
+        for i in range(30):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [1])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, 1)
+
+        expected_statusses = [1,1,1,0,0,0,-1,-1,-1,-1]
+        for i in range(10):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [-0.4*i])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_statusses[i])
+
+
+
 
 
 class CombinationTestCase(unittest.TestCase):

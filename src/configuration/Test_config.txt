@@ -1,0 +1,1 @@
+{"anomaly_detection_alg": ["MACD()"], "anomaly_detection_conf": [{"input_vector_size": 1, "warning_stages": [0.5], "period1": 10, "period2": 30, "UL": 1.0, "LL": -1.0, "output": [], "output_conf": [{}]}]}

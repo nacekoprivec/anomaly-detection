@@ -62,7 +62,6 @@ class MACD(AnomalyDetectionAbstract):
         value = value[0]
 
         if(self.use_cols is not None):
-            print("here")
             value = []
             for el in range(len(message_value["ftr_vector"])):
                 if(el in self.use_cols):
@@ -83,8 +82,6 @@ class MACD(AnomalyDetectionAbstract):
             self.EMA2 = value*2/(self.period2 + 1) + self.EMA2*(1 - 2/(self.period2 + 1))
 
         value_normalized = 2*((self.EMA1 - self.EMA2) - (self.UL + self.LL)/2)/(self.UL - self.LL)
-        
-        print(value_normalized)
          
         if(value_normalized > 1):
             status = "Error: MACD above upper limit"
