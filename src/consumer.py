@@ -135,9 +135,14 @@ class ConsumerKafka(ConsumerAbstract):
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
 
-        #datetime.fromtimestamp
+        # Convert unix timestamp to datetime format (with seconds unit if
+        # possible alse miliseconds)
+        try:
+            timestamp = pd.to_datetime(message.value['timestamp'], unit="s")
+        except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
+            timestamp = pd.to_datetime(message.value['timestamp'], unit="ms")
 
-        timestamp = pd.to_datetime(message.value['timestamp'], unit='s')
+        # timestamp = pd.to_datetime(message.value['timestamp'], unit='s')
         time = timestamp.time()
         target_time = datetime.time(target_time[0], target_time[1], target_time[2])
         tol = datetime.timedelta(hours = tolerance[0], minutes = tolerance[1], seconds = tolerance[2])
@@ -145,9 +150,9 @@ class ConsumerKafka(ConsumerAbstract):
         datetime1 = datetime.datetime.combine(date, time)
         datetime2 = datetime.datetime.combine(date, target_time)
 
-        #return message only if timestamp is within tolerance
-        print((max(datetime2, datetime1) - min(datetime2, datetime1)))
-        print(tol)
+        # Return message only if timestamp is within tolerance
+        # print((max(datetime2, datetime1) - min(datetime2, datetime1)))
+        # print(tol)
         if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
             return(message)
         else:
