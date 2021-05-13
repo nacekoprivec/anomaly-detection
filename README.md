@@ -9,6 +9,7 @@
 | `-c CONFIG` | `--config CONFIG` | name of the config file located in configuration folder (example: `config.json`) |
 | `-f` | `--file` | If this flag is used the program will read data from file specified in config file instead of kafka stream|
 | `-fk` | `--filekafka` | If this flag is used the program will read data from file specified in config file and then from kafka stream|
+| `-w` | `--watchdog` | If this flag is used the program will send a ping to watchdog every 30 seconds|
 
 In order to interact with kafka separately from the anomaly detection module e.g. to check messages in a specific topic, scripts from the kafka installation can be run with appropriate flags. For example to view messages in topic 'test' (on windows):
 `.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test --from-beginning`
