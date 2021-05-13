@@ -35,6 +35,10 @@ class GraphVisualization(VisualizationAbstract):
         self.num_of_points = conf["num_of_points"]
         self.num_of_lines = conf["num_of_lines"]
         self.linestyles = conf["linestyles"]
+        if("demo_pause" in conf):
+            self.pause = conf["demo_pause"]
+        else:
+            self.pause = 0.1
         self.lines = [[] for _ in range(self.num_of_lines)]
         self.count = 0
         pass
@@ -106,7 +110,7 @@ class GraphVisualization(VisualizationAbstract):
                 Max = max(value)+0.1
         plt.subplot(111).set_ylim([Min - 0.1, Max + 0.1])
         plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 0.1, max(filter(lambda x: x is not None, x_data))+0.1])
-        plt.pause(0.1)
+        plt.pause(self.pause)
 
         self.count += 1
 
@@ -128,6 +132,11 @@ class StatusPointsVisualization(VisualizationAbstract):
         self.num_of_points = conf["num_of_points"]
         self.num_of_lines = conf["num_of_lines"]
         self.linestyles = conf["linestyles"]
+        if("demo_pause" in conf):
+            self.pause = conf["demo_pause"]
+        else:
+            self.pause = 0.1
+
         self.lines = [[] for _ in range(self.num_of_lines)]
         self.colors = []
         self.count = 0
@@ -232,7 +241,7 @@ class StatusPointsVisualization(VisualizationAbstract):
                                         max(filter(lambda x: x is not None, self.lines[0].get_offsets()[:,1])) + 1])
         
         plt.subplot(111).set_xlim([float(min(filter(lambda x: x is not None, self.x_data))) - 1, float(max(filter(lambda x: x is not None, self.x_data)))+1])
-        plt.pause(0.1)
+        plt.pause(self.pause)
 
         self.count += 1
 
@@ -269,6 +278,10 @@ class HistogramVisualization(VisualizationAbstract):
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.num_of_bins = conf["num_of_bins"]
         self.range = conf["range"]
+        if("demo_pause" in conf):
+            self.pause = conf["demo_pause"]
+        else:
+            self.pause = 0.1
         self.bins = np.linspace(self.range[0], self.range[1], self.num_of_bins)
         self.bin_vals = np.zeros(len(self.bins))
         self.line = []
@@ -289,4 +302,4 @@ class HistogramVisualization(VisualizationAbstract):
             if (max(self.bin_vals) >= self.line.axes.get_ylim()[1]):
                 plt.subplot(111).set_ylim([0, max(self.bin_vals)+1])
 
-        plt.pause(0.1)
+        plt.pause(self.pause)
