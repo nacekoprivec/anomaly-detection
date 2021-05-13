@@ -75,7 +75,7 @@ def main():
 
     # Ping watchdog every 30 seconds if specfied
     if (args.watchdog):
-        print("\n=== Watchdog started ===")
+        logging.info("=== Watchdog started ===")
         ping_watchdog()
 
     consumer.read()
