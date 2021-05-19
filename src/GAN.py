@@ -9,9 +9,9 @@ from tensorflow import keras
 import pandas as pd
 from ast import literal_eval
 
-#sys.path.insert(0,'./src')
+sys.path.insert(0,'./src')
 #sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from src.anomalyDetection import AnomalyDetectionAbstract
+from anomalyDetection import AnomalyDetectionAbstract
 from isolationForest import IsolationForest
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
@@ -159,8 +159,8 @@ class GAN(AnomalyDetectionAbstract):
             else:
                 self.threshold = self.K * np.ma.average(self.window, weights = self.weights[-len(self.window):])
 
-            print(self.threshold)
-            print(self.GAN_error)
+            # print(self.threshold)
+            # print(self.GAN_error)
 
 
             #print("GAN error: " + str(self.GAN_error))

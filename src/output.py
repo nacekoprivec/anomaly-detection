@@ -145,7 +145,7 @@ class FileOutput(OutputAbstract):
                   algorithm: str = "Unknown", suggested_value: Any = None
                   ) -> None:
         with open(self.file_path, "a") as txt_file:
-            o = timestamp + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
+            o = str(timestamp) + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
             if(suggested_value is not None):
                 o = o + ", Suggested value: " + suggested_value
             o = o + "\n"
@@ -192,18 +192,18 @@ class KafkaOutput(OutputAbstract):
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
         if(status_code != 1 or self.send_ok):
-            # Build a object to be sent out
-            to_write = {"sensor": self.node_id}
-            if(algorithm is not None):
-                to_write["algorithm"] =algorithm
-            if(status_code is not None):
-                to_write["score"] = status_code
+            # Construct the object to write
+            to_write = {"algorithm": algorithm}
+            if (value is not None):
+                to_write["value"] = value
+            if (status != ""):
+                to_write["status"] = status
             if (timestamp is not None):
                 to_write["timestamp"] = timestamp
-            #if (value is not None):
-            #    to_write["value"] = value
-            if (status != ""):
-                to_write["explanation"] = status
+            if (status_code is not None):
+                to_write["status_code"] = status_code
+            if(suggested_value is not None):
+                to_write["suggested_value"] = suggested_value
             
             kafka_topic = "anomalies_" + str(self.node_id)
 
