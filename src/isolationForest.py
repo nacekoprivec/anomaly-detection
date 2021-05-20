@@ -113,8 +113,8 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.status_code = status_code
             return status, status_code
 
-        value = message_value["ftr_vector"]
-        value = value[0]
+        #value = message_value["ftr_vector"]
+        #value = value[0]
 
         if(self.use_cols is not None):
             value = []
@@ -125,7 +125,8 @@ class IsolationForest(AnomalyDetectionAbstract):
             value = message_value["ftr_vector"]
 
         timestamp = message_value["timestamp"]
-        feature_vector = super().feature_construction(value=value,timestamp=timestamp)
+        feature_vector = super().feature_construction(value=value,
+                                                      timestamp=timestamp)
         # print("feature vector:", feature_vector)
 
         if (not feature_vector or not self.trained):

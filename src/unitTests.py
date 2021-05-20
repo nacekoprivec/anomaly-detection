@@ -28,6 +28,7 @@ from GAN import GAN
 from PCA import PCA
 from hampel import Hampel
 from MACD import MACD
+from clustering import Clustering
 from combination import Combination, AND, OR
 
 # Normalization imports
@@ -690,6 +691,7 @@ class PCATestFunctionality(PCATestCase):
             self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
 
+
 class MACDTestCase(unittest.TestCase):
     def setUp(self):
         # Set random seed so results are reproducable
@@ -706,6 +708,7 @@ class MACDTestCase(unittest.TestCase):
         "output_conf": [{}]
     }
         self.model = create_model_instance("MACD()", configuration, save = True)
+
 
 class MACDTestPropperties(MACDTestCase):
     def test_Propperties(self):
@@ -739,7 +742,82 @@ class MACDTestFunctionality(MACDTestCase):
             self.assertEqual(self.model.status_code, expected_statusses[i])
 
 
+class ClusteringTestCase(unittest.TestCase):
+    def setUp(self):
+        # Set random seed so results are reproducable
+        np.random.seed(0)
 
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
+
+        # TODO
+        create_testing_file("./unittest/ClusteringTestData.csv")
+
+        configuration = {
+        "train_data": "./unittest/ClusteringTestData.csv",
+        "retrain_file": "./unittest/ClusteringRetrainData.csv",
+        "eps": 0.18,
+        "min_samples": 3,
+        "treshold": 1.5,
+        "retrain_interval": 10,
+        "samples_for_retrain": 10,
+        "input_vector_size": 3,
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("Clustering()", configuration, save=True)
+    
+    def tearDown(self):
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
+
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+
+class ClusteringTestClassPropperties(ClusteringTestCase):
+    #Check propperties setup.
+    def test_Propperties(self):
+        self.assertEqual(self.model.eps, 0.18)
+        self.assertEqual(self.model.min_samples, 3)
+        self.assertEqual(self.model.treshold, 1.5)
+        self.assertEqual(self.model.retrain_interval, 10)
+        self.assertEqual(self.model.samples_for_retrain, 10)
+
+
+class ClusteringTestFunctionality(ClusteringTestCase):
+    # TODO
+    def test_OK(self):
+        return
+        #Insert same values as in train set (status should be 1).
+        test_array = [1.0]*15
+        expected_status = [2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
+
+    def test_errors(self):
+        return
+        #insert different values as in train set (status should be -1).
+        test_array = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0]
+        expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     [test_array[i]])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)
 
 
 class CombinationTestCase(unittest.TestCase):
@@ -778,6 +856,7 @@ class CombinationTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         return super().tearDown()
 
+
 class CombinationTestClassPropperties(CombinationTestCase):
     def test_ANDPropperties(self):
         #check algorithms and determiner setup
@@ -793,6 +872,7 @@ class CombinationTestClassPropperties(CombinationTestCase):
         self.assertIsInstance(self.model.anomaly_algorithms[0], BorderCheck)
         self.assertIsInstance(self.model.anomaly_algorithms[1], BorderCheck)
         self.assertIsInstance(self.model.status_determiner,OR)
+
 
 class CombinationTestFunctionality(CombinationTestCase):
     def test_AND(self):
@@ -1046,6 +1126,7 @@ class PeriodicAverageNormalizationFunctionality(PeriodicAverageNormalizationTest
             self.assertAlmostEqual(normalized_data[6+response_indx][0], result_data[response_indx][0], 4)
             self.assertAlmostEqual(normalized_data[6+response_indx][1], result_data[response_indx][1], 4)
 
+
 class MsgCheckTestFunctionality(BCTestCase):
     def test_OK(self):
         message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
@@ -1091,8 +1172,6 @@ class MsgCheckTestFunctionality(BCTestCase):
                     "ftr_vector" : [1]}
         self.model.message_insert(message)
         self.assertEqual(self.model.check_ftr_vector(message), False)
-
-
 
 
 if __name__ == '__main__':
