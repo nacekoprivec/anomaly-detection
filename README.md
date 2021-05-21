@@ -250,10 +250,26 @@ It requires the following arguments in the config file:\
 It requires the following arguments in the config file:\
    * N_shifts: Number of past data, which are used to construct the feature vector. (example: 9),
    * N_latent: Dimensionality of the latent space (example: 3),
-   * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95).<br>
+   * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95).
+   * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100),
+   * samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
+   * retrain_file: Path and file name of the file in which retrain data will be stored (example: "./data/retrain/test.csv").<br>
 To see the train and retrain file formats see [Training files](#training-files).
 
-8. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
+9. **Clustering:** This model usses dbscan clustering method (from sklearn) to extract and save core samples. Every incomming sample is then compared to those core samples. If the euclidian distance of the sample to every core sample is greater than treshold then the sample is anomalous.
+It requires the following arguments in the config file:\
+* eps: A float representing the maximum distance between two samples for one to be considered as in the neighborhood of the other,
+* min_samples: An integer representing the number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself,
+* treshold: A float, representing the euclidean distance that is required to determine anomalies (the larger the distance the less points are anomalous),
+* retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100),
+* samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
+* retrain_file: Path and file name of the file in which retrain data will be stored (example: "./data/retrain/test.csv").
+
+10. **MACD:** TODO
+
+11. **Linear fit:** TODO
+
+12. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
 It requires the following arguments in the config file:\
    * anomaly_algorithms: A list of anomaly detection algorithms used.
    * anomaly_algorithms_configurations: A list of anomaly detection algorithm's configurations. These configurations have the same fields as stand-alone anomaly detection algorithms would have. The outputs
