@@ -91,6 +91,31 @@ def create_testing_file(filepath, withzero = False, FV_length = None):
 
     return filepath
 
+def create_clustering_testing_file(filepath):
+    timestamps = [1459926000 + 3600*x for x in range(14)]
+
+    data = [
+        [10.3, 10.44],
+        [9.8, 11.3],
+        [15.433, 16.4],
+        [0, 0.2],
+        [0.2, 0.234],
+        [0.3, 0.12],
+        [0.11, 0.0456],
+        [0.01, 0.07996],
+        [1.3, 0.211],
+        [1, 1.65],
+        [1.2, 1.22],
+        [1.332, 1.03],
+        [1.222, 1.01],
+        [1.554, 1.44]
+    ]
+    
+    df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': data})
+    df.to_csv(filepath, index = False)
+
+    return filepath
+
 def create_testing_file_feature_construction(filepath):
     timestamps = [1459926000 + 3600*x for x in range(20)]
     values = [[x, x+100] for x in range(20)]
@@ -687,7 +712,6 @@ class PCATestFunctionality(PCATestCase):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      test_array)
             self.model.message_insert(message)
-            #print(self.model.status_code)
             self.assertEqual(self.model.status_code, -1)
         self.assertEqual(self.model.retrain_counter, 1)
 
@@ -750,18 +774,17 @@ class ClusteringTestCase(unittest.TestCase):
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
 
-        # TODO
-        create_testing_file("./unittest/ClusteringTestData.csv")
+        create_clustering_testing_file("./unittest/ClusteringTestData.csv")
 
         configuration = {
         "train_data": "./unittest/ClusteringTestData.csv",
         "retrain_file": "./unittest/ClusteringRetrainData.csv",
-        "eps": 0.18,
+        "eps": 0.98,
         "min_samples": 3,
         "treshold": 1.5,
         "retrain_interval": 10,
         "samples_for_retrain": 10,
-        "input_vector_size": 3,
+        "input_vector_size": 2,
         "output": [],
         "output_conf": [{}]
         }
@@ -786,7 +809,7 @@ class ClusteringTestCase(unittest.TestCase):
 class ClusteringTestClassPropperties(ClusteringTestCase):
     #Check propperties setup.
     def test_Propperties(self):
-        self.assertEqual(self.model.eps, 0.18)
+        self.assertEqual(self.model.eps, 0.98)
         self.assertEqual(self.model.min_samples, 3)
         self.assertEqual(self.model.treshold, 1.5)
         self.assertEqual(self.model.retrain_interval, 10)
@@ -794,27 +817,48 @@ class ClusteringTestClassPropperties(ClusteringTestCase):
 
 
 class ClusteringTestFunctionality(ClusteringTestCase):
-    # TODO
     def test_OK(self):
-        return
-        #Insert same values as in train set (status should be 1).
-        test_array = [1.0]*15
-        expected_status = [2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        # Insert similar values as in train set (status should be 1).
+        test_array = [[1.0, 0.9], [0.4, 0.0], [2.554, 2.44]]
+        expected_status = [1, 1, 1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
-        self.assertEqual(self.model.retrain_counter, 1)
+            
 
     def test_errors(self):
-        return
         #insert different values as in train set (status should be -1).
-        test_array = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0]
-        expected_status = [2, 2, 2, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+        test_array = [[3.054, 2.96], [10.0, 11.0], [-5.0, -1.0]]
+        expected_status = [-1, -1, -1]
         for i in range(len(test_array)):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
-                                     [test_array[i]])
+                                     test_array[i])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+    
+    def test_retrain(self):
+        #insert different values as in train set (status should be -1).
+        test_array = [
+            [10, 20.96],
+            [10.0, 1.0],
+            [10.4, 21.1],
+            [0.2, 0.9],
+            [10.4, 20.098],
+            [9.99, 20.44],
+            [9.988, 20.656],
+            [10.443, 21],
+            [10.454, 20.546],
+            [9.995, 20.99],
+            [10.005, 20.3425],
+            [10.1295, 20.456],
+            [1.0, 0.9]     
+            ]
+        expected_status = [-1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1, -1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
         self.assertEqual(self.model.retrain_counter, 1)
@@ -1142,12 +1186,12 @@ class MsgCheckTestFunctionality(BCTestCase):
         self.model.message_insert(message)
         self.assertEqual(self.model.check_ftr_vector(message), False)
 
-        print("a")
+        #print("a")
         message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
                     "ftr_vect" : [1]}
         self.model.message_insert(message)
         self.assertEqual(self.model.check_ftr_vector(message), False)
-        print("a")
+        #print("a")
 
         #wrong ftr_vector length
         message = {"timestamp" : (datetime.now()-datetime(1970,1,1)).total_seconds(),

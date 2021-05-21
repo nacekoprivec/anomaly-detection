@@ -187,10 +187,9 @@ class GAN(AnomalyDetectionAbstract):
         # Add to memory for retrain and execute retrain if needed 
         if (self.retrain_interval is not None):
             # Add to memory
-            samples_in_memory = self.memory_dataframe.shape[0]
-
-            self.memory_dataframe.at[samples_in_memory, "timestamp"] = timestamp
-            self.memory_dataframe.at[samples_in_memory, "ftr_vector"] = value
+            new_row = {"timestamp": timestamp, "ftr_vector": value}
+            self.memory_dataframe = self.memory_dataframe.append(new_row,
+                                                                 ignore_index=True)
             
             # Cut if needed
             if(self.samples_for_retrain is not None):

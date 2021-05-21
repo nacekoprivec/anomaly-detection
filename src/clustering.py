@@ -125,8 +125,8 @@ class Clustering(AnomalyDetectionAbstract):
             # samples
             anomalous = True
             for core_sample in self.core_samples:
-                euclidian_dist = distance.euclidian(core_sample, feature_vector)
-                if(euclidian_dist < self.treshold):
+                euclidean_dist = distance.euclidean(core_sample, feature_vector)
+                if(euclidean_dist < self.treshold):
                     anomalous = False
                     break
             
@@ -150,10 +150,10 @@ class Clustering(AnomalyDetectionAbstract):
         if (self.retrain_interval is not None):
             # Add to memory (timestamp and ftr_vector seperate so it does not
             # ceuse error)
-            samples_in_memory = self.memory_dataframe.shape[0]
-            self.memory_dataframe.at[samples_in_memory, "timestamp"] = timestamp
-            self.memory_dataframe.at[samples_in_memory, "ftr_vector"] = value
-            
+            new_row = {"timestamp": timestamp, "ftr_vector": value}
+            self.memory_dataframe = self.memory_dataframe.append(new_row,
+                                                                 ignore_index=True)
+
             # Cut if needed
             if(self.samples_for_retrain is not None):
                 self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
@@ -199,6 +199,7 @@ class Clustering(AnomalyDetectionAbstract):
         # Extract list of ftr_vectors and list of timestamps
         ftr_vector_list = df["ftr_vector"].tolist()
         timestamp_list = df["timestamp"].tolist()
+
         # Create a new  dataframe with features as columns
         df = pd.DataFrame.from_records(ftr_vector_list)
         df.insert(loc=0, column="timestamp", value=timestamp_list)
@@ -217,15 +218,14 @@ class Clustering(AnomalyDetectionAbstract):
         if(len(features) > 0):
             # train model
             self.model = DBSCAN(eps=self.eps,
-                                                 min_samples=self.min_samples).fit(features)
+                                min_samples=self.min_samples).fit(features)
             # identify core samples
             core_samples_indices = np.zeros_like(self.model.labels_, dtype=bool)
             core_samples_indices[self.model.core_sample_indices_] = True
-
             # Add feature vectors to core samples
             self.core_samples = []
             for indx, fv in enumerate(features):
                 if(core_samples_indices[indx]):
-                    self.core_samples.append(fv)
+                    self.core_samples.append(fv.tolist())
 
             self.trained = True
