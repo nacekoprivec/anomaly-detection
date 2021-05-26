@@ -4,8 +4,11 @@ import json
 import csv
 from json import dumps
 import os
+import logging
 from typing import Any, Dict
 from kafka import KafkaProducer
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.write_api import SYNCHRONOUS, ASYNCHRONOUS
 #from kafka.admin import KafkaAdminClient, NewTopic
 
 
@@ -208,3 +211,100 @@ class KafkaOutput(OutputAbstract):
             kafka_topic = "anomalies_" + str(self.node_id)
 
             self.producer.send(kafka_topic, value=to_write)
+
+class InfluxOutput(OutputAbstract):
+    ip: str
+    port: str
+    token: str
+    org: str
+    bucket: str
+    measurement: str
+    tags: Dict
+    # s, ms, us, ns
+    unix_time_format: str
+    has_suggested_value: bool
+
+    influx_writer: Any
+
+    def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        super().__init__()
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        if(conf is not None):
+            self.configure(conf=conf)
+
+    def configure(self, conf: Dict[Any, Any] = None) -> None:
+        super().configure(conf=conf)
+
+        # Configura writer
+        self.ip = conf["ip"]
+        self.port = conf["port"]
+        self.token = conf["token"]
+        self.org = conf["org"]
+        url = "http://" + self.ip + ":" + self.port
+
+        self.influx_writer = InfluxDBClient(url=url, token=self.token,
+                                            org=self.org).write_api(write_options=ASYNCHRONOUS)
+
+        self.bucket = conf["bucket"]
+        self.measurement = conf["measurement"]
+        self.tags = eval(conf["tags"])
+        self.has_suggested_value = conf["has_suggested_value"]
+
+        self.unix_time_format = conf["unix_time_format"]
+        # Check if format is is acceptable
+        if(self.unix_time_format != "s" and self.unix_time_format != "ms" and
+           self.unix_time_format != "ns" and self.unix_time_format != "us"):
+           logging.error("Invalid unix_time_format at %s.", self.measurement)
+           exit(1)
+
+
+    def send_out(self, suggested_value: Any,status: str = "",
+                 timestamp: Any = None, status_code: int = None,
+                value: Any = "",
+                 algorithm: str = "Unknown") -> None:
+        
+        # Send to kafka only if an anomaly is detected (or if it is specified
+        # that ok values are to be sent)
+        if(status_code != 1 or self.send_ok):
+            # Construct the object to write
+
+            # Check and set value
+            to_write = {"algorithm": algorithm}
+            if (value is not None):
+                to_write["value"] = value
+            else:
+                logging.warning("Missing value in influxdb output %s.",
+                                self.measurement)
+                return
+            # Set status
+            to_write["status"] = status
+
+            # Check and set status_code
+            if (status_code is not None):
+                to_write["status_code"] = status_code
+            else:
+                logging.warning("Missing status_code in influxdb output %s.",
+                                self.measurement)
+
+            # Suggested value is optional so it may not be recorded
+            if(self.has_suggested_value):
+                # Check and set status_code
+                if(suggested_value is not None):
+                    to_write["suggested_value"] = suggested_value
+                else:
+                    logging.warning("Missing suggested_value in influxdb output %s. Try setting has_suggested_value to False",
+                                    self.measurement)
+
+            # Change timestamp to ns
+            if(self.unix_time_format == "s"):
+                timestamp = int(timestamp*1000000000)
+            elif(self.unix_time_format == "us"):
+                timestamp = int(timestamp*1000000)
+            elif(self.unix_time_format == "ms"):
+                timestamp = int(timestamp*1000)
+
+            # Write to database
+            self.influx_writer.write(self.bucket, self.org,
+                                    [{"measurement": self.measurement,
+                                    "tags": self.tags, "fields": to_write,
+                                    "time": timestamp}])
