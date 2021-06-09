@@ -196,3 +196,6 @@ src/data/
 
 # retrain data
 data/retrain
+
+# jems data
+data/JEMS

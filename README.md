@@ -76,25 +76,25 @@ Consumer components differ in where the data is read from.
 
 2. **File consumer:** Data is read from a csv or JSON file. <br>
 **Input format:**
-   * CSV: The csv can have a "timestamp" (strings in datetime format) column. All other columns are considered values for detecting anomalies.
+   * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
       ```
       {
       "ftr_vector":  array (a feature vector) of values,
-      "timestamp": timestamp of the data in datastream as strings in datetime format
+      "timestamp": timestamp of the data in datastream as strings in unix timestamp format
       }
       ```
    File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
-   * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv").
+   * file_name: The name (and location) of the file with the data. (example: "sin.csv").
 
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
 **Input format:**
-   * CSV: The csv can have a "timestamp" (strings in datetime format) column. All other columns are considered values for detecting anomalies.
+   * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
       ```
       {
       "ftr_vector":  array (a feature vector) of values,
-      "timestamp": timestamp of the data in datastream as strings in datetime format
+      "timestamp": timestamp of the data in datastream as strings in unix timestamp format
       }
       ```
    File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
@@ -191,7 +191,7 @@ The component that does the actual anomaly detection. It recieves data from a co
 * averages: Specifies additional features to be constructed. In this case averages of the last i values of a feature are calculated and included in the feature vector. (example: [[2, 3, 5], [2]] -> this means that the first feature gets addtitonal features: average over last 2 values, average over last 3 values and average over last 5 values and the second feature gets average over last 2 values),
 * periodic_averages: A list (for different features) of lists (for different periods) of lists of length 2 where the first element is the period and the seconf is a list of N-s (number of samples of this periodic sequence from which we will calculate average). (example: [[[5, [2, 3]], [2, [4, 5]]] -> in this example we have one feature with two periods ( 5 and 2). The first one contains 2 and 3 elements of the sequence and the second one 4 and 5),
 * shifts: Specifies additional features to be constructed. In this case shifted values of a feature are included in the feature vector. (example: [[1, 2, 3], [4, 5]] -> this means that the first feature gets addtitonal features: value shifted for 1, value shifted for 2 and value shifted for 3 and the second feature gets value shifted for 4 and value shifted for 5),
-* "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires datetime format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]).
+* "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires unix timestamp format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]).
 1. **Border check:** A simple component that checks if the ftr_vector falls within the specified interval and also gives warnings if it is close to the border. It requires the following arguments in the config file:
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9]),
    * UL: Upper limit of the specified interval. (example: 4),
