@@ -55,7 +55,7 @@
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5770",
@@ -64,6 +64,15 @@
                 {
                     "file_name": "braila_pressure_5770_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomlay",
+                    "measurement": "pressure_5770",
+                    "tags": "{}"
                 }
             ]
         },
@@ -84,7 +93,7 @@
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5771",
@@ -93,6 +102,15 @@
                 {
                     "file_name": "braila_pressure_5771_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "pressure_5771",
+                    "tags": "{}"
                 }
             ]
         },
@@ -113,7 +131,7 @@
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5772",
@@ -122,6 +140,15 @@
                 {
                     "file_name": "braila_pressure_5772_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "pressure_5772",
+                    "tags": "{}"
                 }
             ]
         },
@@ -142,7 +169,7 @@
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5773",
@@ -151,6 +178,15 @@
                 {
                     "file_name": "braila_pressure_5773_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "pressure_5773",
+                    "tags": "{}"
                 }
             ]
         },
@@ -158,7 +194,7 @@
             "status_determiner": "OR()",
             "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211206H360",
@@ -167,6 +203,15 @@
                 {
                     "file_name": "braila_flow_211206H360_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "flow_211206H360",
+                    "tags": "{}"
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -194,7 +239,7 @@
             "status_determiner": "OR()",
             "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211106H360",
@@ -203,6 +248,15 @@
                 {
                     "file_name": "braila_flow_211106H360_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "flow_211106H360",
+                    "tags": "{}"
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -230,7 +284,7 @@
             "status_determiner": "OR()",
             "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211306H360",
@@ -239,6 +293,15 @@
                 {
                     "file_name": "braila_flow_211306H360_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "flow_211106H360",
+                    "tags": "{}"
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -266,7 +329,7 @@
             "status_determiner": "OR()",
             "input_vector_size": 1,
             "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_flow_318505H498",
@@ -275,6 +338,15 @@
                 {
                     "file_name": "braila_flow_318505H498_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "braila_anomalies",
+                    "measurement": "flow_318505H498",
+                    "tags": "{}"
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -302,7 +374,7 @@
             "status_determiner": "OR()",
             "input_vector_size": 1,
             "anomaly_algorithms": ["MACD()", "Welford()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
             "output_conf": [
                 {
                     "node_id": "alicante_salinity_EA003_36_conductivity",
@@ -311,6 +383,15 @@
                 {
                     "file_name": "alicante_salinity_EA003_36_conductivity_anomalies.csv",
                     "mode": "w"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "alicante_anomalies",
+                    "measurement": "salinity_EA003_36_conductivity",
+                    "tags": "{}"
                 }
             ],
             "anomaly_algorithms_configurations":[
