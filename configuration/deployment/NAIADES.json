@@ -72,7 +72,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomlay",
                     "measurement": "pressure_5770",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ]
         },
@@ -110,7 +112,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "pressure_5771",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ]
         },
@@ -148,7 +152,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "pressure_5772",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ]
         },
@@ -186,7 +192,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "pressure_5773",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ]
         },
@@ -211,7 +219,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "flow_211206H360",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -256,7 +266,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "flow_211106H360",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -301,7 +313,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "flow_211106H360",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -346,7 +360,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "braila_anomalies",
                     "measurement": "flow_318505H498",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ],
             "anomaly_algorithms_configurations":[
@@ -391,7 +407,9 @@
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "alicante_anomalies",
                     "measurement": "salinity_EA003_36_conductivity",
-                    "tags": "{}"
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ],
             "anomaly_algorithms_configurations":[

@@ -171,6 +171,7 @@ class FileOutput(OutputAbstract):
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writerow(to_write)
 
+
 class KafkaOutput(OutputAbstract):
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
@@ -211,6 +212,7 @@ class KafkaOutput(OutputAbstract):
             kafka_topic = "anomalies_" + str(self.node_id)
 
             self.producer.send(kafka_topic, value=to_write)
+
 
 class InfluxOutput(OutputAbstract):
     ip: str

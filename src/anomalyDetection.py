@@ -9,7 +9,8 @@ from datetime import datetime
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
+from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput,\
+    InfluxOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
 from normalization import NormalizationAbstract, LastNAverage,\
