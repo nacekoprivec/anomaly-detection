@@ -273,7 +273,8 @@ class InfluxOutput(OutputAbstract):
             # Check and set value
             to_write = {"algorithm": algorithm}
             if (value is not None):
-                to_write["value"] = value
+                # Writes to influx only the first element in feature vector
+                to_write["value"] = value[0]
             else:
                 logging.warning("Missing value in influxdb output %s.",
                                 self.measurement)
