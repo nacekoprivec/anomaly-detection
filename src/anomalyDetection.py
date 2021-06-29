@@ -51,14 +51,14 @@ class AnomalyDetectionAbstract(ABC):
 
     def __init__(self) -> None:
         # Logging configuration
-        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
         
         self.memory = []
 
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         # logging when message recieved (this line can be commented)
-        logging.info("%s recieved message.", self.name)
+        #logging.info("%s recieved message.", self.name)
         pass
 
     @abstractmethod

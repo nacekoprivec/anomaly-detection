@@ -230,7 +230,7 @@ class InfluxOutput(OutputAbstract):
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
-        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
         if(conf is not None):
             self.configure(conf=conf)
 
@@ -264,7 +264,9 @@ class InfluxOutput(OutputAbstract):
                  timestamp: Any = None, status_code: int = None,
                 value: Any = "",
                  algorithm: str = "Unknown") -> None:
-        
+
+        logging.info("influx seind out call %f, %d", value, status) 
+         
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
         if(status_code != 1 or self.send_ok):

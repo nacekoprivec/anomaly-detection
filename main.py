@@ -20,10 +20,12 @@ def ping_watchdog():
     except requests.exceptions.RequestException as e:  # This is the correct syntax
         logging.warning(e)
     else:
-        logging.info('Successful ping at ' + time.ctime())
+        pass
+        #logging.info('Successful ping at ' + time.ctime())
     threading.Timer(interval, ping_watchdog).start()
 
 def main():
+    logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     parser = argparse.ArgumentParser(description="consumer")
 
     parser.add_argument(
@@ -77,6 +79,8 @@ def main():
     if (args.watchdog):
         logging.info("=== Watchdog started ===")
         ping_watchdog()
+
+    logging.info("=== Service starting ===")
 
     consumer.read()
 
