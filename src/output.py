@@ -265,7 +265,7 @@ class InfluxOutput(OutputAbstract):
                 value: Any = "",
                  algorithm: str = "Unknown") -> None:
 
-        print("influx seind out call %f, %d".format(value, status), flush=True) 
+        print("measurement " + self.measurement + "; influx seind out call " + value + ", " + status, flush=True) 
 
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
@@ -309,7 +309,9 @@ class InfluxOutput(OutputAbstract):
                 timestamp = int(timestamp*1000)
 
             # Write to database
+            print("measurement " + self.measurement + " sending", flush=True)
             self.influx_writer.write(self.bucket, self.org,
                                     [{"measurement": self.measurement,
                                     "tags": self.tags, "fields": to_write,
                                     "time": timestamp}])
+            print("measurement " + self.measurement + " done", flush=True)
