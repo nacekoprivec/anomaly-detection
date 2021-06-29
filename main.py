@@ -77,10 +77,11 @@ def main():
 
     # Ping watchdog every 30 seconds if specfied
     if (args.watchdog):
-        logging.info("=== Watchdog started ===")
+        print("=== Watchdog started ==", flush=True) 
+        logging.info()
         ping_watchdog()
 
-    logging.info("=== Service starting ===")
+    print("=== Service starting ===", flush=True)
 
     consumer.read()
 
