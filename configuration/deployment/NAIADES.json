@@ -73,7 +73,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "pressure_5770",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
@@ -113,7 +113,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "pressure_5771",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
@@ -153,7 +153,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "pressure_5772",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
@@ -193,7 +193,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "pressure_5773",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
@@ -220,7 +220,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "flow_211206H360",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ],
@@ -267,7 +267,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "flow_211106H360",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ],
@@ -314,7 +314,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "flow_211106H360",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ],
@@ -361,7 +361,7 @@
                     "bucket": "braila_anomaly",
                     "measurement": "flow_318505H498",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ],
@@ -408,7 +408,7 @@
                     "bucket": "alicante_anomaly",
                     "measurement": "salinity_EA003_36_conductivity",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ],
