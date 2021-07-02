@@ -15,14 +15,16 @@ def ping_watchdog():
     port = 5001
     path = "/pingCheckIn/Anomaly detection"
 
-    try:
-        r = requests.get("http://{}:{}{}".format(url, port, path))
-    except requests.exceptions.RequestException as e:  # This is the correct syntax
-        logging.warning(e)
-    else:
-        pass
-        #logging.info('Successful ping at ' + time.ctime())
-    threading.Timer(interval, ping_watchdog).start()
+    # Continue sending pings only if main thread is still alive
+    if(threading.main_thread().is_alive()):
+        try:
+            r = requests.get("http://{}:{}{}".format(url, port, path))
+        except requests.exceptions.RequestException as e:  # This is the correct syntax
+            logging.warning(e)
+        else:
+            pass
+            #logging.info('Successful ping at ' + time.ctime())
+        threading.Timer(interval, ping_watchdog).start()
 
 def main():
     logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
