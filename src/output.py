@@ -303,13 +303,14 @@ class InfluxOutput(OutputAbstract):
             # Change timestamp to ns
             if(self.unix_time_format == "s"):
                 timestamp = int(timestamp*1000000000)
-            elif(self.unix_time_format == "us"):
-                timestamp = int(timestamp*1000000)
             elif(self.unix_time_format == "ms"):
+                timestamp = int(timestamp*1000000)
+            elif(self.unix_time_format == "us"):
                 timestamp = int(timestamp*1000)
 
             # Write to database
             print("measurement " + self.measurement + " sending", flush=True)
+            print(timestamp, flush=True)
             self.influx_writer.write(self.bucket, self.org,
                                     [{"measurement": self.measurement,
                                     "tags": self.tags, "fields": to_write,
