@@ -8,23 +8,36 @@ import logging
 
 from src.consumer import ConsumerKafka, ConsumerFile, ConsumerFileKafka
 
+from multiprocessing import Process
+from datetime import datetime
 
-def ping_watchdog():
+
+def ping_watchdog(process):
     interval = 30 # ping interval in seconds
-    url = "atena.ijs.si"
+    url = "localhost"
     port = 5001
-    path = "/pingCheckIn/Anomaly detection"
+    path = "/pingCheckIn/Data adapter"
 
-    # Continue sending pings only if main thread is still alive
-    if(threading.main_thread().is_alive()):
+    while(process.is_alive()):
+        print("{}: Pinging.".format(datetime.now()))
         try:
             r = requests.get("http://{}:{}{}".format(url, port, path))
         except requests.exceptions.RequestException as e:  # This is the correct syntax
             logging.warning(e)
         else:
-            pass
-            #logging.info('Successful ping at ' + time.ctime())
-        threading.Timer(interval, ping_watchdog).start()
+            logging.info('Successful ping at ' + time.ctime())
+        time.sleep(interval)
+
+def start_consumer(args):
+    if(args.data_file):   
+        consumer = ConsumerFile(configuration_location=args.config)
+    elif(args.data_both):
+        consumer = ConsumerFileKafka(configuration_location=args.config)
+    else:
+        consumer = ConsumerKafka(configuration_location=args.config)
+    
+    print("=== Service starting ===", flush=True)
+    consumer.read()
 
 def main():
     logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
@@ -70,21 +83,20 @@ def main():
     # Parse input arguments
     args = parser.parse_args()
 
-    if(args.data_file):   
-        consumer = ConsumerFile(configuration_location=args.config)
-    elif(args.data_both):
-        consumer = ConsumerFileKafka(configuration_location=args.config)
-    else:
-        consumer = ConsumerKafka(configuration_location=args.config)
-
     # Ping watchdog every 30 seconds if specfied
     if (args.watchdog):
+        # Run and save a parelel process
+        # Start periodic download
+        process = Process(target=start_consumer, args=(args,))
+        process.start()
+
+        # On the main thread ping watchdog if child process is alive
         print("=== Watchdog started ==", flush=True) 
-        ping_watchdog()
+        ping_watchdog(process)
+    else:
+        start_consumer(args)
 
-    print("=== Service starting ===", flush=True)
-
-    consumer.read()
+    
 
 
 if (__name__ == '__main__'):
