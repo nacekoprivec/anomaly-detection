@@ -120,6 +120,7 @@ class ConsumerKafka(ConsumerAbstract):
             # Get topic and insert into correct algorithm
             #print(message)
             topic = message.topic
+            print('topic: ' + str(topic))
             algorithm_indx = self.topics.index(topic)
             
             #check if this topic needs filtering
@@ -137,6 +138,8 @@ class ConsumerKafka(ConsumerAbstract):
 
         # Convert unix timestamp to datetime format (with seconds unit if
         # possible alse miliseconds)
+
+        print('filering; timestamp: ' + str(message.value['timestamp']))
         try:
             timestamp = pd.to_datetime(message.value['timestamp'], unit="s")
         except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
@@ -153,9 +156,12 @@ class ConsumerKafka(ConsumerAbstract):
         # Return message only if timestamp is within tolerance
         # print((max(datetime2, datetime1) - min(datetime2, datetime1)))
         # print(tol)
+        print('razlika: ' + str((max(datetime2, datetime1) - min(datetime2, datetime1))))
         if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
+            print('filtriral!')
             return(message)
         else:
+            print('Nisem :(')
             return(None)
 
 
