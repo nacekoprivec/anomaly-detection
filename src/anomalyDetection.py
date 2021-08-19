@@ -9,7 +9,8 @@ from datetime import datetime
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
+from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput,\
+    InfluxOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
 from normalization import NormalizationAbstract, LastNAverage,\
@@ -57,7 +58,7 @@ class AnomalyDetectionAbstract(ABC):
     @abstractmethod
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         # logging when message recieved (this line can be commented)
-        logging.info("%s recieved message.", self.name)
+        #logging.info("%s recieved message.", self.name)
         pass
 
     @abstractmethod

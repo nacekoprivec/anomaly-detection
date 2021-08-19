@@ -9,6 +9,7 @@
 | `-c CONFIG` | `--config CONFIG` | name of the config file located in configuration folder (example: `config.json`) |
 | `-f` | `--file` | If this flag is used the program will read data from file specified in config file instead of kafka stream|
 | `-fk` | `--filekafka` | If this flag is used the program will read data from file specified in config file and then from kafka stream|
+| `-w` | `--watchdog` | If this flag is used the program will send a ping to watchdog every 30 seconds|
 
 In order to interact with kafka separately from the anomaly detection module e.g. to check messages in a specific topic, scripts from the kafka installation can be run with appropriate flags. For example to view messages in topic 'test' (on windows):
 `.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test --from-beginning`
@@ -54,34 +55,57 @@ For more details see example configuration files in configuration folder.
 
 ### Consumer
 Consumer components differ in where the data is read from.
-1. **Kafka consumer:** Data is read from one or more kafka topics. Each topic cooresponds to a seperate anomaly detection algorithm from field "anomaly_detection_alg" which has the configuration defined in a cooresponding object in the list under "anomaly_detection_conf" field. The conciguration file must specify following parameters:
-   * bootstrap_servers: Kafka server. (example: ["localhost:9092"]),
-   * auto_offset_reset: Where the consumer starts to read messages. If "latest", when comsumer is started, it will continue reading from the message where it last left off. If "earliest" it will read from the oldest available message onwards. (example: "latest"),
-   * enable_auto_commit": If True , the consumer’s offset (the point in the topic where messages are read) will be periodically committed in the background. Otherwise offsets can be commited manually. (example: "True"),
-   * group_id: The name of the consumer group. (example "my-group"),
-   * value_deserializer":  Any callable that takes a raw message value and returns a deserialized value. (example "lambda x: loads(x.decode('utf-8'))"),
-   * topics: A list of topics streaming the data. (example ["anomaly_detection"]),
+1. **Kafka consumer:** Data is read from one or more kafka topics. Each topic cooresponds to a seperate anomaly detection algorithm from field "anomaly_detection_alg" which has the configuration defined in a cooresponding object in the list under "anomaly_detection_conf" field. <br>
+**Input format:** The format of the message read from kafka topic must be of shape:
+   ```
+   {
+   "ftr_vector":  array (a feature vector) of values,
+   "timestamp": timestamp of the data in datastream in unix timestamp format
+   }
+   ```
+   The conciguration file must specify following parameters:
+      * bootstrap_servers: Kafka server. (example: ["localhost:9092"]),
+      * auto_offset_reset: Where the consumer starts to read messages. If "latest", when comsumer is started, it will continue reading from the message where it last left off. If "earliest" it will read from the oldest available message onwards. (example: "latest"),
+      * enable_auto_commit": If True , the consumer’s offset (the point in the topic where messages are read) will be periodically committed in the background. Otherwise offsets can be commited manually. (example: "True"),
+      * group_id: The name of the consumer group. (example "my-group"),
+      * value_deserializer":  Any callable that takes a raw message value and returns a deserialized value. (example "lambda x: loads(x.decode('utf-8'))"),
+      * topics: A list of topics streaming the data. (example ["anomaly_detection"]),
 
-   A message in kafka topic must contain two fields:
-   * timestamp: Contains a timestamp of the data in datastream in unix timestamp format.
-   * ftr_vector: Contains an array (a feature vector) of values.
+   Kafka consumer also has the option to filter data stored in the specified topic. To read only the messages with timestamps in a specific range, we can specify the field "filtering", with the target time and tolerance. Only the messages with time of day +- tolerance will be inserted into the algorithm. The configuration file must specify:
+      * filtering: An array of filtering parameters for each topic - either "None" or array of shape "[[target_time_hour, ...minute, second], [tolerance_hour, ...minute, ...second]]" . (example: ["[[1, 0, 0], [0, 0, 30]]"] - will read only data with time of day 00:59:30 - 01:00:30).
 
-Kafka consumer also has the option to filter data stored in the specified topic. To read only the messages with timestamps in a specific range, we can specify the field "filtering", with the target time and tolerance. Only the messages with time of day +- tolerance will be inserted into the algorithm. The configuration file must specify:
-   * filtering: An array of filtering parameters for each topic - either "None" or array of shape "[[target_time_hour, ...minute, second], [tolerance_hour, ...minute, ...second]]" . (example: ["[[1, 0, 0], [0, 0, 30]]"] - will read only data with time of day 00:59:30 - 01:00:30).
-
-2. **File consumer:** Data is read from a csv or JSON file. The csv can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON file must be of shape `{"data": [{"timestamp": ..., ftr_vector": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
-   * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv").
+2. **File consumer:** Data is read from a csv or JSON file. <br>
+**Input format:**
+   * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
+   * JSON: The JSON file must be of shape:
+      ```
+      {
+      "ftr_vector":  array (a feature vector) of values,
+      "timestamp": timestamp of the data in datastream as strings in unix timestamp format
+      }
+      ```
+   File consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
+   * file_name: The name (and location) of the file with the data. (example: "sin.csv").
 
 3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
-The csv input file can have a "timestamp" column. All other columns are considered values for detecting anomalies. The JSON input file must be of shape `{"data": [{"timestamp": ..., ftr_vector": [value1, value2, ...]}, ...]}`. All timestamp values must be strings in datetime format. File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
-   * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv"),\
-The following parameters are similar to ones in Kafka consumer:
-   * bootstrap_servers: Kafka server. (example: ["localhost:9092"]),
-   * auto_offset_reset: (example: "latest"),
-   * enable_auto_commit": (example: "True"),
-   * group_id: (example "my-group"),
-   * value_deserializer": (example "lambda x: loads(x.decode('utf-8'))"),
-   * topics: A list of topics streaming the data. (example ["anomaly_detection"]),
+**Input format:**
+   * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
+   * JSON: The JSON file must be of shape:
+      ```
+      {
+      "ftr_vector":  array (a feature vector) of values,
+      "timestamp": timestamp of the data in datastream as strings in unix timestamp format
+      }
+      ```
+   File kafka consumer also requires a list of anomaly detection algorithms, however only the first algorithm from a list is used for anomaly detection (similar thing aplies for configuration). The configuration file must specify the following parameters:
+      * file_name: The name of the file with the data, located in data/consumer/ directory. (example: "sin.csv"),\
+   The following parameters are similar to ones in Kafka consumer:
+      * bootstrap_servers: Kafka server. (example: ["localhost:9092"]),
+      * auto_offset_reset: (example: "latest"),
+      * enable_auto_commit": (example: "True"),
+      * group_id: (example "my-group"),
+      * value_deserializer": (example "lambda x: loads(x.decode('utf-8'))"),
+      * topics: A list of topics streaming the data. (example ["anomaly_detection"]),
 
 ### Output
 Output component differs in where the data is outputted to. more than one output conmonent can be specified. It recieves three arguments from the anomaly detection component: value (the last value of the stream), timestamp and status (wether data is anomalous). The following arguments of configuration file are general for all outputs:
@@ -89,20 +113,42 @@ Output component differs in where the data is outputted to. more than one output
 
 1. **Terminal output:** Timestamp, value and status are outputed to the terminal. It does not require any parameters in the configuration file.
 
-2. **Kafka output:** Value is outputed to separate kafka topic. The outputted object is of form: 
+2. **Kafka output:** Value is outputed to separate kafka topic. <br>
+**Output format:** The outputted object is of form: 
 ```
 {
- "sensor": ...,
- "algorithm":...,
- "score":...,
- "timestamp":...,
- "explanation":...
+ "algorithm": anomaly detection algorithm used,
+ "value": the sample from the datastream,
+ "status": result of the anomaly detection algorithm,
+ "timestamp": timestamp of the data in datastream in unix timestamp format,
+ "status_code": result of the anomaly detection algorithm (descriptive),
+ "suggested_value": optional field, that can suggest a "normal" value if anomaly is detected
 }
 ```
 Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following argments in the config file:
    * node_id: The anomalies will be sent to topic: anomalies_[node_id] (example: 1).
 
-3. **File output:** Data is outputed to a JSON csv or txt file. The JSON file contains a single field "data" whose value is an array of objects of shape: `{"algorithm": [algorithm used], "value": [value of stream in question], "status": [gives information of anomalouesness], "status_code": [gives information of anomalouesness], "timestep": [timestep of the value in stream]}`. The output in the txt file is the same as terminal output. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following arguments in the config file:
+3. **File output:** Data is outputed to a JSON csv or txt file. <br>
+**Output format:** 
+   * csv: The csv file contains the following fields:
+      * "algorithm": anomaly detection algorithm used,
+      * "value": the sample from the datastream,
+      * "status": result of the anomaly detection algorithm,
+      * "timestamp": timestamp of the data in datastream in unix timestamp format,
+      * "status_code": result of the anomaly detection algorithm (descriptive),
+      * "suggested_value": optional field, that can suggest a "normal" value if anomaly is detected
+   * JOSN: The JSON file contains a single field "data" whose value is an array of objects of shape: 
+   ```
+   {
+   "algorithm": anomaly detection algorithm used,
+   "value": the sample from the datastream,
+   "status": result of the anomaly detection algorithm,
+   "timestamp": timestamp of the data in datastream in unix timestamp format,
+   "status_code": result of the anomaly detection algorithm (descriptive),
+   "suggested_value": optional field, that can suggest a "normal" value if anomaly is detected
+   }
+   ```
+   The output in the txt file is the same as terminal output. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following arguments in the config file:
    * file_name: The name of the file for output located in the log/ directory. (example: "output.csv"),
    * mode: Wether we want to overwrite the file or just append data to it. (example: "a").
 
@@ -145,7 +191,7 @@ The component that does the actual anomaly detection. It recieves data from a co
 * averages: Specifies additional features to be constructed. In this case averages of the last i values of a feature are calculated and included in the feature vector. (example: [[2, 3, 5], [2]] -> this means that the first feature gets addtitonal features: average over last 2 values, average over last 3 values and average over last 5 values and the second feature gets average over last 2 values),
 * periodic_averages: A list (for different features) of lists (for different periods) of lists of length 2 where the first element is the period and the seconf is a list of N-s (number of samples of this periodic sequence from which we will calculate average). (example: [[[5, [2, 3]], [2, [4, 5]]] -> in this example we have one feature with two periods ( 5 and 2). The first one contains 2 and 3 elements of the sequence and the second one 4 and 5),
 * shifts: Specifies additional features to be constructed. In this case shifted values of a feature are included in the feature vector. (example: [[1, 2, 3], [4, 5]] -> this means that the first feature gets addtitonal features: value shifted for 1, value shifted for 2 and value shifted for 3 and the second feature gets value shifted for 4 and value shifted for 5),
-* "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires datetime format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]).
+* "time_features": Specifies additional features to be constructed. In this case the following features can be constructed: day of month, month of year, weekday, hour of day. Note that construction of these features requires unix timestamp format of timestamp. If that is not hte case pass an empty array as parameter for that field. (example: ["day", "month", "weekday", "hour"]).
 1. **Border check:** A simple component that checks if the ftr_vector falls within the specified interval and also gives warnings if it is close to the border. It requires the following arguments in the config file:
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9]),
    * UL: Upper limit of the specified interval. (example: 4),
@@ -204,10 +250,26 @@ It requires the following arguments in the config file:\
 It requires the following arguments in the config file:\
    * N_shifts: Number of past data, which are used to construct the feature vector. (example: 9),
    * N_latent: Dimensionality of the latent space (example: 3),
-   * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95).<br>
+   * K: Koefficient to determine the threshold for reconstruction error from max_err - largest error on the training set -> threshold = K*max_err (example: 0.95).
+   * retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100),
+   * samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
+   * retrain_file: Path and file name of the file in which retrain data will be stored (example: "./data/retrain/test.csv").<br>
 To see the train and retrain file formats see [Training files](#training-files).
 
-8. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
+9. **Clustering:** This model usses dbscan clustering method (from sklearn) to extract and save core samples. Every incomming sample is then compared to those core samples. If the euclidian distance of the sample to every core sample is greater than treshold then the sample is anomalous.
+It requires the following arguments in the config file:\
+* eps: A float representing the maximum distance between two samples for one to be considered as in the neighborhood of the other,
+* min_samples: An integer representing the number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself,
+* treshold: A float, representing the euclidean distance that is required to determine anomalies (the larger the distance the less points are anomalous),
+* retrain_interval: An integer representing the number of samples recieved by the anomaly detection component that trigger model retraining. If this optional parameter is not present the model is not retrained. Every time the model is retrained the training set is saved to IsolationForest_last_{samples_for_retrain}_samples.csv file in data folder and configuration file is changed so that the next time the model is ran it will train on this dataset (eg. in case of crash and rerun). (example: 100),
+* samples_for_retrain": An integer representing the number of most recent samples that are used to retrain the model. If it is not specified it uses all samples (may cause memory overflow). If training dataset is specified those samples are also considered for retraining untill they are overwritten by newer samples. (example: 2000),
+* retrain_file: Path and file name of the file in which retrain data will be stored (example: "./data/retrain/test.csv").
+
+10. **MACD:** TODO
+
+11. **Linear fit:** TODO
+
+12. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
 It requires the following arguments in the config file:\
    * anomaly_algorithms: A list of anomaly detection algorithms used.
    * anomaly_algorithms_configurations: A list of anomaly detection algorithm's configurations. These configurations have the same fields as stand-alone anomaly detection algorithms would have. The outputs

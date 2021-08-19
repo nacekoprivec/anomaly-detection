@@ -10,7 +10,7 @@ import pandas as pd
 from ast import literal_eval
 #sys.path.insert(0,'./src')
 #sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from src.anomalyDetection import AnomalyDetectionAbstract
+from anomalyDetection import AnomalyDetectionAbstract
 from isolationForest import IsolationForest
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\

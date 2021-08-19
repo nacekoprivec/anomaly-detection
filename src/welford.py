@@ -87,8 +87,18 @@ class Welford(AnomalyDetectionAbstract):
         # with full memory
         elif ((self.N is None and self.count > 1) or
              (self.N is not None and self.N <= self.count)):
-            value_normalized = 2*(value - (self.UL + self.LL)/2) / \
-                (self.UL - self.LL)
+
+            # If LL != UL then calculate normalized value
+            if(self.UL != self.LL):
+                value_normalized = 2*(value - (self.UL + self.LL)/2) / \
+                    (self.UL - self.LL)
+            # If LL == UL and value == LL then there is no error
+            elif(value == self.LL):
+                value_normalized = 0
+            # Else ther is always error
+            else:
+                value_normalized = float("inf")
+
             status = self.OK
             status_code = self.OK_CODE
 

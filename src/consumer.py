@@ -20,8 +20,7 @@ from combination import Combination
 from trend_classification import Trend_Classification
 from Cumulative import Cumulative
 from MACD import MACD
-from EMA_Percentile import EMA_Percentile
-
+from clustering import Clustering
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
 import matplotlib.pyplot as plt
@@ -182,7 +181,7 @@ class ConsumerFile(ConsumerAbstract):
 
     def configure(self, con: Dict[Any, Any] = None) -> None:
         self.file_name = con["file_name"]
-        self.file_path = "./data/consumer/" + self.file_name
+        self.file_path = self.file_name
 
         # Expects a list but only requires the first element
         self.anomaly = eval(con["anomaly_detection_alg"][0])
