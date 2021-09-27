@@ -864,6 +864,106 @@ class ClusteringTestFunctionality(ClusteringTestCase):
         self.assertEqual(self.model.retrain_counter, 1)
 
 
+class ProphetTestCase(unittest.TestCase):
+    def setUp(self):
+        # Set random seed so results are reproducable
+        np.random.seed(0)
+
+        if not os.path.isdir("unittest"):
+            os.makedirs("unittest")
+
+        create_clustering_testing_file("./unittest/ClusteringTestData.csv")
+
+        configuration = {
+        "train_data": "./unittest/ClusteringTestData.csv",
+        "retrain_file": "./unittest/ClusteringRetrainData.csv",
+        "eps": 0.98,
+        "min_samples": 3,
+        "treshold": 1.5,
+        "retrain_interval": 10,
+        "samples_for_retrain": 10,
+        "input_vector_size": 2,
+        "output": [],
+        "output_conf": [{}]
+        }
+        self.f = "models"
+
+        #Create a temporary /models folder.
+        if not os.path.isdir(self.f):
+            os.makedirs(self.f)
+        self.model = create_model_instance("Clustering()", configuration, save=True)
+    
+    def tearDown(self):
+        if os.path.isdir(self.f):
+            shutil.rmtree(self.f)
+
+        # Delete unittest folder
+        shutil.rmtree("unittest")
+
+        if os.path.isdir("configuration"):
+            shutil.rmtree("configuration")
+
+
+class ProphetTestClassPropperties(ProphetTestCase):
+    #Check propperties setup.
+    def test_Propperties(self):
+        # TODO
+        pass
+
+
+class ProphetTestFunctionality(ProphetTestCase):
+    # TODO everything
+    
+    def test_OK(self):
+        pass
+        """# Insert similar values as in train set (status should be 1).
+        test_array = [[1.0, 0.9], [0.4, 0.0], [2.554, 2.44]]
+        expected_status = [1, 1, 1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array[i])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])"""
+            
+
+    def test_errors(self):
+        pass
+        """#insert different values as in train set (status should be -1).
+        test_array = [[3.054, 2.96], [10.0, 11.0], [-5.0, -1.0]]
+        expected_status = [-1, -1, -1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array[i])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])"""
+    
+    def test_retrain(self):
+        pass
+        """#insert different values as in train set (status should be -1).
+        test_array = [
+            [10, 20.96],
+            [10.0, 1.0],
+            [10.4, 21.1],
+            [0.2, 0.9],
+            [10.4, 20.098],
+            [9.99, 20.44],
+            [9.988, 20.656],
+            [10.443, 21],
+            [10.454, 20.546],
+            [9.995, 20.99],
+            [10.005, 20.3425],
+            [10.1295, 20.456],
+            [1.0, 0.9]     
+            ]
+        expected_status = [-1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1, -1]
+        for i in range(len(test_array)):
+            message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
+                                     test_array[i])
+            self.model.message_insert(message)
+            self.assertEqual(self.model.status_code, expected_status[i])
+        self.assertEqual(self.model.retrain_counter, 1)"""
+
+
 class CombinationTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.configuration = {
