@@ -113,7 +113,7 @@
             {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "FileOutput()"],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5772",
@@ -122,17 +122,6 @@
                 {
                     "file_name": "braila_pressure_5772_anomalies.csv",
                     "mode": "a"
-                },
-                {
-                    "ip": "localhost",
-                    "port": "8086",
-                    "org": "naiades",
-                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
-                    "bucket": "braila_anomaly",
-                    "measurement": "pressure_5772",
-                    "tags": "{}",
-                    "unix_time_format": "ms",
-                    "has_suggested_value": false
                 }
             ]
         },
