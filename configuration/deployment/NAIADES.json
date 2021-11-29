@@ -443,7 +443,7 @@
             "use_cols": [1],
             "input_vector_size": 1,
             "warning_stages": [0.8],
-            "N": 200,
+            "N": 100,
             "X": 5,
             "output": [
                 "KafkaOutput()",
@@ -479,7 +479,6 @@
             "period2": 30,
             "UL": 400,
             "LL": -400,
-            "output": ["FileOutput()"],
             "output": [
                 "KafkaOutput()",
                 "FileOutput()",
