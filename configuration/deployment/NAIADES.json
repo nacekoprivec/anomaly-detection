@@ -467,7 +467,7 @@
                     "bucket": "alicante_anomaly",
                     "measurement": "salinity_EA003_36_conductivity_hourly",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
@@ -501,7 +501,7 @@
                     "bucket": "alicante_anomaly",
                     "measurement": "salinity_EA003_36_conductivity_daily",
                     "tags": "{}",
-                    "unix_time_format": "s",
+                    "unix_time_format": "ms",
                     "has_suggested_value": false
                 }
             ]
