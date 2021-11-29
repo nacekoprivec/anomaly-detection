@@ -222,10 +222,10 @@ class IsolationForest(AnomalyDetectionAbstract):
             raise Exception("train_file or train_dataframe must be specified.")
         
         # Extract list of ftr_vectors and list of timestamps
-        ftr_vector_list = df["ftr_vector"].tolist()
-        timestamp_list = df["timestamp"].tolist()
+        ftr_vector_list = df["ftr_vector"].values.tolist()
+        timestamp_list = df["timestamp"].values.tolist()
         # Create a new  dataframe with features as columns
-        df = pd.DataFrame.from_records(ftr_vector_list)
+        df = pd.DataFrame(ftr_vector_list)
         df.insert(loc=0, column="timestamp", value=timestamp_list)
         # Transfer to numpy and extract data and timestamps
         df = df.to_numpy()

@@ -6,53 +6,28 @@
     "enable_auto_commit": "True",
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
-    "topics": "anomaly_detection1",
-    "anomaly_detection_alg": "IsolationForest()",
-    "anomaly_detection_conf": {
-        "train_data": "./data/IsolationForest_last_2000_samples.csv",
+    "file_name": "data/consumer/braila_pressure5771_eval.csv",
+    "anomaly_detection_alg": ["IsolationForest()"],
+    "anomaly_detection_conf": [{
+        "train_data": "data/training/braila_pressure5771_train.csv",
         "train_conf": {
-            "max_features": 3,
-            "max_samples": 1000,
-            "contamination": "auto",
+            "max_features": 4,
+            "max_samples": 2000,
+            "contamination": 0.001,
             "model_name": "IsolForestModel"
         },
-        "retrain_interval": 100,
+        "retrain_interval": 100000,
         "samples_for_retrain": 2000,
         "retrain_file": "./data/retrain/test.csv",
         "input_vector_size": 1,
-        "shifts": [
-            [
-                1,
-                2,
-                3,
-                4
-            ]
-        ],
-        "averages": [
-            [
-                1,
-                2
-            ]
-        ],
-        "normalization": "LastNAverage()",
-        "normalization_conf": {
-            "N": 3
-        },
-        "output": [
-            "KafkaOutput()"
-        ],
+        "shifts": [[1,2, 3, 4]],
+        "averages": [[1]],
+        "output": ["FileOutput()"],
         "output_conf": [
             {
-                "node_id": 1
+                "file_name": "braila_pressure5771_IF_anomalies.csv",
+                "mode": "w"
             }
-        ],
-        "visualization": "StatusPointsVisualization()",
-        "visualization_conf": {
-            "num_of_points": 100,
-            "num_of_lines": 1,
-            "linestyles": [
-                "wo"
-            ]
-        }
-    }
+        ]}
+    ]
 }

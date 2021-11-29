@@ -6,18 +6,18 @@
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": ["anomaly_detection1"],
     "anomaly_detection_alg": ["Welford()"],
-    "file_name":"55.csv",
+    "file_name":"data/consumer/period5000.csv",
 
     "anomaly_detection_conf": [{
         "use_cols": [1],
         "input_vector_size": 1,
         "warning_stages": [0.7, 0.9],
-        "N": 7,
-        "X": 6,
+        "N": 10,
+        "X": 4,
         "output": ["FileOutput()"],
         "output_conf": [
             {
-                "file_name": "55_welford.csv",
+                "file_name": "period5000_welford.csv",
                 "mode": "w"
             }
         ],

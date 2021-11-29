@@ -4,26 +4,21 @@
     "enable_auto_commit": "True",
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
-    "file_name":"braila_pressure5770.csv",
+    "file_name":"data/consumer/daily500k.csv",
     "anomaly_detection_alg": ["MACD()"],
     "anomaly_detection_conf": [{
         "input_vector_size": 1,
-        "warning_stages": [0.5, 0.9],
-        "period1": 20000,
-        "period2": 30000,
-        "UL": 500,
-        "LL": -500,
-        "output": ["TerminalOutput()"],
-        "output_conf": [{}],
-        "visualization": "HistogramVisualization()",
-        "visualization_conf":
+        "warning_stages": [0.8],
+        "period1": 20,
+        "period2": 30,
+        "UL": 400,
+        "LL": -400,
+        "output": ["FileOutput()"],
+        "output_conf": [
             {
-                "num_of_bins": 60,
-                "range": [9, 20],
-                "num_of_points": 50,
-                "num_of_lines": 1,
-                "linestyles":["wo"],
-                "demo_pause": 1.0
+                "file_name": "daily500k_MACD.csv",
+                "mode": "w"
             }
+        ]
     }]
 }

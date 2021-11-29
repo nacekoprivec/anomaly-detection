@@ -188,7 +188,7 @@ class KafkaOutput(OutputAbstract):
                          value_serializer=lambda x: 
                          dumps(x).encode('utf-8'))
 
-    def send_out(self, suggested_value: Any,status: str = "",
+    def send_out(self, suggested_value: Any = None,status: str = "",
                  timestamp: Any = None, status_code: int = None,
                 value: Any = None,
                  algorithm: str = "Unknown") -> None:
@@ -260,7 +260,7 @@ class InfluxOutput(OutputAbstract):
            exit(1)
 
 
-    def send_out(self, suggested_value: Any,status: str = "",
+    def send_out(self, suggested_value: Any = None,status: str = "",
                  timestamp: Any = None, status_code: int = None,
                 value: Any = "",
                  algorithm: str = "Unknown") -> None:
