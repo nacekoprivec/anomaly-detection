@@ -1,5 +1,7 @@
 {
-    "bootstrap_servers": ["localhost:9092"],
+    "bootstrap_servers": [
+        "localhost:9092"
+    ],
     "auto_offset_reset": "latest",
     "enable_auto_commit": "True",
     "group_id": "my-group",
@@ -13,7 +15,9 @@
         "features_braila_flow211106H360_night_anomaly",
         "features_braila_flow211306H360_night_anomaly",
         "features_braila_flow318505H498_night_anomaly",
-        "features_alicante_salinity_EA003_36_conductivity"
+        "features_alicante_salinity_EA003_36_conductivity",
+        "features_alicante_salinity_EA003_36_conductivity_hourly",
+        "features_alicante_salinity_EA003_36_conductivity_daily"
     ],
     "filtering": [
         "None",
@@ -24,6 +28,8 @@
         "[[1, 0, 0], [0, 0, 30]]",
         "[[1, 0, 0], [0, 0, 30]]",
         "[[1, 0, 0], [0, 0, 30]]",
+        "None", 
+        "None",
         "None"
     ],
     "anomaly_detection_alg": [
@@ -35,12 +41,14 @@
         "Combination()",
         "Combination()",
         "Combination()",
-        "Combination()"
+        "Combination()",
+        "Welford()",
+        "MACD()"
     ],
     "anomaly_detection_conf": [
         {
-            "train_data": "data/training/braila_pressure5770.csv",
-            "train_conf":{
+            "train_data": "./data/retrain/braila_pressure_5770_retrain.csv",
+            "train_conf": {
                 "model_name": "GAN_Braila_pressure_5770",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -51,11 +59,13 @@
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5770_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
+            "normalization_conf": {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5770",
@@ -68,8 +78,8 @@
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5771.csv",
-            "train_conf":{
+            "train_data": "./data/retrain/braila_pressure_5771_retrain.csv",
+            "train_conf": {
                 "model_name": "GAN_Braila_pressure_5771",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -80,11 +90,13 @@
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5771_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
+            "normalization_conf": {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5771",
@@ -97,8 +109,8 @@
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5772.csv",
-            "train_conf":{
+            "train_data": "./data/retrain/braila_pressure_5772_retrain.csv",
+            "train_conf": {
                 "model_name": "GAN_Braila_pressure_5772",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -109,11 +121,13 @@
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5772_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
+            "normalization_conf": {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5772",
@@ -126,8 +140,8 @@
             ]
         },
         {
-            "train_data": "data/training/braila_pressure5773.csv",
-            "train_conf":{
+            "train_data": "./data/retrain/braila_pressure_5773_retrain.csv",
+            "train_conf": {
                 "model_name": "GAN_Braila_pressure_5773",
                 "N_shifts": 9,
                 "N_latent": 3,
@@ -138,11 +152,13 @@
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/braila_pressure_5773_retrain.csv",
             "input_vector_size": 10,
-            "normalization_conf":
-            {
+            "normalization_conf": {
                 "N": 3
             },
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_pressure_5773",
@@ -157,8 +173,14 @@
         {
             "status_determiner": "OR()",
             "input_vector_size": 1,
-            "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "anomaly_algorithms": [
+                "Welford()",
+                "LinearFit()"
+            ],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211206H360",
@@ -169,32 +191,48 @@
                     "mode": "a"
                 }
             ],
-            "anomaly_algorithms_configurations":[
+            "anomaly_algorithms_configurations": [
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.7, 0.9],
+                    "warning_stages": [
+                        0.7,
+                        0.9
+                    ],
                     "N": 7,
                     "X": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 },
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.5, 0.9],
+                    "warning_stages": [
+                        0.5,
+                        0.9
+                    ],
                     "N": 10,
                     "UL": 4,
                     "LL": -4,
                     "confidence_norm": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 }
             ]
         },
         {
             "status_determiner": "OR()",
             "input_vector_size": 1,
-            "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "anomaly_algorithms": [
+                "Welford()",
+                "LinearFit()"
+            ],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211106H360",
@@ -205,32 +243,48 @@
                     "mode": "a"
                 }
             ],
-            "anomaly_algorithms_configurations":[
+            "anomaly_algorithms_configurations": [
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.7, 0.9],
+                    "warning_stages": [
+                        0.7,
+                        0.9
+                    ],
                     "N": 7,
                     "X": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 },
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.5, 0.9],
+                    "warning_stages": [
+                        0.5,
+                        0.9
+                    ],
                     "N": 10,
                     "UL": 4,
                     "LL": -4,
                     "confidence_norm": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 }
             ]
         },
         {
             "status_determiner": "OR()",
             "input_vector_size": 1,
-            "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "anomaly_algorithms": [
+                "Welford()",
+                "LinearFit()"
+            ],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_flow_211306H360",
@@ -241,32 +295,48 @@
                     "mode": "a"
                 }
             ],
-            "anomaly_algorithms_configurations":[
+            "anomaly_algorithms_configurations": [
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.7, 0.9],
+                    "warning_stages": [
+                        0.7,
+                        0.9
+                    ],
                     "N": 7,
                     "X": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 },
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.5, 0.9],
+                    "warning_stages": [
+                        0.5,
+                        0.9
+                    ],
                     "N": 10,
                     "UL": 4,
                     "LL": -4,
                     "confidence_norm": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 }
             ]
         },
         {
             "status_determiner": "OR()",
             "input_vector_size": 1,
-            "anomaly_algorithms": ["Welford()", "LinearFit()"],
-            "output": ["KafkaOutput()", "FileOutput()"],
+            "anomaly_algorithms": [
+                "Welford()",
+                "LinearFit()"
+            ],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "braila_flow_318505H498",
@@ -277,32 +347,49 @@
                     "mode": "a"
                 }
             ],
-            "anomaly_algorithms_configurations":[
+            "anomaly_algorithms_configurations": [
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.7, 0.9],
+                    "warning_stages": [
+                        0.7,
+                        0.9
+                    ],
                     "N": 7,
                     "X": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 },
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.5, 0.9],
+                    "warning_stages": [
+                        0.5,
+                        0.9
+                    ],
                     "N": 10,
                     "UL": 4,
                     "LL": -4,
                     "confidence_norm": 6,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
                 }
             ]
         },
         {
             "status_determiner": "OR()",
             "input_vector_size": 1,
-            "anomaly_algorithms": ["MACD()", "Welford()"],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "anomaly_algorithms": [
+                "MACD()",
+                "Welford()"
+            ],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()",
+                "InfluxOutput()"
+            ],
             "output_conf": [
                 {
                     "node_id": "alicante_salinity_EA003_36_conductivity",
@@ -324,25 +411,99 @@
                     "has_suggested_value": false
                 }
             ],
-            "anomaly_algorithms_configurations":[
+            "anomaly_algorithms_configurations": [
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.5, 0.9],
+                    "warning_stages": [
+                        0.5,
+                        0.9
+                    ],
                     "period1": 20000,
                     "period2": 30000,
                     "UL": 500.0,
                     "LL": -500.0,
                     "output": [],
                     "output_conf": []
-                
                 },
                 {
                     "input_vector_size": 1,
-                    "warning_stages": [0.9],
+                    "warning_stages": [
+                        0.9
+                    ],
                     "N": 1440,
                     "X": 3,
                     "output": [],
-                    "output_conf": [{}]
+                    "output_conf": [
+                        {}
+                    ]
+                }
+            ]
+        },
+        {
+            "use_cols": [1],
+            "input_vector_size": 1,
+            "warning_stages": [0.8],
+            "N": 200,
+            "X": 5,
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()",
+                "InfluxOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA003_36_conductivity_hourly",
+                    "send_ok": true
+                },
+                {
+                    "file_name": "alicante_salinity_EA003_36_conductivity_hourly_anomalies.csv",
+                    "mode": "a"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "alicante_anomaly",
+                    "measurement": "salinity_EA003_36_conductivity_hourly",
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
+                }
+            ]
+        },
+        {
+            "input_vector_size": 1,
+            "warning_stages": [0.8],
+            "period1": 20,
+            "period2": 30,
+            "UL": 400,
+            "LL": -400,
+            "output": ["FileOutput()"],
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()",
+                "InfluxOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA003_36_conductivity_daily",
+                    "send_ok": true
+                },
+                {
+                    "file_name": "alicante_salinity_EA003_36_conductivity_daily_anomalies.csv",
+                    "mode": "a"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "alicante_anomaly",
+                    "measurement": "salinity_EA003_36_conductivity_daily",
+                    "tags": "{}",
+                    "unix_time_format": "s",
+                    "has_suggested_value": false
                 }
             ]
         }
