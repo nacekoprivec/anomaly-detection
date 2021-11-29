@@ -168,29 +168,29 @@ class AnomalyDetectionAbstract(ABC):
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
         if(not "ftr_vector" in message_value):
-            logging.warning(f"{self.name}: ftr_vector field was not contained in message.")
+            print(f"{self.name}: ftr_vector field was not contained in message.", flush=True)
             return False
 
         # Check for timestamp field
         if(not "timestamp" in message_value):
-            logging.warning(f"{self.name}: timestamp field was not contained in message.")
+            print(f"{self.name}: timestamp field was not contained in message.", flush=True)
             return False
 
         # Check vector length
         if(len(message_value["ftr_vector"]) != self.input_vector_size):
-            logging.warning("%s: Given test value does not satisfy input vector size. Feature vector: %s",
+            print("%s: Given test value does not satisfy input vector size. Feature vector: %s",
                             self.name,
-                            "[" + ",".join([str(elem) for elem in message_value["ftr_vector"]]) + "]")
+                            "[" + ",".join([str(elem) for elem in message_value["ftr_vector"]]) + "]", flush=True)
             return False
 
         # Check if feature vector contains a string
         if(any(type(x)==str for x in message_value["ftr_vector"])):
-            logging.warning(f"{self.name}: Feature vector contains a string.")
+            print(f"{self.name}: Feature vector contains a string.", flush=True)
             return False
 
         # Check if feature vector contains None
         if(any(x==None for x in message_value["ftr_vector"])):
-            logging.warning(f"{self.name}: Feature vector contains a None.")
+            print(f"{self.name}: Feature vector contains a None.", flush=True)
             return False
 
         
