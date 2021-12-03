@@ -17,7 +17,9 @@
         "features_braila_flow318505H498_night_anomaly",
         "features_alicante_salinity_EA003_36_conductivity",
         "features_alicante_salinity_EA003_36_conductivity_hourly",
-        "features_alicante_salinity_EA003_36_conductivity_daily"
+        "features_alicante_salinity_EA003_36_conductivity_daily",
+        "features_alicante_salinity_EA003_36_level",
+        "features_alicante_salinity_EA003_36_level_duration"
     ],
     "filtering": [
         "None",
@@ -29,6 +31,8 @@
         "[[1, 0, 0], [0, 0, 30]]",
         "[[1, 0, 0], [0, 0, 30]]",
         "None", 
+        "None",
+        "None",
         "None",
         "None"
     ],
@@ -43,7 +47,9 @@
         "Combination()",
         "Combination()",
         "Welford()",
-        "MACD()"
+        "MACD()",
+        "BorderCheck()",
+        "BorderCheck()"
     ],
     "anomaly_detection_conf": [
         {
@@ -502,6 +508,70 @@
                     "measurement": "salinity_EA003_36_conductivity_daily",
                     "tags": "{}",
                     "unix_time_format": "ms",
+                    "has_suggested_value": false
+                }
+            ]
+        },
+        {
+            "input_vector_size": 1,
+            "warning_stages": [0.9],
+            "UL": 390,
+            "LL": 80,
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()",
+                "InfluxOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA003_36_level",
+                    "send_ok": true
+                },
+                {
+                    "file_name": "alicante_salinity_EA003_36_level_anomalies.csv",
+                    "mode": "a"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "alicante_anomaly",
+                    "measurement": "salinity_EA003_36_level",
+                    "tags": "{}",
+                    "unix_time_format": "ms",
+                    "has_suggested_value": false
+                }
+            ]
+        },
+        {
+            "input_vector_size": 1,
+            "warning_stages": [0.9],
+            "UL": 6000,
+            "LL": 2000,
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()",
+                "InfluxOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA003_36_level_duration",
+                    "send_ok": true
+                },
+                {
+                    "file_name": "alicante_salinity_EA003_36_level_duration_anomalies.csv",
+                    "mode": "a"
+                },
+                {
+                    "ip": "localhost",
+                    "port": "8086",
+                    "org": "naiades",
+                    "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                    "bucket": "alicante_anomaly",
+                    "measurement": "salinity_EA003_36_level_duration_daily",
+                    "tags": "{}",
+                    "unix_time_format": "s",
                     "has_suggested_value": false
                 }
             ]
