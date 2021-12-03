@@ -524,11 +524,11 @@
             ],
             "output_conf": [
                 {
-                    "node_id": "alicante_salinity_EA003_36_level",
+                    "node_id": "alicante_salinity_EA001_36_level",
                     "send_ok": true
                 },
                 {
-                    "file_name": "alicante_salinity_EA003_36_level_anomalies.csv",
+                    "file_name": "alicante_salinity_EA001_36_level_anomalies.csv",
                     "mode": "a"
                 },
                 {
@@ -537,7 +537,7 @@
                     "org": "naiades",
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "alicante_anomaly",
-                    "measurement": "salinity_EA003_36_level",
+                    "measurement": "salinity_EA001_36_level",
                     "tags": "{}",
                     "unix_time_format": "ms",
                     "has_suggested_value": false
@@ -556,11 +556,11 @@
             ],
             "output_conf": [
                 {
-                    "node_id": "alicante_salinity_EA003_36_level_duration",
+                    "node_id": "alicante_salinity_EA001_36_level_duration",
                     "send_ok": true
                 },
                 {
-                    "file_name": "alicante_salinity_EA003_36_level_duration_anomalies.csv",
+                    "file_name": "alicante_salinity_EA001_36_level_duration_anomalies.csv",
                     "mode": "a"
                 },
                 {
@@ -569,7 +569,7 @@
                     "org": "naiades",
                     "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                     "bucket": "alicante_anomaly",
-                    "measurement": "salinity_EA003_36_level_duration_daily",
+                    "measurement": "salinity_EA001_36_level_duration",
                     "tags": "{}",
                     "unix_time_format": "s",
                     "has_suggested_value": false
