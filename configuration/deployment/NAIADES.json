@@ -18,8 +18,8 @@
         "features_alicante_salinity_EA003_36_conductivity",
         "features_alicante_salinity_EA003_36_conductivity_hourly",
         "features_alicante_salinity_EA003_36_conductivity_daily",
-        "features_alicante_salinity_EA003_36_level",
-        "features_alicante_salinity_EA003_36_level_duration"
+        "features_alicante_salinity_EA001_36_level",
+        "features_alicante_salinity_EA001_36_level_duration"
     ],
     "filtering": [
         "None",
