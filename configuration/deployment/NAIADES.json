@@ -60,6 +60,8 @@
         "Combination()",
         "Combination()",
         "Welford()",
+        "Welford()",
+        "Welford()",
         "MACD()",
         "BorderCheck()",
         "BorderCheck()"
