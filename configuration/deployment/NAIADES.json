@@ -798,7 +798,7 @@
             "train_data": "./data/retrain/alicante_salinity_EA001_36_level_Gan_train.csv",
             "train_conf": {
                 "model_name": "GAN_alicante_level",
-                "N_shifts": 23,
+                "N_shifts": 19,
                 "N_latent": 6,
                 "K": 4,
                 "len_window": 20
@@ -806,7 +806,7 @@
             "retrain_interval": 2000,
             "samples_for_retrain": 8000,
             "retrain_file": "./data/retrain/alicante_salinity_EA001_36_level_Gan_train.csv",
-            "input_vector_size": 24,
+            "input_vector_size": 20,
             "output": [
                 "KafkaOutput()",
                 "FileOutput()"
