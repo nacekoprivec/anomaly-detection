@@ -7,6 +7,7 @@
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics": [
+        "features_braila_flow211106H360_anomaly_Gan",
         "features_braila_flow211206H360_anomaly_Gan",
         "features_braila_flow211306H360_anomaly_Gan",
         "features_braila_flow318505H498_anomaly_Gan",
@@ -19,14 +20,17 @@
         "features_braila_flow211306H360_night_anomaly",
         "features_braila_flow318505H498_night_anomaly",
         "features_alicante_salinity_EA003_36_conductivity",
+        "features_alicante_salinity_EA003_36_conductivity_anomaly_Gan",
         "features_alicante_salinity_EA003_36_conductivity_hourly",
         "features_alicante_salinity_EA003_36_conductivity_hourly_1",
         "features_alicante_salinity_EA003_36_conductivity_hourly_2",
         "features_alicante_salinity_EA003_36_conductivity_daily",
         "features_alicante_salinity_EA001_36_level",
-        "features_alicante_salinity_EA001_36_level_duration"
+        "features_alicante_salinity_EA001_36_level_duration",
+        "features_alicante_salinity_EA001_36_level_anomaly_Gan"
     ],
     "filtering": [
+        "None",
         "None",
         "None",
         "None",
@@ -44,9 +48,11 @@
         "[[7, 30, 0], [2, 0, 0]]",
         "None",
         "None",
+        "None",
         "None"
     ],
     "anomaly_detection_alg": [
+        "GAN()",
         "GAN()",
         "GAN()",
         "GAN()",
@@ -64,9 +70,41 @@
         "Welford()",
         "MACD()",
         "BorderCheck()",
-        "BorderCheck()"
+        "BorderCheck()",
+        "GAN()"
     ],
     "anomaly_detection_conf": [
+        {
+            "train_data": "./data/retrain/braila_flow211106H360_retrain.csv",
+            "train_conf": {
+                "model_name": "GAN_Braila_flow211106H360",
+                "N_shifts": 9,
+                "N_latent": 4,
+                "K": 5,
+                "len_window": 20
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/braila_flow211106H360_retrain.csv",
+            "input_vector_size": 10,
+            "normalization_conf": {
+                "N": 3
+            },
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "braila_flow211106H360_GAN",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "braila_flow211106H360_GAN_anomalies.csv",
+                    "mode": "a"
+                }
+            ]
+        },
         {
             "train_data": "./data/retrain/braila_flow211206H360_retrain.csv",
             "train_conf": {
@@ -545,11 +583,39 @@
                         0.9
                     ],
                     "N": 1440,
-                    "X": 3,
+                    "X": 4,
                     "output": [],
                     "output_conf": [
                         {}
                     ]
+                }
+            ]
+        },
+        {
+            "train_data": "./data/retrain/alicante_salinity_EA003_36_conductivity_Gan_train.csv",
+            "train_conf": {
+                "model_name": "GAN_alicante_conductivity",
+                "N_shifts": 23,
+                "N_latent": 6,
+                "K": 4,
+                "len_window": 20
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/alicante_salinity_EA003_36_conductivity_Gan_train.csv",
+            "input_vector_size": 24,
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA003_36_conductivity_Gan",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "alicante_salinity_EA003_36_conductivity_Gan_anomalies.csv",
+                    "mode": "a"
                 }
             ]
         },
@@ -723,6 +789,34 @@
                     "tags": "{}",
                     "unix_time_format": "s",
                     "has_suggested_value": false
+                }
+            ]
+        },
+        {
+            "train_data": "./data/retrain/alicante_salinity_EA001_36_level_Gan_train.csv",
+            "train_conf": {
+                "model_name": "GAN_alicante_level",
+                "N_shifts": 23,
+                "N_latent": 6,
+                "K": 4,
+                "len_window": 20
+            },
+            "retrain_interval": 2000,
+            "samples_for_retrain": 8000,
+            "retrain_file": "./data/retrain/alicante_salinity_EA001_36_level_Gan_train.csv",
+            "input_vector_size": 24,
+            "output": [
+                "KafkaOutput()",
+                "FileOutput()"
+            ],
+            "output_conf": [
+                {
+                    "node_id": "alicante_salinity_EA001_36_level_Gan",
+                    "send_ok": false
+                },
+                {
+                    "file_name": "alicante_salinity_EA001_36_level_Gan_anomalies.csv",
+                    "mode": "a"
                 }
             ]
         }
