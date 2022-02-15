@@ -67,71 +67,82 @@ class EMA(AnomalyDetectionAbstract):
         value = message_value["ftr_vector"]
         value = value[0]
 
-        self.numbers.append(value)
-        self.timestamps.append(message_value['timestamp'])
-        if (len(self.numbers) > self.N):
-            self.numbers = self.numbers[-self.N:]
-            self.timestamps = self.timestamps[-self.N:]
+        feature_vector = super().feature_construction(value=message_value['ftr_vector'],
+                                                      timestamp=message_value['timestamp'])
 
-        #Calculate exponential moving average
-        if(len(self.EMA) == 0):
-            self.EMA.append(self.numbers[-1])
+        if (feature_vector == False):
+            # If this happens the memory does not contain enough samples to
+            # create all additional features.
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
         else:
-            new = self.numbers[-1] * self.smoothing + self.EMA[-1] *\
-                (1-self.smoothing)
-            self.EMA.append(new)
-        if(len(self.numbers) == 1):
-            self.sigma.append(0)
-        elif(len(self.numbers) < self.N):
-            self.sigma.append(np.std(self.numbers))
-        else:
-            self.sigma.append(np.std(self.numbers[-self.N:]))
+            value = feature_vector[0]
+
+            self.numbers.append(value)
+            self.timestamps.append(message_value['timestamp'])
+            if (len(self.numbers) > self.N):
+                self.numbers = self.numbers[-self.N:]
+                self.timestamps = self.timestamps[-self.N:]
+
+            #Calculate exponential moving average
+            if(len(self.EMA) == 0):
+                self.EMA.append(self.numbers[-1])
+            else:
+                new = self.numbers[-1] * self.smoothing + self.EMA[-1] *\
+                    (1-self.smoothing)
+                self.EMA.append(new)
+            if(len(self.numbers) == 1):
+                self.sigma.append(0)
+            elif(len(self.numbers) < self.N):
+                self.sigma.append(np.std(self.numbers))
+            else:
+                self.sigma.append(np.std(self.numbers[-self.N:]))
 
 
-        #Normalize the moving average to the range LL - UL
-        value_normalized = 2*(self.EMA[-1] - (self.UL + self.LL)/2) / \
-            (self.UL - self.LL)
-        status = self.OK
-        status_code = self.OK_CODE
+            #Normalize the moving average to the range LL - UL
+            value_normalized = 2*(self.EMA[-1] - (self.UL + self.LL)/2) / \
+                (self.UL - self.LL)
+            status = self.OK
+            status_code = self.OK_CODE
 
-        #Perform error and warning checks
-        if(value_normalized > 1):
-            status = "Error: EMA above upper limit"
-            status_code = -1
-        elif(value_normalized < -1):
-            status = "Error: EMA below lower limit"
-            status_code = -1
-        else:
-            for stage in range(len(self.warning_stages)):
-                if(value_normalized > self.warning_stages[stage]):
-                    status = "Warning" + str(stage) + \
-                        ": EMA close to upper limit."
-                    status_code = 0
-                elif(value_normalized < -self.warning_stages[stage]):
-                    status = "Warning" + str(stage) + \
-                        ": EMA close to lower limit."
-                    status_code = 0
-                else:
-                    break
+            #Perform error and warning checks
+            if(value_normalized > 1):
+                status = "Error: EMA above upper limit"
+                status_code = -1
+            elif(value_normalized < -1):
+                status = "Error: EMA below lower limit"
+                status_code = -1
+            else:
+                for stage in range(len(self.warning_stages)):
+                    if(value_normalized > self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": EMA close to upper limit."
+                        status_code = 0
+                    elif(value_normalized < -self.warning_stages[stage]):
+                        status = "Warning" + str(stage) + \
+                            ": EMA close to lower limit."
+                        status_code = 0
+                    else:
+                        break
 
-        self.status = status
-        self.status_code = status_code
+            self.status = status
+            self.status_code = status_code
 
-        # Does not use general normalization_output_visualization method
-        # because of custom visualization
-        for output in self.outputs:
-            output.send_out(timestamp=message_value["timestamp"],
-                            algorithm=self.name, status=status,
-                            value=message_value['ftr_vector'],
-                            status_code=status_code)
+            # Does not use general normalization_output_visualization method
+            # because of custom visualization
+            for output in self.outputs:
+                output.send_out(timestamp=message_value["timestamp"],
+                                algorithm=self.name, status=status,
+                                value=message_value['ftr_vector'],
+                                status_code=status_code)
 
-        #send EMA and +- sigma band to visualization
-        
-        # mean = self.EMA[-1]
-        #sigma = self.sigma[-1]
-        lines = [self.numbers[-1]]
-        if(self.visualization is not None):
-            self.visualization.update(value=lines, timestamp=message_value["timestamp"],
-            status_code = status_code)
+            #send EMA and +- sigma band to visualization
+            
+            # mean = self.EMA[-1]
+            #sigma = self.sigma[-1]
+            lines = [self.numbers[-1]]
+            if(self.visualization is not None):
+                self.visualization.update(value=lines, timestamp=message_value["timestamp"],
+                status_code = status_code)
 
         return status, status_code

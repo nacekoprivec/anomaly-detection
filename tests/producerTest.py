@@ -5,6 +5,7 @@ from json import dumps
 from kafka import KafkaProducer
 import numpy as np
 from datetime import datetime
+import time
 
 #Define producer
 producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
@@ -18,35 +19,15 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
 tab_data = [3, 4, 4, 4, 4, 5, 5, 5]
 tab_data_csv = []
 
-for e in range(9):
-    timestamp = e
-    # Normal distribution
-    ran = float(np.random.normal(0, 0.1))
+timestamp = time.time()
 
-    # Sin with normal distribution error
-    #ran = float(np.random.normal(0, 0.01) + np.sin(0.01*e))
+for e in range(100):
+    timestamp += 60
+    ran = float(np.random.normal(0, 1))
     
+    data = {"ftr_vector" : [ran],
+			"timestamp": timestamp}
     
-    if(e%10 == 0):
-        ran += 0.4
-    data = {"test_value" : [tab_data[e]],
-			"timestamp": str(datetime.now())}
-    data_csv = {"test_value" : 3 + ran,
-            "second": e,
-			"timestamp": str(datetime.now())}
-    #tab_data.append(data)
-    tab_data_csv.append(data_csv)
-	
-    producer.send('anomaly_detection1', value=data)
+    producer.send('input_stream', value=data)
     sleep(1) #one data point each second
 
-"""with open("../data/consumer/sin.json", "w") as f:
-    d = {"data": tab_data}
-    json.dump(d, f)
-"""
-"""with open("../data/consumer/sin.csv", "w", newline="") as csv_file:
-        fieldnames = ["timestamp", "test_value", "second"]
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(tab_data_csv)
-"""
