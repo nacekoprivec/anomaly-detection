@@ -17,6 +17,8 @@ from PCA import PCA
 from hampel import Hampel
 from linearFit import LinearFit
 from MACD import MACD
+import time
+import numpy as np
 
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
@@ -64,6 +66,7 @@ class Combination(AnomalyDetectionAbstract):
 
         # Status determiner initalization
         self.status_determiner = eval(conf["status_determiner"])
+        self.status_determiner.configure(conf["status_determiner_conf"])
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
@@ -78,7 +81,7 @@ class Combination(AnomalyDetectionAbstract):
             statuses.append(status_code)
         
         # Get fina status
-        final_status_code, status = self.status_determiner.determine_status(statuses=statuses)
+        final_status_code, status = self.status_determiner.determine_status(statuses=statuses, timestamp = message_value["timestamp"])
 
         self.status_code = final_status_code
         self.status = status
@@ -108,13 +111,18 @@ class StatusDeterminer(ABC):
     @abstractclassmethod
     def determine_status(self, statuses: List[int] ) -> Tuple[int, str]:
         pass
+    @abstractclassmethod
+    def configure(self, conf: Dict[Any, Any] = None):
+        pass
 
 
 class AND(StatusDeterminer):
     # Returns error if all statuses are error, warning if all statuses are
     # warrning (or error) and OK otherwise. Undefined statuses are ignored.
+    def configure(self, conf: Dict[Any, Any] = None):
+        pass
 
-    def determine_status(self, statuses):
+    def determine_status(self, statuses, timestamp):
         # 1-OK, 0-warrning, -1-error. We search for the highest status
         # (except 2) and return it
         max_status = -2
@@ -141,8 +149,10 @@ class OR(StatusDeterminer):
     # Returns error if at least one status is error, warning if at least one
     # status is warrning (or error) and OK otherwise. Undefined statuses are
     # ignored.
+    def configure(self, conf: Dict[Any, Any] = None):
+        pass
 
-    def determine_status(self, statuses):
+    def determine_status(self, statuses, timestamp):
         # 1-OK, 0-warrning, -1-error. We search for the lowest status and
         # return it
         min_status = 2
@@ -161,3 +171,48 @@ class OR(StatusDeterminer):
             status_message = self.UNDEFINED
         
         return min_status, status_message
+
+class PercentScore(StatusDeterminer):
+    #Returns a score between 0 and 1; 1-all algorithms signaled an error, 0-all algorithms OK
+
+    def configure(self, conf: Dict[Any, Any] = None):
+        self.memory = []
+        self.interval = conf["interval"]
+
+    def determine_status(self, statuses, timestamp):
+        #sum up the statuses, divide by max score
+
+        max_score = len(statuses)*2
+        score = 0
+
+        for status in statuses:
+            if(status == 0):
+                score +=1
+            elif(status == -1):
+                score +=2
+            else:
+                score +=0
+        
+
+        
+        final_score = score/max_score
+        status_message = "PercentScore"
+
+        if(final_score is not None):
+            if(timestamp<1e10):
+                self.memory.append([final_score, timestamp])
+            else:
+                self.memory.append([final_score, timestamp/1000])
+        now = self.memory[-1][1]
+
+
+        tmstps = np.array(self.memory)[:,1]
+        idx =[i for i, j in enumerate(tmstps) if j>(now-self.interval)]
+        self.memory = list(np.array(self.memory)[idx])
+        
+        try:
+            convoluted_score = np.mean(np.array(self.memory)[:,0])
+        except:
+            convoluted_score = 0
+        
+        return status_message, convoluted_score

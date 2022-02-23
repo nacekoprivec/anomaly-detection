@@ -5,7 +5,7 @@ import pandas as pd
 import sys
 import logging
 from statistics import mean
-from datetime import datetime
+import datetime
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -60,6 +60,25 @@ class AnomalyDetectionAbstract(ABC):
         # logging when message recieved (this line can be commented)
         #logging.info("%s recieved message.", self.name)
         pass
+
+    def filter_by_time(self, message, target_time, tolerance) -> Any:
+        try:
+            timestamp = pd.to_datetime(message['timestamp'], unit="s")
+        except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
+            timestamp = pd.to_datetime(message['timestamp'], unit="ms")
+
+        time = timestamp.time()
+
+        target_time = datetime.time(target_time[0], target_time[1], target_time[2])
+        tol = datetime.timedelta(hours = tolerance[0], minutes = tolerance[1], seconds = tolerance[2])
+        date = datetime.date(1, 1, 1)
+        datetime1 = datetime.datetime.combine(date, time)
+        datetime2 = datetime.datetime.combine(date, target_time)
+
+        if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
+            return(message)
+        else:
+            return(None)
 
     @abstractmethod
     def configure(self, conf: Dict[Any, Any],
@@ -157,7 +176,9 @@ class AnomalyDetectionAbstract(ABC):
         self.outputs = [eval(o) for o in conf["output"]]
         output_configurations = conf["output_conf"]
         for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
+            print(output_configurations[o])
+            print(self.outputs[o])
+            self.outputs[o].configure(conf = output_configurations[o])
         if ("visualization" in conf):
             self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
@@ -181,6 +202,8 @@ class AnomalyDetectionAbstract(ABC):
     
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
+        if(message_value == None):
+            return False
         if(not "ftr_vector" in message_value):
             print(f"{self.name}: ftr_vector field was not contained in message.", flush=True)
             return False
@@ -455,3 +478,5 @@ class AnomalyDetectionAbstract(ABC):
             lines = [value[0]]
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
+
+   

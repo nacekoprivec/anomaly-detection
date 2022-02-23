@@ -21,13 +21,14 @@ tab_data_csv = []
 
 timestamp = time.time()
 
-for e in range(100):
-    timestamp += 60
-    ran = float(np.random.normal(0, 1))
+for e in range(5000):
+    timestamp += 5*60
+    ran = float(np.random.normal(15, 5))
     
     data = {"ftr_vector" : [ran],
 			"timestamp": timestamp}
     
-    producer.send('input_stream', value=data)
-    sleep(1) #one data point each second
+    producer.send('features_braila_pressure5770_anomaly', value=data)
+    producer.send('features_braila_pressure5771_anomaly', value=data)
+    sleep(0.1) #one data point each second
 

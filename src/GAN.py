@@ -45,6 +45,7 @@ class GAN(AnomalyDetectionAbstract):
         self.model_name = conf["train_conf"]["model_name"]
         self.K = conf["train_conf"]["K"]
         self.len_window = conf["train_conf"]["len_window"]
+        self.filtering = conf["filtering"]
 
         self.window = []
         self.weights = np.exp(np.linspace(0, 1, self.len_window))
@@ -100,6 +101,11 @@ class GAN(AnomalyDetectionAbstract):
                             initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
+        if(self.filtering is not None and eval(self.filtering) is not None):
+            #extract target time and tolerance
+            target_time, tolerance = eval(self.filtering)
+            message_value = self.filter_by_time(message_value, target_time, tolerance)
+
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
@@ -127,8 +133,6 @@ class GAN(AnomalyDetectionAbstract):
             
         else:
             feature_vector = list(message_value['ftr_vector'])
-        
-        print(f'GAN {feature_vector = }')
 
         value = feature_vector
 

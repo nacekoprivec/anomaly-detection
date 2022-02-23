@@ -168,12 +168,9 @@ class ConsumerKafka(ConsumerAbstract):
         # Return message only if timestamp is within tolerance
         # print((max(datetime2, datetime1) - min(datetime2, datetime1)))
         # print(tol)
-        print('razlika: ' + str((max(datetime2, datetime1) - min(datetime2, datetime1))), flush=True)
         if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
-            print('filtriral!', flush=True)
             return(message)
         else:
-            print('Nisem :(', flush=True)
             return(None)
 
 

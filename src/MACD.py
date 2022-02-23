@@ -38,6 +38,7 @@ class MACD(AnomalyDetectionAbstract):
         self.warning_stages = conf["warning_stages"]
         self.UL = conf["UL"]
         self.LL = conf["LL"]
+        self.filtering = conf["filtering"]
 
         self.EMA1 = 0
         self.EMA2 = 0
@@ -45,6 +46,11 @@ class MACD(AnomalyDetectionAbstract):
 
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
+        if(self.filtering is not None and eval(self.filtering) is not None):
+            #extract target time and tolerance
+            target_time, tolerance = eval(self.filtering)
+            message_value = super().filter_by_time(message_value, target_time, tolerance)
+
         # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
