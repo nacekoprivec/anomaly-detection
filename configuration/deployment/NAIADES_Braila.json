@@ -69,7 +69,7 @@
                 "bucket": "braila_anomaly",
                 "measurement": "pressure_5770_meta_signal",
                 "tags": "{}",
-                "unix_time_format": "s",
+                "unix_time_format": "ms",
                 "has_suggested_value": false
             }
         ],
@@ -442,7 +442,7 @@
                 "bucket": "braila_anomaly",
                 "measurement": "pressure_5771_meta_signal",
                 "tags": "{}",
-                "unix_time_format": "s",
+                "unix_time_format": "ms",
                 "has_suggested_value": false
             }
         ],
@@ -815,7 +815,7 @@
                 "bucket": "braila_anomaly",
                 "measurement": "pressure_5772_meta_signal",
                 "tags": "{}",
-                "unix_time_format": "s",
+                "unix_time_format": "ms",
                 "has_suggested_value": false
             }
         ],
@@ -1188,7 +1188,7 @@
                 "bucket": "braila_anomaly",
                 "measurement": "pressure_5773_meta_signal",
                 "tags": "{}",
-                "unix_time_format": "s",
+                "unix_time_format": "ms",
                 "has_suggested_value": false
             }
         ],
