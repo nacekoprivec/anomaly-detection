@@ -149,7 +149,6 @@ class GAN(AnomalyDetectionAbstract):
             # print(feature_vector)
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
-            print(f'{prediction = }')
             
             
             self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
@@ -168,9 +167,6 @@ class GAN(AnomalyDetectionAbstract):
 
             #print("GAN error: " + str(self.GAN_error))
             #IsolationForest_transformed =  self.IsolationForest.predict(self.GAN_error.reshape(-1, 1))
-
-            print(f'{self.GAN_error = }')
-            print(f'{self.threshold = }')
             
             if(self.GAN_error < self.threshold):
                 status = self.OK

@@ -39,11 +39,11 @@ class BorderCheck(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
-
         if(self.filtering is not None and eval(self.filtering) is not None):
             #extract target time and tolerance
             target_time, tolerance = eval(self.filtering)
             message_value = super().filter_by_time(message_value, target_time, tolerance)
+
 
         # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
@@ -66,6 +66,7 @@ class BorderCheck(AnomalyDetectionAbstract):
 
         feature_vector = super().feature_construction(value=message_value['ftr_vector'],
                                                       timestamp=message_value['timestamp'])
+
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to

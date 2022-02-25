@@ -73,11 +73,13 @@ class Combination(AnomalyDetectionAbstract):
 
         # No need to check feature vector since every algorithm is going to do
         # that
+        
 
         # Get statuses from all algorithms
         statuses = []
         for algorithm in self.anomaly_algorithms:
-            _, status_code = algorithm.message_insert(message_value=message_value)
+            to_insert = message_value.copy()
+            _, status_code = algorithm.message_insert(message_value=to_insert)
             statuses.append(status_code)
         
         # Get fina status

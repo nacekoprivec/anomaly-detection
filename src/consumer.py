@@ -141,6 +141,7 @@ class ConsumerKafka(ConsumerAbstract):
 
                 if message is not None:
                     value = message.value
+
                     self.anomalies[algorithm_indx].message_insert(value)
 
                 
