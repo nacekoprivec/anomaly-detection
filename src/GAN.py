@@ -255,7 +255,6 @@ class GAN(AnomalyDetectionAbstract):
             df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,))
             vals = df_['ftr_vector'].values
             vals = np.array([np.array([xi]) for xi in vals])
-            print(vals)
             try:
                 self.min = min(min(vals, key=min))
                 self.max = max(max(vals, key=max))

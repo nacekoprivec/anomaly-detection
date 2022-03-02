@@ -180,6 +180,8 @@ class PercentScore(StatusDeterminer):
     def configure(self, conf: Dict[Any, Any] = None):
         self.memory = []
         self.interval = conf["interval"]
+        self.data_interval = conf["interval"]
+        self.num_in_interval = int(self.interval/self.data_interval)
 
     def determine_status(self, statuses, timestamp):
         #sum up the statuses, divide by max score
@@ -213,7 +215,7 @@ class PercentScore(StatusDeterminer):
         self.memory = list(np.array(self.memory)[idx])
         
         try:
-            convoluted_score = np.mean(np.array(self.memory)[:,0])
+            convoluted_score = np.sum(np.array(self.memory)[:,0])/self.num_in_interval
         except:
             convoluted_score = 0
         

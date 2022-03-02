@@ -23,7 +23,7 @@
         "use_cols": [1],
         "input_vector_size": 1,
         "status_determiner": "PercentScore()",
-        "status_determiner_conf": {"interval": 7200},
+        "status_determiner_conf": {"interval": 7200, "data_interval": 600},
         "anomaly_algorithms": [
             "Welford()",
             "Welford()",
@@ -396,7 +396,7 @@
         "use_cols": [1],
         "input_vector_size": 1,
         "status_determiner": "PercentScore()",
-        "status_determiner_conf": {"interval": 7200},
+        "status_determiner_conf": {"interval": 7200, "data_interval": 600},
         "anomaly_algorithms": [
             "Welford()",
             "Welford()",
@@ -769,7 +769,7 @@
         "use_cols": [1],
         "input_vector_size": 1,
         "status_determiner": "PercentScore()",
-        "status_determiner_conf": {"interval": 7200},
+        "status_determiner_conf": {"interval": 7200, "data_interval": 600},
         "anomaly_algorithms": [
             "Welford()",
             "Welford()",
@@ -1142,7 +1142,7 @@
         "use_cols": [1],
         "input_vector_size": 1,
         "status_determiner": "PercentScore()",
-        "status_determiner_conf": {"interval": 7200},
+        "status_determiner_conf": {"interval": 7200, "data_interval": 600},
         "anomaly_algorithms": [
             "Welford()",
             "Welford()",

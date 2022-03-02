@@ -176,8 +176,8 @@ class AnomalyDetectionAbstract(ABC):
         self.outputs = [eval(o) for o in conf["output"]]
         output_configurations = conf["output_conf"]
         for o in range(len(self.outputs)):
-            print(output_configurations[o])
-            print(self.outputs[o])
+            #print(output_configurations[o])
+            #print(self.outputs[o])
             self.outputs[o].configure(conf = output_configurations[o])
         if ("visualization" in conf):
             self.visualization = eval(conf["visualization"])
@@ -279,8 +279,6 @@ class AnomalyDetectionAbstract(ABC):
 
             if(feature_vector is not False):
                 if(not np.isnan(np.array(feature_vector)).any()):
-                    print('training:')
-                    print(np.array(feature_vector))
                     features.append(np.array(feature_vector))
 
         self.memory = memory_backup
@@ -442,8 +440,6 @@ class AnomalyDetectionAbstract(ABC):
                     try:
                         shifts.append(np.mean(buff))
                     except:
-                        print('shift construction failed')
-                        print(f'{buff = }')
                         return []
                     buff = []
 
