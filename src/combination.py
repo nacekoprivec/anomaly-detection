@@ -219,4 +219,4 @@ class PercentScore(StatusDeterminer):
         except:
             convoluted_score = 0
         
-        return status_message, convoluted_score
+        return convoluted_score, status_message
