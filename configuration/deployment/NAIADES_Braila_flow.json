@@ -65,7 +65,7 @@
             "send_ok": true
             },
             {
-                "file_name": "braila_flow211106H360_meta_signal.csv",
+                "file_name": "braila_flow_211106H360_meta_signal.csv",
                 "mode": "a"
             },
             {
@@ -74,7 +74,7 @@
                 "org": "naiades",
                 "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                 "bucket": "braila_anomaly",
-                "measurement": "flow211106H360_meta_signal",
+                "measurement": "flow_211106H360_meta_signal",
                 "tags": "{}",
                 "unix_time_format": "ms",
                 "has_suggested_value": false
@@ -572,7 +572,7 @@
             "send_ok": true
             },
             {
-                "file_name": "braila_flow211206H360_meta_signal.csv",
+                "file_name": "braila_flow_211206H360_meta_signal.csv",
                 "mode": "a"
             },
             {
@@ -581,7 +581,7 @@
                 "org": "naiades",
                 "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                 "bucket": "braila_anomaly",
-                "measurement": "flow211206H360_meta_signal",
+                "measurement": "flow_211206H360_meta_signal",
                 "tags": "{}",
                 "unix_time_format": "ms",
                 "has_suggested_value": false
@@ -1074,7 +1074,7 @@
             "send_ok": true
             },
             {
-                "file_name": "braila_flow211306H360_meta_signal.csv",
+                "file_name": "braila_flow_211306H360_meta_signal.csv",
                 "mode": "a"
             },
             {
@@ -1083,7 +1083,7 @@
                 "org": "naiades",
                 "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                 "bucket": "braila_anomaly",
-                "measurement": "flow211306H360_meta_signal",
+                "measurement": "flow_211306H360_meta_signal",
                 "tags": "{}",
                 "unix_time_format": "ms",
                 "has_suggested_value": false
@@ -1499,7 +1499,7 @@
             "send_ok": true
             },
             {
-                "file_name": "braila_flow318505H498_meta_signal.csv",
+                "file_name": "braila_flow_318505H498_meta_signal.csv",
                 "mode": "a"
             },
             {
@@ -1508,7 +1508,7 @@
                 "org": "naiades",
                 "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
                 "bucket": "braila_anomaly",
-                "measurement": "flow318505H498_meta_signal",
+                "measurement": "flow_318505H498_meta_signal",
                 "tags": "{}",
                 "unix_time_format": "ms",
                 "has_suggested_value": false
