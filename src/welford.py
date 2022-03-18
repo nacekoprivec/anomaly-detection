@@ -20,7 +20,7 @@ class Welford(AnomalyDetectionAbstract):
     LL: float
     N: int
     count: int
-    memory: List[float]
+    Memory: List[float]
     X: float
     mean: float
     s: float
@@ -39,12 +39,13 @@ class Welford(AnomalyDetectionAbstract):
 
         if ('N' in conf):
             self.N = conf['N']
-            self.memory = [None] * self.N
+            self.Memory = [None] * self.N
         else:
             self.N = None
 
         self.UL = self.LL = None
         self.count = 0
+        self.filtering = conf["filtering"]
 
         self.X = conf["X"]
         self.warning_stages = conf["warning_stages"]
@@ -52,6 +53,11 @@ class Welford(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
+        
+        if(self.filtering is not None and eval(self.filtering) is not None):
+            #extract target time and tolerance
+            target_time, tolerance = eval(self.filtering)
+            message_value = super().filter_by_time(message_value, target_time, tolerance)
 
         # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
@@ -69,84 +75,111 @@ class Welford(AnomalyDetectionAbstract):
             self.status_code = status_code
             return status, status_code
 
-        value = message_value["ftr_vector"]
-        value = value[0]
-
-        # extract from message
+        #extract from message
         value = message_value["ftr_vector"]
         value = value[0]
         timestamp = message_value["timestamp"]
 
-        # First value is undefined
-        if (self.count == 0):
-            self.mean = value
-            self.s = 0
-            status = self.UNDEFINED
-            status_code = self.UNDEFIEND_CODE
-        # Infinite stream and has at least 2 elements so far, or finite stream
-        # with full memory
-        elif ((self.N is None and self.count > 1) or
-             (self.N is not None and self.N <= self.count)):
-
-            # If LL != UL then calculate normalized value
-            if(self.UL != self.LL):
-                value_normalized = 2*(value - (self.UL + self.LL)/2) / \
-                    (self.UL - self.LL)
-            # If LL == UL and value == LL then there is no error
-            elif(value == self.LL):
-                value_normalized = 0
-            # Else ther is always error
-            else:
-                value_normalized = float("inf")
-
-            status = self.OK
-            status_code = self.OK_CODE
-
-            if(value_normalized > 1):
-                status = "Error: measurement above upper limit"
-                status_code = -1
-            elif(value_normalized < -1):
-                status = "Error: measurement below lower limit"
-                status_code = -1
-            else:
-                for stage in range(len(self.warning_stages)):
-                    if(value_normalized > self.warning_stages[stage]):
-                        status = "Warning" + str(stage) + \
-                            ": measurement close to upper limit."
-                        status_code = 0
-                    elif(value_normalized < -self.warning_stages[stage]):
-                        status = "Warning" + str(stage) + \
-                            ": measurement close to lower limit."
-                        status_code = 0
-                    else:
-                        break
-        else:
-            status = self.UNDEFINED
-            status_code = self.UNDEFIEND_CODE
-
-        self.status = status
-        self.status_code = status_code
-
-        # Outputs and visualizations
-        for output in self.outputs:
-            output.send_out(timestamp=timestamp, status=status,
-                            value=message_value["ftr_vector"],
-                            status_code=status_code, algorithm=self.name)
-
-        if(self.visualization is not None):
-            lines = [value]
-            self.visualization.update(value=lines, timestamp=timestamp,
-                                      status_code=status_code)
+        feature_vector = super().feature_construction(value=message_value['ftr_vector'],
+                                                      timestamp=message_value['timestamp'])
         
-        self.count += 1
-        # adjust mean and stdev for the current window
-        if(self.N is not None):
-            self.memory.append(value)
-            self.memory = self.memory[-self.N:]
-            # If the memory is not full calculate stdev, mean LL and UL
-            if(self.count >= self.N):
-                self.mean = statistics.mean(self.memory)
-                self.s = statistics.stdev(self.memory)
+
+        if (feature_vector == False):
+            # If this happens the memory does not contain enough samples to
+            # create all additional features.
+            status = self.UNDEFINED
+            status_code = self.UNDEFIEND_CODE
+        else:
+            value = feature_vector[0]
+
+            # First value is undefined
+            if (self.count == 0):
+                self.mean = value
+                self.s = 0
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
+            # Infinite stream and has at least 2 elements so far, or finite stream
+            # with full memory
+            elif ((self.N is None and self.count > 1) or
+                (self.N is not None and self.N <= self.count)):
+
+                # If LL != UL then calculate normalized value
+                if(self.UL != self.LL):
+                    value_normalized = 2*(value - (self.UL + self.LL)/2) / \
+                        (self.UL - self.LL)
+                # If LL == UL and value == LL then there is no error
+                elif(value == self.LL):
+                    value_normalized = 0
+                # Else ther is always error
+                else:
+                    value_normalized = float("inf")
+
+                status = self.OK
+                status_code = self.OK_CODE
+
+                if(value_normalized > 1):
+                    status = "Error: measurement above upper limit"
+                    status_code = -1
+                elif(value_normalized < -1):
+                    status = "Error: measurement below lower limit"
+                    status_code = -1
+                else:
+                    for stage in range(len(self.warning_stages)):
+                        if(value_normalized > self.warning_stages[stage]):
+                            status = "Warning" + str(stage) + \
+                                ": measurement close to upper limit."
+                            status_code = 0
+                        elif(value_normalized < -self.warning_stages[stage]):
+                            status = "Warning" + str(stage) + \
+                                ": measurement close to lower limit."
+                            status_code = 0
+                        else:
+                            break
+            else:
+                status = self.UNDEFINED
+                status_code = self.UNDEFIEND_CODE
+
+            self.status = status
+            self.status_code = status_code
+
+            # Outputs and visualizations
+            for output in self.outputs:
+                output.send_out(timestamp=timestamp, status=status,
+                                value=message_value["ftr_vector"],
+                                status_code=status_code, algorithm=self.name)
+
+            if(self.visualization is not None):
+                lines = [value]
+                self.visualization.update(value=lines, timestamp=timestamp,
+                                        status_code=status_code)
+            
+            self.count += 1
+            # adjust mean and stdev for the current window
+            if(self.N is not None):
+                self.Memory.append(value)
+                self.Memory = self.Memory[-self.N:]
+                # If the memory is not full calculate stdev, mean LL and UL
+                if(self.count >= self.N):
+                    #print(f'{self.memory = }')
+                    self.mean = statistics.mean(self.Memory)
+                    self.s = statistics.stdev(self.Memory)
+
+                    # if standard deviation is 0 it causes error in the next
+                    # iteration (UL and LL are the same) so a small number is
+                    # choosen instead 
+                    if(self.s == 0):
+                        self.s = np.nextafter(0, 1)
+
+                    self.LL = self.mean - self.X*self.s
+                    self.UL = self.mean + self.X*self.s
+            # Adjust mean and stdev for all data till this point
+            elif(self.count > 1):
+                # Actual welfords algorithm formulas
+                new_mean = self.mean + (value - self.mean)*1./self.count
+                new_s = self.s + (value - self.mean)* \
+                            (value - new_mean)
+                self.mean = new_mean
+                self.s = new_s
 
                 # if standard deviation is 0 it causes error in the next
                 # iteration (UL and LL are the same) so a small number is
@@ -154,24 +187,7 @@ class Welford(AnomalyDetectionAbstract):
                 if(self.s == 0):
                     self.s = np.nextafter(0, 1)
 
-                self.LL = self.mean - self.X*self.s
-                self.UL = self.mean + self.X*self.s
-        # Adjust mean and stdev for all data till this point
-        elif(self.count > 1):
-            # Actual welfords algorithm formulas
-            new_mean = self.mean + (value - self.mean)*1./self.count
-            new_s = self.s + (value - self.mean)* \
-                        (value - new_mean)
-            self.mean = new_mean
-            self.s = new_s
-
-            # if standard deviation is 0 it causes error in the next
-            # iteration (UL and LL are the same) so a small number is
-            # choosen instead 
-            if(self.s == 0):
-                self.s = np.nextafter(0, 1)
-
-            self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
-            self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
+                self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
+                self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
     
         return status, status_code

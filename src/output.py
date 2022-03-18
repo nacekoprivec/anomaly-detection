@@ -265,7 +265,7 @@ class InfluxOutput(OutputAbstract):
                 value: Any = "",
                  algorithm: str = "Unknown") -> None:
 
-        print("measurement " + self.measurement + "; influx seind out call " + str(value) + ", " + status, flush=True) 
+        print("measurement " + self.measurement + "; influx seind out call " + str(value) + ", " + str(status), flush=True) 
 
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)

@@ -45,9 +45,11 @@ class GAN(AnomalyDetectionAbstract):
         self.model_name = conf["train_conf"]["model_name"]
         self.K = conf["train_conf"]["K"]
         self.len_window = conf["train_conf"]["len_window"]
+        self.filtering = conf["filtering"]
 
         self.window = []
         self.weights = np.exp(np.linspace(0, 1, self.len_window))
+        self.threshold = 1
 
         # Retrain configuration
         if("retrain_interval" in conf):
@@ -77,8 +79,7 @@ class GAN(AnomalyDetectionAbstract):
 
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
                                                     skiprows=0,
-                                                    delimiter=",",
-                                                    converters={"ftr_vector": literal_eval})
+                                                    delimiter=",")
 
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
@@ -100,6 +101,11 @@ class GAN(AnomalyDetectionAbstract):
                             initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
+        if(self.filtering is not None and eval(self.filtering) is not None):
+            #extract target time and tolerance
+            target_time, tolerance = eval(self.filtering)
+            message_value = self.filter_by_time(message_value, target_time, tolerance)
+
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
@@ -120,23 +126,17 @@ class GAN(AnomalyDetectionAbstract):
 
         super().message_insert(message_value)
 
-        # Check feature vector
-        
-
-        value = message_value["ftr_vector"]
-        value = value[0]
-
-        if(self.use_cols is not None):
-            value = []
-            for el in range(len(message_value["ftr_vector"])):
-                if(el in self.use_cols):
-                    value.append(message_value["ftr_vector"][el])
+        #do feature construction only if single values are fed into the algorithm
+        if(len(message_value['ftr_vector']) == 1):
+            feature_vector = super().feature_construction(value=message_value['ftr_vector'],
+                                                      timestamp=message_value['timestamp'])
+            
         else:
-            value = message_value["ftr_vector"]
+            feature_vector = list(message_value['ftr_vector'])
+
+        value = feature_vector
 
         timestamp = message_value["timestamp"]
-
-        feature_vector = list(value)
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -146,18 +146,20 @@ class GAN(AnomalyDetectionAbstract):
         else:
             feature_vector = np.array(feature_vector)
 
-
             # print(feature_vector)
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
+            
+            
             self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
 
-            self.window.append(self.GAN_error)
-            if(len(self.window) > self.len_window):
-                self.window = self.window[-self.len_window:]
-                self.threshold = self.K * np.ma.average(self.window, weights = self.weights)
-            else:
-                self.threshold = self.K * np.ma.average(self.window, weights = self.weights[-len(self.window):])
+            if(not np.isnan(self.mse(np.array(prediction),np.array(feature_vector)))):
+                self.window.append(self.GAN_error)
+                if(len(self.window) > self.len_window):
+                    self.window = self.window[-self.len_window:]
+                    self.threshold = self.K * np.ma.average(self.window, weights = self.weights)
+                else:
+                    self.threshold = self.K * np.ma.average(self.window, weights = self.weights[-len(self.window):])
 
             # print(self.threshold)
             # print(self.GAN_error)
@@ -250,12 +252,17 @@ class GAN(AnomalyDetectionAbstract):
             df = df.to_numpy()
 
         elif(train_file is not None):
-            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
+            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,))
             vals = df_['ftr_vector'].values
-            vals = np.array([np.array(xi) for xi in vals])
-            self.min = min(min(vals, key=min))
-            self.max = max(max(vals, key=max))
-            self.avg = (self.min + self.max)/2
+            vals = np.array([np.array([xi]) for xi in vals])
+            try:
+                self.min = min(min(vals, key=min))
+                self.max = max(max(vals, key=max))
+                self.avg = (self.min + self.max)/2
+            except:
+                self.min = min(vals)
+                self.max = max(vals)
+                self.avg = (self.min + self.max)/2
 
             if(self.min != self.max):
                 values = (np.array(vals) - self.avg)/(self.max - self.min)
@@ -266,7 +273,7 @@ class GAN(AnomalyDetectionAbstract):
             #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
             timestamps = np.array(df_['timestamp'].values)
             timestamps = np.reshape(timestamps, (-1, 1))
-            df = np.concatenate([timestamps,values], axis = 1)
+            df = np.concatenate([timestamps,np.atleast_2d(values)], axis = 1)
         else:
             raise Exception("train_file or train_dataframe must be specified.")
 
@@ -283,7 +290,7 @@ class GAN(AnomalyDetectionAbstract):
         # construct at leat one feature)
         if(len(features) > 0):
 
-            original_dim = np.prod(np.array(features).shape [1:]) # dimenzija vhodnih podatkov
+            original_dim = len(features[0]) # dimenzija vhodnih podatkov
             hidden_dim = 10 # skriti sloj z 64 node -i
             latent_dim = self.N_latent # 2D latentni prostor
             inputs = keras.Input(shape =(original_dim ,))

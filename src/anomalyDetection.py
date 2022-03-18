@@ -5,7 +5,7 @@ import pandas as pd
 import sys
 import logging
 from statistics import mean
-from datetime import datetime
+import datetime
 
 sys.path.insert(0,'./src')
 sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
@@ -61,11 +61,32 @@ class AnomalyDetectionAbstract(ABC):
         #logging.info("%s recieved message.", self.name)
         pass
 
+    def filter_by_time(self, message, target_time, tolerance) -> Any:
+        try:
+            timestamp = pd.to_datetime(message['timestamp'], unit="s")
+        except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
+            timestamp = pd.to_datetime(message['timestamp'], unit="ms")
+
+        time = timestamp.time()
+
+        target_time = datetime.time(target_time[0], target_time[1], target_time[2])
+        tol = datetime.timedelta(hours = tolerance[0], minutes = tolerance[1], seconds = tolerance[2])
+        date = datetime.date(1, 1, 1)
+        datetime1 = datetime.datetime.combine(date, time)
+        datetime2 = datetime.datetime.combine(date, target_time)
+
+        if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
+            return(message)
+        else:
+            return(None)
+
     @abstractmethod
     def configure(self, conf: Dict[Any, Any],
                   configuration_location: str = None,
                   algorithm_indx: int = None) -> None:
         self.configuration_location = configuration_location
+        
+        self.conf = conf
         
         # If algorithm is initialized from consumer kafka it has this
         # specified
@@ -98,6 +119,18 @@ class AnomalyDetectionAbstract(ABC):
             self.time_features = conf["time_features"]
         else:
             self.time_features = []
+
+        if("max_memory" in conf):
+            self.max_memory = conf["max_memory"]
+        else:
+            self.max_memory = 0
+
+        if("time_average_shifts" in conf):
+            self.time_average_shifts = conf["time_average_shifts"]
+            self.last_sample = 0
+        else:
+            self.time_average_shifts = []
+            self.last_sample = 0
 
         # Finds the largest element among averages and shifts
         if(len(self.shifts) == 0):
@@ -137,13 +170,15 @@ class AnomalyDetectionAbstract(ABC):
                         max_periodic_average = required_memory
 
         # one because of feature construction memory management
-        self.memory_size = max(max_shift, max_average, max_periodic_average, 1)
+        self.memory_size = max(max_shift, max_average, max_periodic_average, self.max_memory, 1)
 
         # OUTPUT/VISUALIZATION INITIALIZATION & CONFIGURATION
         self.outputs = [eval(o) for o in conf["output"]]
         output_configurations = conf["output_conf"]
         for o in range(len(self.outputs)):
-            self.outputs[o].configure(output_configurations[o])
+            #print(output_configurations[o])
+            #print(self.outputs[o])
+            self.outputs[o].configure(conf = output_configurations[o])
         if ("visualization" in conf):
             self.visualization = eval(conf["visualization"])
             visualization_configurations = conf["visualization_conf"]
@@ -167,6 +202,8 @@ class AnomalyDetectionAbstract(ABC):
     
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
+        if(message_value == None):
+            return False
         if(not "ftr_vector" in message_value):
             print(f"{self.name}: ftr_vector field was not contained in message.", flush=True)
             return False
@@ -190,6 +227,10 @@ class AnomalyDetectionAbstract(ABC):
 
         # Check if feature vector contains None
         if(any(x==None for x in message_value["ftr_vector"])):
+            print(f"{self.name}: Feature vector contains a None.", flush=True)
+            return False
+        
+        if(any(np.isnan(x) for x in message_value["ftr_vector"])):
             print(f"{self.name}: Feature vector contains a None.", flush=True)
             return False
 
@@ -237,16 +278,20 @@ class AnomalyDetectionAbstract(ABC):
                                                       timestamp=timestamp)
 
             if(feature_vector is not False):
-                features.append(np.array(feature_vector))
+                if(not np.isnan(np.array(feature_vector)).any()):
+                    features.append(np.array(feature_vector))
 
         self.memory = memory_backup
         return features
 
     def feature_construction(self, value: List[Any], 
                              timestamp: str) -> Union[Any, bool]:
-
         # Add new value to memory and slice it
-        self.memory.append(value)
+        if(timestamp<1e10):
+            self.memory.append([value[0], timestamp])
+        else:
+            self.memory.append([value[0], timestamp/1000])
+
         self.memory = self.memory[-self.memory_size:]
 
         if(len(self.memory) < self.memory_size):
@@ -269,7 +314,16 @@ class AnomalyDetectionAbstract(ABC):
         # Create time features
         new_value.extend(self.time_features_construction(timestamp))
 
-        return new_value
+        #print(f'{new_value = }')
+        new_value.extend(self.time_averages())
+
+        if(self.use_cols is not None):
+            try:
+                return list(np.array(new_value)[self.use_cols])
+            except:
+                return False
+        else:
+            return new_value
 
     def average_construction(self) -> None:
         averages = []
@@ -283,7 +337,7 @@ class AnomalyDetectionAbstract(ABC):
                 for sample_indx in range(len(self.memory)):
                     if(sample_indx == interval):
                         break
-                    values.append(self.memory[-(sample_indx+1)][feature_index])
+                    values.append(self.memory[:,0][-(sample_indx+1)][feature_index])
                 #print(values)
                 averages.append(mean(values))
 
@@ -314,7 +368,7 @@ class AnomalyDetectionAbstract(ABC):
                             # Enough samples
                             break
                         if(i%period==0):
-                            periodic_list.append(self.memory[self.memory_size-(i+1)][feature_indx])
+                            periodic_list.append(self.memory[:,0][self.memory_size-(i+1)][feature_indx])
                     
                     # print("periodic list:")
                     # print(periodic_list)
@@ -332,7 +386,7 @@ class AnomalyDetectionAbstract(ABC):
         for feature_index in range(len(self.shifts)):
             # Loop through all shift values
             for look_back in self.shifts[feature_index]:
-                shifts.append(self.memory[self.memory_size-(look_back+1)][feature_index])
+                shifts.append(self.memory[:,0][self.memory_size-(look_back+1)][feature_index])
 
         return shifts
 
@@ -360,6 +414,41 @@ class AnomalyDetectionAbstract(ABC):
 
         return time_features
 
+    def time_averages(self) -> None:
+        shifts = []
+        num, period = self.time_average_shifts
+        current_time = self.memory[-1][1]
+
+        self.memory = [i for i in self.memory if i]
+        self.memory = [i for i in self.memory if type(i) == list]
+        self.memory = [i for i in self.memory if len(i) == 2]
+
+        #print(f'{len(self.memory) = }')
+        #print(f'{self.memory[-1][1] - self.last_sample = }')
+        
+        if(abs(self.memory[-1][1] - self.last_sample)<period):
+            return[]
+
+        elif(self.memory[0][1] < (current_time - num*period)):
+            buff = []
+            shift = 0
+            for sample in self.memory[::-1]:
+                if(sample[1]>(current_time - (shift+1)*period)):
+                    buff.append(sample[0])
+                else:
+                    shift +=1
+                    try:
+                        shifts.append(np.mean(buff))
+                    except:
+                        return []
+                    buff = []
+
+        if(len(shifts)<num or np.isnan(np.array(shifts).any())):
+            return []
+        else:
+            self.last_sample = self.memory[-1][1]
+            return shifts[:num][::-1]
+   
     def normalization_output_visualization(self, status_code: int,
                                            status: str, value: List[Any],
                                            timestamp: Any) -> None:
@@ -385,3 +474,5 @@ class AnomalyDetectionAbstract(ABC):
             lines = [value[0]]
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
+
+   
