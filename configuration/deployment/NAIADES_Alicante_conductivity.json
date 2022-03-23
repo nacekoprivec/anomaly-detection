@@ -7,7 +7,7 @@
     "group_id": "my-group",
     "value_deserializer": "lambda x: loads(x.decode('utf-8'))",
     "topics":[
-        "features_alicante_salinity_EA003_36_conductivity_anomaly"
+        "features_alicante_salinity_EA003_36_conductivity"
     ],
     "anomaly_detection_alg": [
     "Combination()"
