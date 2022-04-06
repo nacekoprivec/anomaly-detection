@@ -77,13 +77,15 @@ class Combination(AnomalyDetectionAbstract):
 
         # Get statuses from all algorithms
         statuses = []
+        status_messages = []
         for algorithm in self.anomaly_algorithms:
             to_insert = message_value.copy()
-            _, status_code = algorithm.message_insert(message_value=to_insert)
+            status_message, status_code = algorithm.message_insert(message_value=to_insert)
             statuses.append(status_code)
+            status_messages.append(status_message)
         
         # Get fina status
-        final_status_code, status = self.status_determiner.determine_status(statuses=statuses, timestamp = message_value["timestamp"])
+        final_status_code, status = self.status_determiner.determine_status(statuses=statuses, status_messages = status_messages, timestamp = message_value["timestamp"])
 
         self.status_code = final_status_code
         self.status = status
@@ -124,7 +126,7 @@ class AND(StatusDeterminer):
     def configure(self, conf: Dict[Any, Any] = None):
         pass
 
-    def determine_status(self, statuses, timestamp):
+    def determine_status(self, statuses,status_messages, timestamp):
         # 1-OK, 0-warrning, -1-error. We search for the highest status
         # (except 2) and return it
         max_status = -2
@@ -154,7 +156,7 @@ class OR(StatusDeterminer):
     def configure(self, conf: Dict[Any, Any] = None):
         pass
 
-    def determine_status(self, statuses, timestamp):
+    def determine_status(self, statuses, status_messages, timestamp):
         # 1-OK, 0-warrning, -1-error. We search for the lowest status and
         # return it
         min_status = 2
@@ -183,12 +185,10 @@ class PercentScore(StatusDeterminer):
         self.data_interval = conf["data_interval"]
         self.num_in_interval = int(self.interval/self.data_interval)
 
-    def determine_status(self, statuses, timestamp):
+    def determine_status(self, statuses, status_messages, timestamp):
         #sum up the statuses, divide by max score
-
         max_score = len(statuses)*2
         score = 0
-
         for status in statuses:
             if(status == 0):
                 score +=1
@@ -197,7 +197,52 @@ class PercentScore(StatusDeterminer):
             else:
                 score +=0
         
+        final_score = score/max_score
+        status_message = "PercentScore"
 
+        if(final_score is not None):
+            if(timestamp<1e10):
+                self.memory.append([final_score, timestamp])
+            else:
+                self.memory.append([final_score, timestamp/1000])
+        now = self.memory[-1][1]
+
+        tmstps = np.array(self.memory)[:,1]
+        idx =[i for i, j in enumerate(tmstps) if j>(now-self.interval)]
+        self.memory = list(np.array(self.memory)[idx])
+
+        try:
+            convoluted_score = np.sum(np.array(self.memory)[:,0])/max(self.num_in_interval, len(self.memory))
+        except:
+            convoluted_score = 0
+        
+        return convoluted_score, status_message
+
+    
+class PercentScore_Alicante(StatusDeterminer):
+    #Returns a score between 0 and 1; 1-all algorithms signaled an error, 0-all algorithms OK
+    #Specific for alicante salinity - only includes sudden jumps in the upwards direction, not sudden drops
+
+    def configure(self, conf: Dict[Any, Any] = None):
+        self.memory = []
+        self.interval = conf["interval"]
+        self.data_interval = conf["data_interval"]
+        self.num_in_interval = int(self.interval/self.data_interval)
+
+    def determine_status(self, statuses, status_messages, timestamp):
+        #sum up the statuses, divide by max score
+        max_score = len(statuses)*2
+        score = 0
+        for s, s_m in zip(statuses, status_messages):
+            if('upper' in s_m):    # only include anomalies of type .... close to upper limit
+                if(s == 0):
+                    score +=1
+                elif(s == -1):
+                    score +=2
+                else:
+                    score +=0
+            else:
+                score += 0
         
         final_score = score/max_score
         status_message = "PercentScore"
