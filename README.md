@@ -23,7 +23,7 @@ The anomaly detection program consists of three main types of components:
 3. Output component
 Each component has many implementations that are interchangeable. Which ones are used depends on the task the program is solving.
 Normalization is an additional optional component which replaces anomalic samples with normalized ones.
-Another optional component is Visualization component which doesn't effect the general workflow and is used for streaming data visualization.
+Another optional component is Visualization component which doesn't affect the general workflow and is used for streaming data visualization.
 
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
@@ -152,6 +152,22 @@ Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undef
    The output in the txt file is the same as terminal output. Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undefined: 2. It requires the following arguments in the config file:
    * file_name: The name of the file for output located in the log/ directory. (example: "output.csv"),
    * mode: Wether we want to overwrite the file or just append data to it. (example: "a").
+3. **Influx output:** Data is outputed to the influx database <br>
+The following structure is used in output_conf:
+    ```
+    {
+     "ip": "localhost",
+     "port": "8086",
+     "org": "naiades",
+     "token": "...",
+     "bucket": "...",
+     "measurement": "...",
+     "tags": "{}",
+     "unix_time_format": "s"/"ms"/"ns"/"us",
+     "has_suggested_value": true/false
+     }
+     ```
+     All the values described in 3) ("algorithm", "value", "status",...) are sent to the database.
 
 ### Visualization
 An optional conponent intendet to visualize the inputted stream. 
@@ -179,7 +195,7 @@ An optional component that replaces anomalic values with normalized ones, which 
    * period: An integer representing the period between samples (example: 24).
 
 ### Anomaly detection
-The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all conponents:
+The component that does the actual anomaly detection. It recieves data from a consumer component and sends output to output components. The following arguments are general for all components:
 * input_vector_size: An integer representing the dimensionality of the inputted vector (number of features) (example: 2),
 * use_cols: A list of integers representing the indexes of elements in the inputted vector to be used. (example: [0, 2]),
 * output: A list of output objects (example: "FileOutput()"),
@@ -272,15 +288,29 @@ It requires the following arguments in the config file:\
 
 11. **Linear fit:** TODO
 
-12. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
+12. **fb_Prophet()** An anomaly detection algorithm based on the Prophet forecasting tool. Prophet produces an uncertainty interval along with its forecast. The uncertainty interval is used as a tolerance band. When an incoming data point falls out of the tolerance band, it is labelled as an anomaly. The forecast with the tolerance band is produced periodically, also using the new incoming data. The following fields are required in the configuration:
+    *  uncertainty_interval: Prophet uncertainty parameter - a float value between 0 (lowest tolerance) and 1(highest tolerance). (example: 0.85),
+    *  forecast_horizon: A list of two values. First is the number of periods to forecast, second is the period length: 's' - second, 'min' - minute, 'h' - hour, 'd' - day, 'm' - month, 'y' - year. (example: [24, 'h'] - a prediction for 24 hours in advance is made; [1440, 'min'] - also 24 hours in advance, but with finer granularity),
+    *  retrain_interval: The number of incoming data messages, before a retraining of the forecast is done. It is important this interval is shorter than the forecast horizon (example: 50),
+    *  min_samples: the minimum required number of samples used to make a forecast - if there aren't enough samples the algorithm will return 'Undefined'. (example: 1000),
+    *  max_samples: the maximum number of samples which are stored in memory. (example: 5000),
+    *  history_file: optional - an initial set of samples to make the first predictions immediately when the component is started. The csv file should contain columns: 'ds' - timestamps in datetime format, 'y' - values (example: "data/retrain/retrain_file.csv")
+
+13. **Combination:** Not really a stand-alone algorithm but rather a combination of arbitary algorithms with the idea to obtain a single estimate about anomalousness of the sample. From each algorithm's estimate a final status is determined using a specific logic (that can be completely case-specific).
 It requires the following arguments in the config file:\
    * anomaly_algorithms: A list of anomaly detection algorithms used.
    * anomaly_algorithms_configurations: A list of anomaly detection algorithm's configurations. These configurations have the same fields as stand-alone anomaly detection algorithms would have. The outputs
    * status_determiner: An object containing a logic to determine the final status. Additional objects for that purpose can be implemented.
+   * status_determiner_conf: Configuration for the status determiner function.
 
 The following status determiner methods are currently available:
-   * AND(): Gives error if all statuses are error, warning if all statuses are warrning (or error), otherwise OK. Undefined statuses are ignored.
-   * OR(): Gives error if at least one status is error, warning if at least one status is warrning, otherwise OK. Undefined statuses are ignored.
+   * AND(): Gives error if all statuses are error, warning if all statuses are warrning (or error), otherwise OK. Undefined statuses are ignored (status_determiner_conf can be empty).
+   * OR(): Gives error if at least one status is error, warning if at least one status is warrning, otherwise OK. Undefined statuses are ignored (status_determiner_conf can be empty).
+   * PercentScore(): This determiner is used to produce the anomaly meta signal. It requires the following fields in status_determiner_conf:\
+        *interval: The time window of past statuses to observe in seconds (example: 3600)\
+        *data_interval: The (approximate) interval of incoming data in seconds (example: 60)\
+    The output of this determiner is calculated as the normalized sum of all the anomaly scores in the defined window of past data. If one of the algorithms reports       an anomaly, its impact will be greater than if only a warning is issued.
+   * PercentScore_Alicante(): The same as PercentScore(), except anomalies which happen as a result of a large drop in the datastream are ignored (filtered by the AD alorithm's string status message) 
 
 
 #### Training files:
