@@ -70,14 +70,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
             "node_id":  "alicante_salinity_EA002_26_conductivity_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA002_26_conductivity_meta_signal.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -482,14 +478,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
-            "node_id":  "alicante_salinity_EA002_26_conductivity_meta_signal_up",
+            "node_id":  "alicante_salinity_EA002_26_conductivity_up_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA002_26_conductivity_meta_signal_up.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -894,14 +886,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
             "node_id":  "alicante_salinity_EA007_36_conductivity_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA007_36_conductivity_meta_signal.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -1306,14 +1294,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
-            "node_id":  "alicante_salinity_EA007_36_conductivity_meta_signal_up",
+            "node_id":  "alicante_salinity_EA007_36_conductivity_up_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA007_36_conductivity_meta_signal_up.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -1718,14 +1702,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
             "node_id":  "alicante_salinity_EA008_36_conductivity_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA008_36_conductivity_meta_signal.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -2130,14 +2110,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
-            "node_id":  "alicante_salinity_EA008_36_conductivity_meta_signal_up",
+            "node_id":  "alicante_salinity_EA008_36_conductivity_up_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA008_36_conductivity_meta_signal_up.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -2546,14 +2522,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
             "node_id":  "alicante_salinity_EA003_36_conductivity_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA003_36_conductivity_meta_signal.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -3094,14 +3066,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-            "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
             "output_conf": [{
-            "node_id":  "alicante_salinity_EA003_36_conductivity_meta_signal_up",
+            "node_id":  "alicante_salinity_EA003_36_conductivity_up_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA003_36_conductivity_meta_signal_up.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
@@ -3608,14 +3576,10 @@
                 "Welford()",
                 "BorderCheck()"
             ],
-        "output": ["KafkaOutput()", "FileOutput()", "InfluxOutput()"],
+        "output": ["KafkaOutput()", "InfluxOutput()"],
         "output_conf": [{
             "node_id":  "alicante_salinity_EA001_36_level_meta_signal",
             "send_ok": true
-            },
-            {
-                "file_name": "alicante_salinity_EA001_36_level_meta_signal.csv",
-                "mode": "a"
             },
             {
                 "ip": "localhost",
