@@ -317,6 +317,7 @@ class AnomalyDetectionAbstract(ABC):
         #print(f'{new_value = }')
         new_value.extend(self.time_averages())
 
+        #print(f'{new_value = }')
         if(self.use_cols is not None):
             try:
                 return list(np.array(new_value)[self.use_cols])
@@ -443,18 +444,24 @@ class AnomalyDetectionAbstract(ABC):
                         return []
                     buff = []
 
-        if(len(shifts)<num or np.isnan(np.array(shifts).any())):
+        if(len(shifts)<num or np.isnan(np.array(shifts)).any()):
             return []
         else:
             self.last_sample = self.memory[-1][1]
             return shifts[:num][::-1]
+        #returns only the shifts, no timestamp; frequency of data is decreased
    
     def normalization_output_visualization(self, status_code: int,
                                            status: str, value: List[Any],
-                                           timestamp: Any) -> None:
+                                           timestamp: Any,
+                                           suggested_value = None) -> None:
         # Normalize if needed or just add the value
         normalized = None
-        if(self.normalization is not None):
+
+        if(suggested_value is not None):
+            normalized = suggested_value
+
+        elif(self.normalization is not None):
             if(status_code == -1):
                 normalized = self.normalization.get_normalized(value=value)
                 if(normalized != False):

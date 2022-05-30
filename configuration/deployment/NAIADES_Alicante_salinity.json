@@ -15,9 +15,21 @@
         "features_alicante_salinity_EA008_36_conductivity",
         "features_alicante_salinity_EA003_36_conductivity",
         "features_alicante_salinity_EA003_36_conductivity",
+        "features_alicante_salinity_EA003_21_conductivity",
+        "features_alicante_salinity_EA003_21_conductivity",
+        "features_alicante_salinity_EA004_21_conductivity",
+        "features_alicante_salinity_EA004_21_conductivity",
+        "features_alicante_salinity_EA005_21_conductivity",
+        "features_alicante_salinity_EA005_21_conductivity",
         "features_alicante_salinity_EA001_36_level"
     ],
     "anomaly_detection_alg": [
+    "Combination()",
+    "Combination()",
+    "Combination()",
+    "Combination()",
+    "Combination()",
+    "Combination()",
     "Combination()",
     "Combination()",
     "Combination()",
@@ -37,7 +49,7 @@
             "status_determiner": "PercentScore()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -445,7 +457,7 @@
             "status_determiner": "PercentScore_Alicante()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -853,7 +865,7 @@
             "status_determiner": "PercentScore()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -1261,7 +1273,7 @@
             "status_determiner": "PercentScore_Alicante()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -1669,7 +1681,7 @@
             "status_determiner": "PercentScore()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -2060,7 +2072,7 @@
                     "use_cols": [1],
                     "input_vector_size": 1,
                     "warning_stages": [0.9],
-                    "UL": 7000,
+                    "UL": 13000,
                     "LL": 500,
                     "max_memory": 50,
                     "time_average_shifts": [1,600],
@@ -2077,7 +2089,7 @@
             "status_determiner": "PercentScore_Alicante()",
             "status_determiner_conf": {
                 "interval": 7200,
-                "data_interval": 30
+                "data_interval": 600
             },
             "anomaly_algorithms": [
                 "Welford()",
@@ -2468,7 +2480,7 @@
                     "use_cols": [1],
                     "input_vector_size": 1,
                     "warning_stages": [0.9],
-                    "UL": 7000,
+                    "UL": 13000,
                     "LL": 500,
                     "max_memory": 50,
                     "time_average_shifts": [1,600],
@@ -2481,7 +2493,7 @@
             "use_cols": [1],
             "input_vector_size": 1,
             "status_determiner": "PercentScore()",
-            "status_determiner_conf": {"interval": 7200, "data_interval": 60},
+            "status_determiner_conf": {"interval": 7200, "data_interval": 600},
             "anomaly_algorithms": [
                 "GAN()",
                 "GAN()",
@@ -3025,7 +3037,7 @@
             "use_cols": [1],
             "input_vector_size": 1,
             "status_determiner": "PercentScore()",
-            "status_determiner_conf": {"interval": 7200, "data_interval": 60},
+            "status_determiner_conf": {"interval": 7200, "data_interval": 600},
             "anomaly_algorithms": [
                 "GAN()",
                 "GAN()",
@@ -3558,6 +3570,504 @@
                     "warning_stages": [0.9],
                     "UL": 20000,
                     "LL": 2000,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA003_21_conductivity_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA003_21_conductivity_meta_signal",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.95],
+                    "UL": 7000,
+                    "LL": -1000,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore_Alicante()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA003_21_conductivity_up_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA003_21_conductivity_meta_signal_up",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.95],
+                    "UL": 7000,
+                    "LL": -1000,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA004_21_conductivity_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA004_21_conductivity_meta_signal",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "[[15, 0, 0], [9, 0, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "[[15, 0, 0], [9, 0, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,1800],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "[[4, 30, 0], [0, 30, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 5,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.9],
+                    "UL": 7000,
+                    "LL": 500,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore_Alicante()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA004_21_conductivity_up_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA004_21_conductivity_meta_signal_up",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "[[15, 0, 0], [9, 0, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "[[15, 0, 0], [9, 0, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,1800],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "[[4, 30, 0], [0, 30, 0]]",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 5,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.9],
+                    "UL": 7000,
+                    "LL": 500,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA005_21_conductivity_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA005_21_conductivity_meta_signal",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.95],
+                    "UL": 7000,
+                    "LL": 500,
+                    "max_memory": 50,
+                    "time_average_shifts": [1,600],
+                    "output": [],
+                    "output_conf": [{}]
+                }
+            ]
+        },
+        {
+            "use_cols": [
+                1
+            ],
+            "input_vector_size": 1,
+            "status_determiner": "PercentScore_Alicante()",
+            "status_determiner_conf": {
+                "interval": 7200,
+                "data_interval": 600
+            },
+            "anomaly_algorithms": [
+                "Welford()",
+                "Welford()",
+                "Welford()",
+                "BorderCheck()"
+            ],
+            "output": ["KafkaOutput()", "InfluxOutput()"],
+            "output_conf": [{
+            "node_id":  "alicante_salinity_EA005_21_conductivity_up_meta_signal",
+            "send_ok": true
+            },
+            {
+                "ip": "localhost",
+                "port": "8086",
+                "org": "naiades",
+                "token": "AOAm_a0wPNlX3u10m0Fl7gBLeKZwjV67tYPvpU4FRLxNZPmRLS-BDV81jtUKzC_siO1VPqCkTfzo8H9OVEv5eQ==",
+                "bucket": "alicante_anomaly",
+                "measurement": "alicante_salinity_EA005_21_conductivity_meta_signal_up",
+                "tags": "{}",
+                "unix_time_format": "ms",
+                "has_suggested_value": false
+            }],
+            "anomaly_algorithms_configurations": [
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 20,
+                    "X": 10,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,3600],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.8],
+                    "N": 16,
+                    "X": 8,
+                    "max_memory": 200,
+                    "time_average_shifts": [1,7200],
+                    "output": [],
+                    "output_conf": [{}]
+                },
+                {
+                    "filtering": "None",
+                    "use_cols": [1],
+                    "input_vector_size": 1,
+                    "warning_stages": [0.95],
+                    "UL": 7000,
+                    "LL": 500,
                     "max_memory": 50,
                     "time_average_shifts": [1,600],
                     "output": [],

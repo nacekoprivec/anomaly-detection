@@ -183,7 +183,7 @@ class KafkaOutput(OutputAbstract):
     def configure(self, conf: Dict[Any, Any]) -> None:
         super().configure(conf=conf)
         self.node_id = conf['node_id']
-
+        self.has_suggested_value = conf["has_suggested_value"]
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                          value_serializer=lambda x: 
                          dumps(x).encode('utf-8'))
@@ -206,7 +206,7 @@ class KafkaOutput(OutputAbstract):
                 to_write["timestamp"] = timestamp
             if (status_code is not None):
                 to_write["status_code"] = status_code
-            if(suggested_value is not None):
+            if((suggested_value is not None) and self.has_suggested_value):
                 to_write["suggested_value"] = suggested_value
             
             kafka_topic = "anomalies_" + str(self.node_id)
@@ -309,10 +309,10 @@ class InfluxOutput(OutputAbstract):
                 timestamp = int(timestamp*1000)
 
             # Write to database
-            print("measurement " + self.measurement + " sending", flush=True)
-            print(timestamp, flush=True)
+            #print("measurement " + self.measurement + " sending", flush=True)
+            #print(timestamp, flush=True)
             self.influx_writer.write(self.bucket, self.org,
                                     [{"measurement": self.measurement,
                                     "tags": self.tags, "fields": to_write,
                                     "time": timestamp}])
-            print("measurement " + self.measurement + " done", flush=True)
+            #print("measurement " + self.measurement + " done", flush=True)
