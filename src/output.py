@@ -183,7 +183,8 @@ class KafkaOutput(OutputAbstract):
     def configure(self, conf: Dict[Any, Any]) -> None:
         super().configure(conf=conf)
         self.node_id = conf['node_id']
-        self.has_suggested_value = conf["has_suggested_value"]
+        if("has_suggested_value" in conf):
+            self.has_suggested_value = conf["has_suggested_value"]
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                          value_serializer=lambda x: 
                          dumps(x).encode('utf-8'))
