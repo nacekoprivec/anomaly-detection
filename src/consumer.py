@@ -21,6 +21,11 @@ from trend_classification import Trend_Classification
 from Cumulative import Cumulative
 from MACD import MACD
 from clustering import Clustering
+
+#TODO: imports
+#from fb_prophet import fb_Prophet
+#from RRCF_trees import RRCF_trees
+
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
 import matplotlib.pyplot as plt
@@ -120,14 +125,14 @@ class ConsumerKafka(ConsumerAbstract):
             # Get topic and insert into correct algorithm
             #print(message)
             topic = message.topic
-            print('topic: ' + str(topic), flush=True)
+            #print('topic: ' + str(topic), flush=True)
             
             algorithm_indxs = []
 
             for i, j in enumerate(self.topics):
                 if(j == topic):
                     algorithm_indxs.append(i)
-            print(f'{algorithm_indxs = }')
+            #print(f'{algorithm_indxs = }')
             
             #this line was replaced with above loop (to insert the message into several algorithms at the same time)
             #algorithm_indx = self.topics.index(topic)
@@ -152,7 +157,7 @@ class ConsumerKafka(ConsumerAbstract):
         # Convert unix timestamp to datetime format (with seconds unit if
         # possible alse miliseconds)
 
-        print('filering; timestamp: ' + str(message.value['timestamp']), flush=True)
+        #print('filering; timestamp: ' + str(message.value['timestamp']), flush=True)
         try:
             timestamp = pd.to_datetime(message.value['timestamp'], unit="s")
         except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
@@ -291,7 +296,7 @@ class ConsumerFile(ConsumerAbstract):
         # Convert unix timestamp to datetime format (with seconds unit if
         # possible alse miliseconds)
 
-        print('filering; timestamp: ' + str(message['timestamp']), flush=True)
+        #print('filering; timestamp: ' + str(message['timestamp']), flush=True)
         try:
             timestamp = pd.to_datetime(message['timestamp'], unit="s")
         except(pd._libs.tslibs.np_datetime.OutOfBoundsDatetime):
@@ -308,12 +313,12 @@ class ConsumerFile(ConsumerAbstract):
         # Return message only if timestamp is within tolerance
         # print((max(datetime2, datetime1) - min(datetime2, datetime1)))
         # print(tol)
-        print('razlika: ' + str((max(datetime2, datetime1) - min(datetime2, datetime1))), flush=True)
+        #print('razlika: ' + str((max(datetime2, datetime1) - min(datetime2, datetime1))), flush=True)
         if((max(datetime2, datetime1) - min(datetime2, datetime1)) < tol):
-            print('filtriral!', flush=True)
+            #print('filtriral!', flush=True)
             return(message)
         else:
-            print('Nisem :(', flush=True)
+            #print('Nisem :(', flush=True)
             return(None)
 
 
