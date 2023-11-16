@@ -15,6 +15,13 @@ In order to interact with kafka separately from the anomaly detection module e.g
 `.\bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic test --from-beginning`
 
 
+## Development Environment
+Create virtual environment for development:
+`conda create --name anomaly python=3.8`
+
+Go to proper directory and intall requirements with:
+`pip install -r requirements.txt`
+
 
 ## Architecture
 The anomaly detection program consists of three main types of components:
@@ -27,7 +34,7 @@ Another optional component is Visualization component which doesn't affect the g
 
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
-```
+```json
 {
     ...
     consumer configuration
@@ -57,7 +64,7 @@ For more details see example configuration files in configuration folder.
 Consumer components differ in where the data is read from.
 1. **Kafka consumer:** Data is read from one or more kafka topics. Each topic cooresponds to a seperate anomaly detection algorithm from field "anomaly_detection_alg" which has the configuration defined in a cooresponding object in the list under "anomaly_detection_conf" field. <br>
 **Input format:** The format of the message read from kafka topic must be of shape:
-   ```
+   ```json
    {
    "ftr_vector":  array (a feature vector) of values,
    "timestamp": timestamp of the data in datastream in unix timestamp format
@@ -88,7 +95,7 @@ Consumer components differ in where the data is read from.
    * file_name: The name (and location) of the file with the data. (example: "sin.csv").
    * anomaly_detection_alg: List of algorithms to be used on the time series. (example: ["Welford()", "Welford()", "MACD()"]) Each of the listed algorithms requires its own configuration to be added.
 
-3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br> 
+3. **File kafka consumer:** Used when first part of the datastream is written in a file and then continues as kafka stream. Also it can be used for model-less aproaches as a way of "learnig" from train data, so that the anomaly detection would work better on the actual kafka input stream. <br>
 **Input format:**
    * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
@@ -115,7 +122,7 @@ Output component differs in where the data is outputted to. more than one output
 1. **Terminal output:** Timestamp, value and status are outputed to the terminal. It does not require any parameters in the configuration file.
 
 2. **Kafka output:** Value is outputed to separate kafka topic. <br>
-**Output format:** The outputted object is of form: 
+**Output format:** The outputted object is of form:
 ```
 {
  "algorithm": anomaly detection algorithm used,
@@ -130,7 +137,7 @@ Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undef
    * node_id: The anomalies will be sent to topic: anomalies_[node_id] (example: 1).
 
 3. **File output:** Data is outputed to a JSON csv or txt file. <br>
-**Output format:** 
+**Output format:**
    * csv: The csv file contains the following fields:
       * "algorithm": anomaly detection algorithm used,
       * "value": the sample from the datastream,
@@ -138,8 +145,8 @@ Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undef
       * "timestamp": timestamp of the data in datastream in unix timestamp format,
       * "status_code": result of the anomaly detection algorithm (descriptive),
       * "suggested_value": optional field, that can suggest a "normal" value if anomaly is detected
-   * JOSN: The JSON file contains a single field "data" whose value is an array of objects of shape: 
-   ```
+   * JOSN: The JSON file contains a single field "data" whose value is an array of objects of shape:
+   ```json
    {
    "algorithm": anomaly detection algorithm used,
    "value": the sample from the datastream,
@@ -154,7 +161,7 @@ Status codes are defined in a following way: OK: 1, warning: 0, error: -1, undef
    * mode: Wether we want to overwrite the file or just append data to it. (example: "a").
 3. **Influx output:** Data is outputed to the influx database <br>
 The following structure is used in output_conf:
-    ```
+    ```json
     {
      "ip": "localhost",
      "port": "8086",
@@ -170,7 +177,7 @@ The following structure is used in output_conf:
      All the values described in 3) ("algorithm", "value", "status",...) are sent to the database.
 
 ### Visualization
-An optional conponent intendet to visualize the inputted stream. 
+An optional conponent intendet to visualize the inputted stream.
 1. **Graph visualization:** The data is represented as points on graph. All anomaly detection component plot the ftr_vector values and some plot additional values like running average, standard deviation... It requires the following arguments in the config file:
    * num_of_points: Maximum number of points of the same line that are visible on the graph at the same time. (example: 50),
    * num_of_lines: Number of lines plotted on the graph. (TODO: it depends on the anomaly detection algorithm so in future this component will be removed) (example: 4),
@@ -179,7 +186,7 @@ An optional conponent intendet to visualize the inputted stream.
 2. **Histogram visualization:** It visualizes the quantity of values, from ftr_vector stream. It requires the following arguments in the config file:
    * num_of_bins: Number of bins in the histogram's range. (example: 50),
    * range: The interval shown on the histogram. (example: [0, 10]).
-   
+
 3. **Status Points Visualization:** Used to visualize processed data e.g. outputs of EMA or Filtering. The points are colored white if OK, warning yellow, error red or undefined blue. It requires the following arguments in the config file:
    * num_of_points: Maximum number of points of the same line that are visible on the graph at the same time. (example: 50),
    * num_of_lines: Number of lines plotted on the graph. (TODO: it depends on the anomaly detection algorithm so in future this component will be removed) (example: 4),
@@ -216,13 +223,13 @@ The component that does the actual anomaly detection. It recieves data from a co
    * UL: Upper limit of the specified interval. (example: 4),
    * LL: Lower limit of the specified interval. (example: 2).
 
-2. **EMA:** Calculates the exponential moving average of test values. It recieves data from a consumer component and sends output to output components. 
+2. **EMA:** Calculates the exponential moving average of test values. It recieves data from a consumer component and sends output to output components.
 EMA is calculated using past EMA values and the newest test value, giving more weigth to newer data. It is calculated in the following way:
 EMA_latest = ftr_vector x smoothing + EMA_last x (1 - smoothing). Warnings are issued if the EMA approaches UL or LL.\
 It requires the following arguments in the config file:
    * N: Parameter from which the smoothing is calculated - roughly translates to how many latest test values contribute to the EMA (example: 5),
    * warning_stages: similar to border check - levels to identify EMA approaching limits (example: [0.7, 0.9]).
-   
+
 3. **Isolation Forest:** iForest algorythm. The basic principle is that an anomalous datapoint is easier to separate from others, than a normal datapoint. In the current implementation, one instance consists of N consecutive (or non-consecutive) test values. Instances are constructed via the "shifts" module. The algorythm can also be modified by adding other features. A pre-trained model can be loaded from the "models" folder, or a new model can be trained with the appropriate train data. Arguments in config file when we're training a new model:
    * train_data: Location of the train data. (example: "data/Continental/0.txt") Data should be in csv format, as it is described in [Training files](#training-files). This is an optional parameter. If it is not specified load_model_from is expected,
    * max_features: The number of features to draw from X to train each base estimator. (example: 4),
@@ -239,17 +246,17 @@ If we have a pre-trained model, we load it by specifying:
 
 4. **PCA + Isolation forest:** PCA (Principal component analysis) projects high dimensional data to a lower dimensional space. Very effective first step, if we have a large number of features in an instance (even > 1000). First, PCA is applied to the input data followed by the Isolation forest algorithm. In addition to the Isolation forest requirements, the following parameters must be specified in the config file: \
     * N_components: dimensionality of the PCA output space (example: 5).
-    
+
 5. **Welfords algorithm:** Very simmilar to border check only in this case UL and LL are calculated with every new sample (with equations: UL=online_mean_consumption+X*online_standard_+deviation and LL=online_mean_consumption-X*online_standard_+deviation). There are two modes for this method. Frist one calculates mean and standard deviation of the previous N samples and the second one calculates them for all the datasamples so far.
 It requires the following arguments in the config file:
    * N: An integer representing the number of samples used for calculating mean and standard deviation. If it is not specified all samples till some point will be used in calculation. (example: 5),
    * warning_stages: A list of floats from interval [0, 1] which represent different stages of warnings (values above 1 are over the border). (example: [0.7, 0.9]),
    * X: A parameter in the equation for calculating LL and UL. The larger it is the bigger the interval of normal values it (more false negatives) (example: 1.5).
-   
+
 6. **Filtering:** Digital filtering is applied to the input data via a lowpass filter, smoothing the signal. The filter used is Butterworth of the order specified in config. This helps to identify trend changes in the data. Similarly to Border check and EMA, warnings are issued if the filtered signal approaches UL or LL.
 
 The filtered signal helps to identify trend shifts. (mode 0)
-Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (mode 1) In mode 1 a normalised value is calculated: value = last change in value/(UL-LL). The normalised value is classified according to warning stages or marked as an error id the value is >1 or <-1. 
+Taking the difference between the actual value of each new data point from the current filtered signal value can help to identify sudden spikes. (mode 1) In mode 1 a normalised value is calculated: value = last change in value/(UL-LL). The normalised value is classified according to warning stages or marked as an error id the value is >1 or <-1.
 
 It requires the following arguments in the config file:
    * UL: Upper limit of the specified interval. (example: 4),
@@ -310,7 +317,7 @@ The following status determiner methods are currently available:
         *interval: The time window of past statuses to observe in seconds (example: 3600)\
         *data_interval: The (approximate) interval of incoming data in seconds (example: 60)\
     The output of this determiner is calculated as the normalized sum of all the anomaly scores in the defined window of past data. If one of the algorithms reports       an anomaly, its impact will be greater than if only a warning is issued.
-   * PercentScore_Alicante(): The same as PercentScore(), except anomalies which happen as a result of a large drop in the datastream are ignored (filtered by the AD alorithm's string status message) 
+   * PercentScore_Alicante(): The same as PercentScore(), except anomalies which happen as a result of a large drop in the datastream are ignored (filtered by the AD alorithm's string status message)
 
 
 #### Training files:

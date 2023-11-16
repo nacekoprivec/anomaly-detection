@@ -29,13 +29,13 @@ def ping_watchdog(process):
         time.sleep(interval)
 
 def start_consumer(args):
-    if(args.data_file):   
+    if(args.data_file):
         consumer = ConsumerFile(configuration_location=args.config)
     elif(args.data_both):
         consumer = ConsumerFileKafka(configuration_location=args.config)
     else:
         consumer = ConsumerKafka(configuration_location=args.config)
-    
+
     print("=== Service starting ===", flush=True)
     consumer.read()
 
@@ -91,12 +91,12 @@ def main():
         process.start()
 
         # On the main thread ping watchdog if child process is alive
-        print("=== Watchdog started ==", flush=True) 
+        print("=== Watchdog started ==", flush=True)
         ping_watchdog(process)
     else:
         start_consumer(args)
 
-    
+
 
 
 if (__name__ == '__main__'):
