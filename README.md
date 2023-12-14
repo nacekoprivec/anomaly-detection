@@ -32,6 +32,39 @@ Each component has many implementations that are interchangeable. Which ones are
 Normalization is an additional optional component which replaces anomalic samples with normalized ones.
 Another optional component is Visualization component which doesn't affect the general workflow and is used for streaming data visualization.
 
+```mermaid
+graph LR;
+   main-->consumer;
+   consumer-->AnomalyDetectionAbstract;
+   AnomalyDetectionAbstract-->BorderCheck;
+   AnomalyDetectionAbstract-->Welford;
+   AnomalyDetectionAbstract-->EMA;
+   AnomalyDetectionAbstract-->Hampel;
+   AnomalyDetectionAbstract-->Filtering;
+   AnomalyDetectionAbstract-->IsolationForest;
+   AnomalyDetectionAbstract-->GAN;
+   AnomalyDetectionAbstract-->PCA;
+   AnomalyDetectionAbstract-->LinearFit;
+   AnomalyDetectionAbstract-->MACD;
+   AnomalyDetectionAbstract-->Trend_Classification;
+   AnomalyDetectionAbstract-->Clustering;
+   AnomalyDetectionAbstract-->Cumulative;
+   Combination-.->AnomalyDetectionAbstract;
+
+   Combination-->AnomalyDetectionAbstract;
+
+   consumer-->ConsumerAbstract;
+   ConsumerAbstract-->ConsumerKafka;
+   ConsumerAbstract-->ConsumerFileKafka;
+   ConsumerFileKafka-->ConsumerKafka;
+   ConsumerFileKafka-->ConsumerFile;
+   ConsumerAbstract-->ConsumerFile;
+
+
+
+
+```
+
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
 ```json

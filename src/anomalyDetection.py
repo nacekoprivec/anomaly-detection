@@ -52,7 +52,7 @@ class AnomalyDetectionAbstract(ABC):
     def __init__(self) -> None:
         # Logging configuration
         logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-        
+
         self.memory = []
 
     @abstractmethod
@@ -85,13 +85,13 @@ class AnomalyDetectionAbstract(ABC):
                   configuration_location: str = None,
                   algorithm_indx: int = None) -> None:
         self.configuration_location = configuration_location
-        
+
         self.conf = conf
-        
+
         # If algorithm is initialized from consumer kafka it has this
         # specified
         self.algorithm_indx = algorithm_indx
-        
+
         # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
 
@@ -99,7 +99,7 @@ class AnomalyDetectionAbstract(ABC):
             self.braila_fall = conf["braila_fall_feature"]
         else:
             self.braila_fall = []
-        
+
         if("averages" in conf):
             self.averages = conf["averages"]
         else:
@@ -190,16 +190,16 @@ class AnomalyDetectionAbstract(ABC):
         if("normalization" in conf):
             self.normalization = eval(conf["normalization"])
             normalization_configuration = conf["normalization_conf"]
-            self.normalization.configure(normalization_configuration) 
+            self.normalization.configure(normalization_configuration)
         else:
             self.normalization = None
-        
+
         # If specified save which columns to use
         if("use_cols" in conf):
             self.use_cols = conf["use_cols"]
         else:
             self.use_cols = None
-    
+
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
         if(message_value == None):
@@ -229,13 +229,13 @@ class AnomalyDetectionAbstract(ABC):
         if(any(x==None for x in message_value["ftr_vector"])):
             print(f"{self.name}: Feature vector contains a None.", flush=True)
             return False
-        
+
         if(any(np.isnan(x) for x in message_value["ftr_vector"])):
             print(f"{self.name}: Feature vector contains a None.", flush=True)
             return False
 
-        
-        
+
+
         # Test if timestamp is of type int
         if(not (isinstance(message_value["timestamp"], int) or isinstance(message_value["timestamp"], float))):
             logging.warning("%s: Timestamp not in correct format: %s",
@@ -244,7 +244,7 @@ class AnomalyDetectionAbstract(ABC):
 
         # Test if timestamp is valid
         timestamp_ok = False
-       
+
         try:
             pd.to_datetime(message_value["timestamp"], unit="s")
             timestamp_ok = True
@@ -258,7 +258,7 @@ class AnomalyDetectionAbstract(ABC):
             logging.warning("%s: Invalid timestamp: %s", self.name,
                             message_value["timestamp"])
             return False
-        
+
         return True
 
     def change_last_record(self, value: List[Any]) -> None:
@@ -284,7 +284,7 @@ class AnomalyDetectionAbstract(ABC):
         self.memory = memory_backup
         return features
 
-    def feature_construction(self, value: List[Any], 
+    def feature_construction(self, value: List[Any],
                              timestamp: str) -> Union[Any, bool]:
         # Add new value to memory and slice it
         if(timestamp<1e10):
@@ -295,7 +295,7 @@ class AnomalyDetectionAbstract(ABC):
         self.memory = self.memory[-self.memory_size:]
 
         if(len(self.memory) < self.memory_size):
-            # The memory does not contain enough records for all shifts and 
+            # The memory does not contain enough records for all shifts and
             # averages to be created
             return False
 
@@ -370,10 +370,10 @@ class AnomalyDetectionAbstract(ABC):
                             break
                         if(i%period==0):
                             periodic_list.append(self.memory[:,0][self.memory_size-(i+1)][feature_indx])
-                    
+
                     # print("periodic list:")
                     # print(periodic_list)
-                    
+
                     # Append average of the list to features
                     avg = mean(periodic_list)
                     periodic_averages.append(avg)
@@ -426,7 +426,7 @@ class AnomalyDetectionAbstract(ABC):
 
         #print(f'{len(self.memory) = }')
         #print(f'{self.memory[-1][1] - self.last_sample = }')
-        
+
         if(abs(self.memory[-1][1] - self.last_sample)<period):
             return[]
 
@@ -450,7 +450,7 @@ class AnomalyDetectionAbstract(ABC):
             self.last_sample = self.memory[-1][1]
             return shifts[:num][::-1]
         #returns only the shifts, no timestamp; frequency of data is decreased
-   
+
     def normalization_output_visualization(self, status_code: int,
                                            status: str, value: List[Any],
                                            timestamp: Any,
@@ -470,7 +470,7 @@ class AnomalyDetectionAbstract(ABC):
                     normalized = None
             else:
                 self.normalization.add_value(value=value)
-        
+
         for output in self.outputs:
             output.send_out(timestamp=timestamp, status=status,
                             suggested_value=normalized,
@@ -482,4 +482,4 @@ class AnomalyDetectionAbstract(ABC):
             self.visualization.update(value=lines, timestamp=timestamp,
                                       status_code=status_code)
 
-   
+
