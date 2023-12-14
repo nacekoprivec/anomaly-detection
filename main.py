@@ -5,14 +5,23 @@ import requests
 import threading
 import time
 import logging
+from datetime import datetime
 
 from src.consumer import ConsumerKafka, ConsumerFile, ConsumerFileKafka
 
 from multiprocessing import Process
-from datetime import datetime
 
 
-def ping_watchdog(process):
+def ping_watchdog(process: Process) -> None:
+    """
+    Function to ping the watchdog at regular intervals.
+
+    Args:
+        process (Process): The child process to monitor.
+
+    Returns:
+        None
+    """
     interval = 30 # ping interval in seconds
     url = "localhost"
     port = 5001
@@ -28,7 +37,16 @@ def ping_watchdog(process):
             logging.info('Successful ping at ' + time.ctime())
         time.sleep(interval)
 
-def start_consumer(args):
+def start_consumer(args: argparse.Namespace) -> None:
+    """
+    Function to start the consumer based on the command line arguments.
+
+    Args:
+        args (argparse.Namespace): Parsed command line arguments.
+
+    Returns:
+        None
+    """
     if(args.data_file):
         consumer = ConsumerFile(configuration_location=args.config)
     elif(args.data_both):
@@ -39,7 +57,13 @@ def start_consumer(args):
     print("=== Service starting ===", flush=True)
     consumer.read()
 
-def main():
+def main() -> None:
+    """
+    Main entry point of the program.
+
+    Returns:
+        None
+    """
     logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     parser = argparse.ArgumentParser(description="consumer")
 
