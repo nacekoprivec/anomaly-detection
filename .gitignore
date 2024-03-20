@@ -212,3 +212,6 @@ data/log/test
 
 # notebooks
 notebooks/pilots/*
+
+# models
+models/*
