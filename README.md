@@ -116,7 +116,7 @@ Consumer components differ in where the data is read from.
 **Input format:**
    * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
-      ```
+      ```json
       {
       "ftr_vector":  array (a feature vector) of values,
       "timestamp": timestamp of the data in datastream as strings in unix timestamp format
@@ -130,7 +130,7 @@ Consumer components differ in where the data is read from.
 **Input format:**
    * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
-      ```
+      ```json
       {
       "ftr_vector":  array (a feature vector) of values,
       "timestamp": timestamp of the data in datastream as strings in unix timestamp format
@@ -154,7 +154,7 @@ Output component differs in where the data is outputted to. more than one output
 
 2. **Kafka output:** Value is outputed to separate kafka topic. <br>
 **Output format:** The outputted object is of form:
-```
+```json
 {
  "algorithm": anomaly detection algorithm used,
  "value": the sample from the datastream,
