@@ -1,5 +1,7 @@
 # Anomaly detection for streaming data
 
+Anomaly detection service is used to detect anomalies in streaming data (time series). It implements several methods from several ML frameworks.
+
 ## Usage
 `python main.py [-h] [-c CONFIG] [--f]`
 
