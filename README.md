@@ -61,34 +61,30 @@ graph LR;
    ConsumerFileKafka-->ConsumerKafka;
    ConsumerFileKafka-->ConsumerFile;
    ConsumerAbstract-->ConsumerFile;
-
-
-
-
 ```
 
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
 ```json
 {
-    ...
-    consumer configuration
-    ...
-    "anomaly_detection_alg": ["list of anomaly detection algorithms"],
+    // ...
+    // consumer configuration
+    // ...
+    "anomaly_detection_alg": ["alg1", "alg2", "algN"],
     "anomaly_detection_conf": [{
-        ...
-        anomaly detection configuration
-        ...
+        // ...
+        // anomaly detection configuration
+        // ...
         "input_vector_size": ...,
         "averages": [...],
         "shifts": [...],
         "time_features": [...],
-        "normalization": "normalization component", # optional
-        "normalization_conf": "normalization component configuration", # optional
+        "normalization": "normalization component", // optional
+        "normalization_conf": "normalization component configuration", // optional
         "output": ["list of output components"],
         "output_conf": ["list of output components configurations"],
-        "visualization": "visualization component", # optional
-        "visualization_conf": "visualization component configuration" # optional
+        "visualization": "visualization component", // optional
+        "visualization_conf": "visualization component configuration" // optional
       }]
 }
 ```
