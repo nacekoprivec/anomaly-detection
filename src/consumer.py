@@ -21,6 +21,7 @@ from trend_classification import Trend_Classification
 from Cumulative import Cumulative
 from MACD import MACD
 from clustering import Clustering
+from percentile import Percentile
 
 #TODO: imports
 #from fb_prophet import fb_Prophet
@@ -85,7 +86,7 @@ class ConsumerKafka(ConsumerAbstract):
     def configure(self, con: Dict[Any, Any] = None) -> None:
         if(con is None):
             print("No configuration was given")
-            return 
+            return
 
         if("filtering" in con):
             self.filtering = con['filtering']
@@ -119,24 +120,24 @@ class ConsumerKafka(ConsumerAbstract):
                               algorithm_indx=algorithm_indx)
             self.anomalies.append(anomaly)
             algorithm_indx += 1
-            
+
     def read(self) -> None:
         for message in self.consumer:
             # Get topic and insert into correct algorithm
             #print(message)
             topic = message.topic
             #print('topic: ' + str(topic), flush=True)
-            
+
             algorithm_indxs = []
 
             for i, j in enumerate(self.topics):
                 if(j == topic):
                     algorithm_indxs.append(i)
             #print(f'{algorithm_indxs = }')
-            
+
             #this line was replaced with above loop (to insert the message into several algorithms at the same time)
             #algorithm_indx = self.topics.index(topic)
-            
+
             for algorithm_indx in algorithm_indxs:
                 #check if this topic needs filtering
                 if(self.filtering is not None and eval(self.filtering[algorithm_indx]) is not None):
@@ -149,7 +150,7 @@ class ConsumerKafka(ConsumerAbstract):
 
                     self.anomalies[algorithm_indx].message_insert(value)
 
-                
+
 
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
@@ -271,7 +272,7 @@ class ConsumerFile(ConsumerAbstract):
                     except ValueError:
                         pass
                     d["timestamp"] = timestamp
-                
+
                 try:
                     ftr_vector = [float(row[i]) for i in other_indicies]
                 except:
@@ -288,7 +289,7 @@ class ConsumerFile(ConsumerAbstract):
 
                     if message is not None:
                         self.anomalies[i].message_insert(d)
-                    
+
 
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
@@ -364,7 +365,7 @@ class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
 
     def read(self) -> None:
         ConsumerFile.read(self)
-        
+
         # expects only one topic
         for message in self.consumer:
             value = message.value

@@ -76,7 +76,7 @@ class BorderCheck(AnomalyDetectionAbstract):
         else:
             value = feature_vector[0]
 
-        # Normalize value
+            # Normalize value
             value_normalized = 2*(value - (self.UL + self.LL)/2) / \
                 (self.UL - self.LL)
             status = self.OK
