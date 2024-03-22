@@ -1,6 +1,11 @@
 # Example config files
 
-TODO: Cleanup.
+## Algorithm tests
+
+* `border_check.json` - Running border check algorithm on `ads-test.csv`.
+
+
+# TODO: Cleanup.
 
 ## General
 * `config1.json`: kafka input, bordercheck, status point visualization, terminal output
