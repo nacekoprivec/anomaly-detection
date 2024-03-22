@@ -14,7 +14,7 @@ class BorderCheck(AnomalyDetectionAbstract):
     UL: float
     LL: float
     warning_stages: List[float]
-    name: str = "Border check"
+    name: str = "border_check"
     filtering: None
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
