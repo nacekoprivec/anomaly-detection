@@ -1,23 +1,10 @@
-from typing import Any, Dict, List
-import numpy as np
-import sys
-import json
-from pandas.core.frame import DataFrame
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
-import pandas as pd
-from ast import literal_eval
+# src\algorithms\MACD.py
 
-#sys.path.insert(0,'./src')
+# general imports
+from typing import Any, Dict
 
+# local imports
 from anomaly_detection import AnomalyDetectionAbstract
-from algorithms.isolation_forest import IsolationForest
-from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
-from visualization import VisualizationAbstract, GraphVisualization,\
-    HistogramVisualization, StatusPointsVisualization
-from normalization import NormalizationAbstract, LastNAverage,\
-    PeriodicLastNAverage
 
 class MACD(AnomalyDetectionAbstract):
     name: str = "MACD"
