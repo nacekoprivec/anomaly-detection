@@ -5,7 +5,7 @@ from pandas.core.frame import DataFrame
 import pandas as pd
 import fbprophet as Prophet
 
-from anomalyDetection import AnomalyDetectionAbstract
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -67,7 +67,7 @@ class Prophet(AnomalyDetectionAbstract):
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
-           
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -84,7 +84,7 @@ class Prophet(AnomalyDetectionAbstract):
             # Add sample to dataframe for retrain
             self.memory_dataframe.append({"ds": string_timestamp, "y": value},
                                          ignore_index=True)
-            
+
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
 
@@ -93,7 +93,7 @@ class Prophet(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
-           
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -145,7 +145,7 @@ class Prophet(AnomalyDetectionAbstract):
         interval_width = 0.9
 
         # Initialize new model
-        self.model = Prophet.Prophet(seasonality_mode='multiplicative', 
+        self.model = Prophet.Prophet(seasonality_mode='multiplicative',
                                      interval_width=interval_width,
                                      changepoint_range = self.changepoint_range)
 

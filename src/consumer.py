@@ -5,23 +5,24 @@ import sys
 
 from typing import Any, Dict, List
 sys.path.insert(0,'./src')
+
 # Algorithm imports
-from src.anomalyDetection import AnomalyDetectionAbstract
-from borderCheck import BorderCheck
-from welford import Welford
-from EMA import EMA
-from filtering import Filtering
-from isolationForest import IsolationForest
-from GAN import GAN
-from PCA import PCA
-from hampel import Hampel
-from linearFit import LinearFit
-from combination import Combination
-from trend_classification import Trend_Classification
-from Cumulative import Cumulative
-from MACD import MACD
-from clustering import Clustering
-from percentile import Percentile
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.border_check import BorderCheck
+from algorithms.welford import Welford
+from algorithms.ema import EMA
+from algorithms.filtering import Filtering
+from algorithms.isolation_forest import IsolationForest
+from algorithms.gan import GAN
+from algorithms.pca import PCA
+from algorithms.hampel import Hampel
+from algorithms.linearFit import LinearFit
+from algorithms.combination import Combination
+from algorithms.trend_classification import Trend_Classification
+from algorithms.cumulative import Cumulative
+from algorithms.macd import MACD
+from algorithms.clustering import Clustering
+from algorithms.percentile import Percentile
 
 #TODO: imports
 #from fb_prophet import fb_Prophet

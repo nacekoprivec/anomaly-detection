@@ -18,18 +18,18 @@ import unittest
 import tensorflow as tf
 
 # Algorithm imports
-from anomalyDetection import AnomalyDetectionAbstract
-from borderCheck import BorderCheck
-from welford import Welford
-from EMA import EMA
-from filtering import Filtering
-from isolationForest import IsolationForest
-from GAN import GAN
-from PCA import PCA
-from hampel import Hampel
-from MACD import MACD
-from clustering import Clustering
-from combination import Combination, AND, OR
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.border_check import BorderCheck
+from algorithms.welford import Welford
+from algorithms.ema import EMA
+from algorithms.filtering import Filtering
+from algorithms.isolationForest import IsolationForest
+from algorithms.GAN import GAN
+from algorithms.PCA import PCA
+from algorithms.hampel import Hampel
+from algorithms.MACD import MACD
+from algorithms.clustering import Clustering
+from algorithms.combination import Combination, AND, OR
 
 # Normalization imports
 from normalization import LastNAverage, PeriodicLastNAverage
@@ -42,7 +42,7 @@ def create_model_instance(algorithm_str, configuration, save = False):
             #save config to temporary file for retrain purposes
             if not os.path.isdir("configuration"):
                 os.makedirs("configuration")
-            
+
             filepath = "configuration/Test_config.txt"
 
             with open(filepath, 'w') as data_file:
@@ -85,7 +85,7 @@ def create_testing_file(filepath, withzero = False, FV_length = None):
         if(withzero):
             values[-1] = [0.0]
 
-    
+
     df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': values})
     df.to_csv(filepath, index = False)
 
@@ -110,7 +110,7 @@ def create_clustering_testing_file(filepath):
         [1.222, 1.01],
         [1.554, 1.44]
     ]
-    
+
     df = pd.DataFrame({'timestamp': timestamps, 'ftr_vector': data})
     df.to_csv(filepath, index = False)
 
@@ -200,7 +200,7 @@ class WelfordDefinedNTestCase(unittest.TestCase):
         ],
         }
         self.model = create_model_instance("Welford()", configuration)
-    
+
     def tearDown(self) -> None:
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
@@ -257,7 +257,7 @@ class WelfordUndefinedNTestCase(unittest.TestCase):
         ],
         }
         self.model = create_model_instance("Welford()", configuration)
-    
+
     def tearDown(self) -> None:
         if os.path.isdir("configuration"):
             shutil.rmtree("configuration")
@@ -279,7 +279,7 @@ class WelfordUndefinedNTestFunctionality(WelfordUndefinedNTestCase):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
                                      [test_data[data_indx]])
             self.model.message_insert(message)
-            
+
             # Check memory length
             self.assertEqual(self.model.count, data_indx+1)
 
@@ -355,7 +355,7 @@ class EMATestFunctionality(EMATestCase):
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
 
-     
+
 class Filtering1TestCase(unittest.TestCase):
     #Test case for filtering - mode 1
     def setUp(self):
@@ -366,7 +366,7 @@ class Filtering1TestCase(unittest.TestCase):
         "UL": 1,
         "filter_order": 3,
         "cutoff_frequency":0.4,
-        "warning_stages": [0.7, 0.9], 
+        "warning_stages": [0.7, 0.9],
         "output": [],
         "output_conf": [{}],
         }
@@ -389,7 +389,7 @@ class Filtering0TestCase(unittest.TestCase):
         "UL": 1,
         "filter_order": 3,
         "cutoff_frequency":0.4,
-        "warning_stages": [0.7, 0.9], 
+        "warning_stages": [0.7, 0.9],
         "output": [],
         "output_conf": [{}],
         }
@@ -503,7 +503,7 @@ class IsolForestTestCase(unittest.TestCase):
         if not os.path.isdir(self.f):
             os.makedirs(self.f)
         self.model = create_model_instance("IsolationForest()", configuration, save = True)
-    
+
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
@@ -587,7 +587,7 @@ class GANTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
-        
+
         # Delete unittest folder
         shutil.rmtree("unittest")
 
@@ -631,7 +631,7 @@ class GANTestFunctionality(GANTestCase):
                                      test_array)
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, -1)
-        
+
         test_array1 = [1, 1, 0, 0, 1, 1, 0, 0, 1, 1]
         for i in range(1):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
@@ -649,7 +649,7 @@ class PCATestCase(unittest.TestCase):
         # Make unittest directory
         if not os.path.isdir("unittest"):
             os.makedirs("unittest")
-            
+
         create_testing_file("./unittest/PCATestData.csv", withzero = True, FV_length = 10)
 
         configuration = {
@@ -664,7 +664,7 @@ class PCATestCase(unittest.TestCase):
         "retrain_file": "./unittest/PCARetrainData.csv",
         "retrain_interval": 10,
         "samples_for_retrain": 90,
-        "input_vector_size": 10, 
+        "input_vector_size": 10,
         "output": [],
         "output_conf": [{}]
         }
@@ -750,7 +750,7 @@ class MACDTestFunctionality(MACDTestCase):
                                      [1])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, 1)
-    
+
     def test_NOK(self):
         for i in range(30):
             message = create_message((datetime.now()-datetime(1970,1,1)).total_seconds(),
@@ -794,7 +794,7 @@ class ClusteringTestCase(unittest.TestCase):
         if not os.path.isdir(self.f):
             os.makedirs(self.f)
         self.model = create_model_instance("Clustering()", configuration, save=True)
-    
+
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
@@ -826,7 +826,7 @@ class ClusteringTestFunctionality(ClusteringTestCase):
                                      test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
-            
+
 
     def test_errors(self):
         #insert different values as in train set (status should be -1).
@@ -837,7 +837,7 @@ class ClusteringTestFunctionality(ClusteringTestCase):
                                      test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])
-    
+
     def test_retrain(self):
         #insert different values as in train set (status should be -1).
         test_array = [
@@ -853,7 +853,7 @@ class ClusteringTestFunctionality(ClusteringTestCase):
             [9.995, 20.99],
             [10.005, 20.3425],
             [10.1295, 20.456],
-            [1.0, 0.9]     
+            [1.0, 0.9]
             ]
         expected_status = [-1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1, -1]
         for i in range(len(test_array)):
@@ -892,7 +892,7 @@ class ProphetTestCase(unittest.TestCase):
         if not os.path.isdir(self.f):
             os.makedirs(self.f)
         self.model = create_model_instance("Clustering()", configuration, save=True)
-    
+
     def tearDown(self):
         if os.path.isdir(self.f):
             shutil.rmtree(self.f)
@@ -913,7 +913,7 @@ class ProphetTestClassPropperties(ProphetTestCase):
 
 class ProphetTestFunctionality(ProphetTestCase):
     # TODO everything
-    
+
     def test_OK(self):
         pass
         """# Insert similar values as in train set (status should be 1).
@@ -924,7 +924,7 @@ class ProphetTestFunctionality(ProphetTestCase):
                                      test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])"""
-            
+
 
     def test_errors(self):
         pass
@@ -936,7 +936,7 @@ class ProphetTestFunctionality(ProphetTestCase):
                                      test_array[i])
             self.model.message_insert(message)
             self.assertEqual(self.model.status_code, expected_status[i])"""
-    
+
     def test_retrain(self):
         pass
         """#insert different values as in train set (status should be -1).
@@ -953,7 +953,7 @@ class ProphetTestFunctionality(ProphetTestCase):
             [9.995, 20.99],
             [10.005, 20.3425],
             [10.1295, 20.456],
-            [1.0, 0.9]     
+            [1.0, 0.9]
             ]
         expected_status = [-1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1, -1]
         for i in range(len(test_array)):
@@ -996,7 +996,7 @@ class CombinationTestCase(unittest.TestCase):
 
         #self.model = create_model_instance("Combination()", configuration, save = True)
         return super().setUp()
-    
+
     def tearDown(self) -> None:
         return super().tearDown()
 
@@ -1009,7 +1009,7 @@ class CombinationTestClassPropperties(CombinationTestCase):
         self.assertIsInstance(self.model.anomaly_algorithms[0], BorderCheck)
         self.assertIsInstance(self.model.anomaly_algorithms[1], BorderCheck)
         self.assertIsInstance(self.model.status_determiner,AND)
-    
+
     def test_ORPropperties(self):
         self.configuration["status_determiner"] = "OR()"
         self.model = create_model_instance("Combination()", self.configuration)
@@ -1042,7 +1042,7 @@ class CombinationTestFunctionality(CombinationTestCase):
 
 class FeatureConstructionTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        # Border check does not use feature construction (or vector size > 1) 
+        # Border check does not use feature construction (or vector size > 1)
         # but will be used because of simplicity
         configuration = {
             "input_vector_size": 2,
@@ -1085,16 +1085,16 @@ class FeatureConstructionTestCase(unittest.TestCase):
             shutil.rmtree("configuration")
 
         return super().tearDown()
-    
+
     def test_shifts(self):
         # First 4 feature vecotrs are undefined since memory does not contain
         # enough samples to construct all features
         for x in self.feature_vectors[:4]:
             self.assertFalse(x)
-        
+
         # Extract shifted features
         shifts = [fv[7:11] for fv in self.feature_vectors[4:]]
-        
+
         # Test shifted features
         self.assertListEqual(shifts[0], [3, 2, 1, 0])
 
@@ -1113,10 +1113,10 @@ class FeatureConstructionTestCase(unittest.TestCase):
         # enough samples to construct all features
         for x in self.feature_vectors[:4]:
             self.assertFalse(x)
-        
+
         # Extract average features
         averages = [fv[2:5] for fv in self.feature_vectors[4:]]
-        
+
         # Test average features
         self.assertListEqual(averages[0], [3.5, 3, 104.5])
 
@@ -1135,10 +1135,10 @@ class FeatureConstructionTestCase(unittest.TestCase):
         # enough samples to construct all features
         for x in self.feature_vectors[:4]:
             self.assertFalse(x)
-        
+
         # Extract periodic average features
         periodic_averages = [fv[5:7] for fv in self.feature_vectors[4:]]
-        
+
         # Test periodic average features
         self.assertListEqual(periodic_averages[0], [2, 2.5])
 
@@ -1157,10 +1157,10 @@ class FeatureConstructionTestCase(unittest.TestCase):
         # enough samples to construct all features
         for x in self.feature_vectors[:4]:
             self.assertFalse(x)
-        
+
         # Extract time features
         time_features = [fv[11:] for fv in self.feature_vectors[4:]]
-        
+
         # Test time features
         self.assertListEqual(time_features[0], [4, 10, 6, 11, 4])
 
@@ -1278,7 +1278,7 @@ class MsgCheckTestFunctionality(BCTestCase):
 
         self.model.message_insert(message)
         self.assertEqual(self.model.check_ftr_vector(message), True)
-    
+
     def test_NOK(self):
         #wrong name
         message = {"timestap" : (datetime.now()-datetime(1970,1,1)).total_seconds(),
