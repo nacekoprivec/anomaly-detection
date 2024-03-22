@@ -13,7 +13,7 @@ from algorithms.welford import Welford
 from algorithms.ema import EMA
 from algorithms.filtering import Filtering
 from algorithms.isolation_forest import IsolationForest
-from algorithms.gan import GAN
+# from algorithms.gan import GAN
 from algorithms.pca import PCA
 from algorithms.hampel import Hampel
 from algorithms.linear_fit import LinearFit
@@ -297,7 +297,7 @@ class ConsumerFile(ConsumerAbstract):
                 timestamp_index = header.index("timestamp")
             except ValueError:
                 timestamp_index = None
-            other_indicies = [i for i, x in enumerate(header) if (x != "timestamp")]
+            other_indicies = [i for i, x in enumerate(header) if ((x != "timestamp") and (x != "label") and (x != "labelInfo"))]
 
             # Iterate over each row in the csv using reader object
             for row in csv_reader:

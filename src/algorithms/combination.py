@@ -11,7 +11,7 @@ from algorithms.welford import Welford
 from algorithms.ema import EMA
 from algorithms.filtering import Filtering
 from algorithms.isolation_forest import IsolationForest
-from algorithms.gan import GAN
+# from algorithms.gan import GAN
 from algorithms.pca import PCA
 from algorithms.hampel import Hampel
 from algorithms.linear_fit import LinearFit

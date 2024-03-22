@@ -124,7 +124,7 @@ class AnomalyDetectionAbstract(ABC):
             self.time_average_shifts = conf["time_average_shifts"]
             self.last_sample = 0
         else:
-            self.time_average_shifts = []
+            self.time_average_shifts = [0, 0]
             self.last_sample = 0
 
         # Finds the largest element among averages and shifts
@@ -211,14 +211,14 @@ class AnomalyDetectionAbstract(ABC):
 
         # Check for timestamp field
         if(not "timestamp" in message_value):
-            print(f"{self.name}: timestamp field was not contained in message.", flush=True)
+            logging.warning("%s: timestamp field was not contained in message.", self.name)
             return False
 
         # Check vector length
         if(len(message_value["ftr_vector"]) != self.input_vector_size):
-            print("%s: Given test value does not satisfy input vector size. Feature vector: %s",
+            logging.error("%s: Given test value does not satisfy input vector size. Feature vector: %s",
                             self.name,
-                            "[" + ",".join([str(elem) for elem in message_value["ftr_vector"]]) + "]", flush=True)
+                            "[" + ",".join([str(elem) for elem in message_value["ftr_vector"]]) + "]")
             return False
 
         # Check if feature vector contains a string

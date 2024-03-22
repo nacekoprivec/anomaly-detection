@@ -1,4 +1,4 @@
-offset;val;error;errorRate
+timestamp;ftr_vector;label;labelInfo
 0.01;0.113201815873;False;0
 0.02;0.0388627832571;False;0
 0.03;0.0742854897949;False;0
