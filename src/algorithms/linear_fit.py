@@ -3,8 +3,8 @@ import numpy as np
 import sys
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -59,7 +59,7 @@ class LinearFit(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -87,7 +87,7 @@ class LinearFit(AnomalyDetectionAbstract):
             y = self.memory
             a, residuals, rank, singular_values, rcond = np.polyfit(x, y, deg = 1, full = True)
             slope, average = a
-        
+
 
         #Normalize the slope to the range LL - UL
         status = self.UNDEFINED
@@ -108,7 +108,7 @@ class LinearFit(AnomalyDetectionAbstract):
             if(residuals/value > self.confidence_norm):
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
-            
+
             #Perform error and warning checks
             elif(value_normalized > 1):
                 status = "Error: slope above upper limit"

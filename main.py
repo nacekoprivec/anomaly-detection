@@ -64,7 +64,7 @@ def main() -> None:
     Returns:
         None
     """
-    logging.basicConfig(filename="event_log.log", format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     parser = argparse.ArgumentParser(description="consumer")
 
     parser.add_argument(

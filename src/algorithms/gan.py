@@ -10,9 +10,9 @@ import pandas as pd
 from ast import literal_eval
 
 sys.path.insert(0,'./src')
-#sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
-from isolationForest import IsolationForest
+
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.isolation_forest import IsolationForest
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -68,10 +68,10 @@ class GAN(AnomalyDetectionAbstract):
 
                 """df_ = pd.read_csv(conf["train_data"], skiprows=1, delimiter = ",", usecols = (0, 1,)).values
                 vals = df_[:,1]
-            
+
                 #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
                 values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
-    
+
                 timestamps = [df_[:,0][-len(values):]]
                 df = np.concatenate((np.array(timestamps).T,values), axis=1)
 
@@ -115,12 +115,12 @@ class GAN(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
             return status, status_code
-        
+
         if(self.min != self.max):
             message_value['ftr_vector'] = list((np.array(message_value['ftr_vector'])- self.avg)/(self.max - self.min))
 
@@ -130,7 +130,7 @@ class GAN(AnomalyDetectionAbstract):
         if(len(message_value['ftr_vector']) == 1):
             feature_vector = super().feature_construction(value=message_value['ftr_vector'],
                                                       timestamp=message_value['timestamp'])
-            
+
         else:
             feature_vector = list(message_value['ftr_vector'])
 
@@ -149,8 +149,8 @@ class GAN(AnomalyDetectionAbstract):
             # print(feature_vector)
             #Model prediction
             prediction = self.GAN.predict(feature_vector.reshape(1, self.N_shifts+1))[0]
-            
-            
+
+
             self.GAN_error = self.mse(np.array(prediction),np.array(feature_vector))
 
             if(not np.isnan(self.mse(np.array(prediction),np.array(feature_vector)))):
@@ -167,7 +167,7 @@ class GAN(AnomalyDetectionAbstract):
 
             #print("GAN error: " + str(self.GAN_error))
             #IsolationForest_transformed =  self.IsolationForest.predict(self.GAN_error.reshape(-1, 1))
-            
+
             if(self.GAN_error < self.threshold):
                 status = self.OK
                 status_code = self.OK_CODE
@@ -182,17 +182,17 @@ class GAN(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
-        
+
         self.status = status
         self.status_code = status_code
 
-        # Add to memory for retrain and execute retrain if needed 
+        # Add to memory for retrain and execute retrain if needed
         if (self.retrain_interval is not None):
             # Add to memory
             new_row = {"timestamp": timestamp, "ftr_vector": value}
             self.memory_dataframe = self.memory_dataframe.append(new_row,
                                                                  ignore_index=True)
-            
+
             # Cut if needed
             if(self.samples_for_retrain is not None):
                 self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
@@ -205,7 +205,7 @@ class GAN(AnomalyDetectionAbstract):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
-        
+
         return status, status_code
 
     @staticmethod
@@ -237,7 +237,7 @@ class GAN(AnomalyDetectionAbstract):
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["anomaly_algorithms_configurations"][self.index_in_combination]["train_data"] = path
                 else:
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
-            
+
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
 
@@ -268,7 +268,7 @@ class GAN(AnomalyDetectionAbstract):
                 values = (np.array(vals) - self.avg)/(self.max - self.min)
             else:
                 values = np.array(vals)
-            
+
             #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
             #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
             timestamps = np.array(df_['timestamp'].values)
@@ -319,9 +319,9 @@ class GAN(AnomalyDetectionAbstract):
             self.GAN.compile(optimizer =tf.keras.optimizers.Adam(lr = 0.001, beta_1 = 0.95))
             features = np.array(features)
             self.GAN.fit(features,features, epochs =100, batch_size = 100, validation_data = None, verbose = 0)
-            
+
             predictions = self.GAN.predict(features.reshape(len(features), self.N_shifts+1))
-            
+
             GAN_transformed = [mse(np.array(features[i]), predictions[i]) for i in range(len(features))]
             self.threshold = max(GAN_transformed)
 

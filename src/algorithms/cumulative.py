@@ -3,8 +3,8 @@ import sys
 import numpy as np
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -49,7 +49,7 @@ class Cumulative(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -69,9 +69,9 @@ class Cumulative(AnomalyDetectionAbstract):
             self.memory.append(value)
             self.memory = self.memory[-self.averaging:]
             self.running_mean = np.average(self.memory)
-        
+
         delta = (self.running_mean - previous)/np.abs(self.running_mean)
-        self.cumulative_sum += delta 
+        self.cumulative_sum += delta
         self.cumulative_sum *= (1-self.decay)
 
         status = self.OK
@@ -98,7 +98,7 @@ class Cumulative(AnomalyDetectionAbstract):
                     status_code = self.WARNING_CODE
                 else:
                     break
-        
+
         # Remenber status for unittests
         self.status = status
         self.status_code = status_code

@@ -3,20 +3,19 @@ from typing import Any, Dict, List, Tuple
 import sys
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
 
 # Algorithm imports
-from anomalyDetection import AnomalyDetectionAbstract
-from borderCheck import BorderCheck
-from welford import Welford
-from EMA import EMA
-from filtering import Filtering
-from isolationForest import IsolationForest
-from GAN import GAN
-from PCA import PCA
-from hampel import Hampel
-from linearFit import LinearFit
-from MACD import MACD
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.border_check import BorderCheck
+from algorithms.welford import Welford
+from algorithms.ema import EMA
+from algorithms.filtering import Filtering
+from algorithms.isolation_forest import IsolationForest
+# from algorithms.gan import GAN
+from algorithms.pca import PCA
+from algorithms.hampel import Hampel
+from algorithms.linear_fit import LinearFit
+from algorithms.macd import MACD
 import time
 import numpy as np
 
@@ -73,7 +72,7 @@ class Combination(AnomalyDetectionAbstract):
 
         # No need to check feature vector since every algorithm is going to do
         # that
-        
+
 
         # Get statuses from all algorithms
         statuses = []
@@ -83,7 +82,7 @@ class Combination(AnomalyDetectionAbstract):
             status_message, status_code = algorithm.message_insert(message_value=to_insert)
             statuses.append(status_code)
             status_messages.append(status_message)
-        
+
         # Get fina status
         final_status_code, status = self.status_determiner.determine_status(statuses=statuses, status_messages = status_messages, timestamp = message_value["timestamp"])
 
@@ -133,7 +132,7 @@ class AND(StatusDeterminer):
         for status in statuses:
             if(status > max_status and status != 2):
                 max_status = status
-        
+
         status_message = ""
         if(max_status == -1):
             status_message = self.ERROR
@@ -145,7 +144,7 @@ class AND(StatusDeterminer):
             # If status remains -2 it means that all statuses were undefined
             max_status = self.UNDEFIEND_CODE
             status_message = self.UNDEFINED
-        
+
         return max_status, status_message
 
 
@@ -163,7 +162,7 @@ class OR(StatusDeterminer):
         for status in statuses:
             if(status < min_status):
                 min_status = status
-        
+
         status_message = ""
         if(min_status == -1):
             status_message = self.ERROR
@@ -173,7 +172,7 @@ class OR(StatusDeterminer):
             status_message = self.OK
         elif(min_status == 2):
             status_message = self.UNDEFINED
-        
+
         return min_status, status_message
 
 class PercentScore(StatusDeterminer):
@@ -196,7 +195,7 @@ class PercentScore(StatusDeterminer):
                 score +=2
             else:
                 score +=0
-        
+
         final_score = score/max_score
         status_message = "PercentScore"
 
@@ -215,10 +214,10 @@ class PercentScore(StatusDeterminer):
             convoluted_score = np.sum(np.array(self.memory)[:,0])/max(self.num_in_interval, len(self.memory))
         except:
             convoluted_score = 0
-        
+
         return convoluted_score, status_message
 
-    
+
 class PercentScore_Alicante(StatusDeterminer):
     #Returns a score between 0 and 1; 1-all algorithms signaled an error, 0-all algorithms OK
     #Specific for alicante salinity - only includes sudden jumps in the upwards direction, not sudden drops
@@ -243,7 +242,7 @@ class PercentScore_Alicante(StatusDeterminer):
                     score +=0
             else:
                 score += 0
-        
+
         final_score = score/max_score
         status_message = "PercentScore"
 
@@ -262,5 +261,5 @@ class PercentScore_Alicante(StatusDeterminer):
             convoluted_score = np.sum(np.array(self.memory)[:,0])/max(self.num_in_interval, len(self.memory))
         except:
             convoluted_score = 0
-        
+
         return convoluted_score, status_message

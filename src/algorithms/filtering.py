@@ -3,8 +3,8 @@ import sys
 from scipy import signal
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -59,7 +59,7 @@ class Filtering(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -74,7 +74,7 @@ class Filtering(AnomalyDetectionAbstract):
         filtered_value, self.z = signal.lfilter(self.b, self.a, x = [self.last_measurement], zi = self.z)
 
         self.filtered = filtered_value[0]
-        
+
         #Normalize filter outputs
         value_normalized = 2*(self.filtered - (self.UL + self.LL)/2) / \
             (self.UL - self.LL)
@@ -121,7 +121,7 @@ class Filtering(AnomalyDetectionAbstract):
                         status_code = 0
                     else:
                         break
-        
+
         self.status = status
         self.status_code = status_code
 
@@ -134,7 +134,7 @@ class Filtering(AnomalyDetectionAbstract):
         # because of custom visualization
         for output in self.outputs:
             output.send_out(timestamp=message_value["timestamp"],
-                            status=status, value=message_value['ftr_vector'][0], 
+                            status=status, value=message_value['ftr_vector'][0],
                             status_code=status_code, algorithm=self.name)
 
         self.result = result
@@ -143,5 +143,5 @@ class Filtering(AnomalyDetectionAbstract):
         if(self.visualization is not None):
             self.visualization.update(value=lines, timestamp=message_value["timestamp"],
             status_code = status_code)
-        
+
         return status, status_code

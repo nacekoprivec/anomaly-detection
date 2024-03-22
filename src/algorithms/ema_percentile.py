@@ -3,8 +3,8 @@ import numpy as np
 import sys
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -72,7 +72,7 @@ class EMA_Percentile(AnomalyDetectionAbstract):
             new = self.numbers[-1] * self.smoothing + self.EMA[-1] *\
                 (1-self.smoothing)
             self.EMA.append(new)
-        
+
         if(len(self.EMA) > self.window):
             self.EMA = self.EMA[-self.window:]
 

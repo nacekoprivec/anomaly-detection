@@ -3,8 +3,8 @@ import numpy as np
 import sys
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -42,7 +42,7 @@ class Hampel(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
-        
+
         # Check feature vector
         if(not self.check_ftr_vector(message_value=message_value)):
             status = self.UNDEFINED
@@ -53,7 +53,7 @@ class Hampel(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -86,7 +86,7 @@ class Hampel(AnomalyDetectionAbstract):
                 suggested_value = None
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
-        
+
         else:
             median = np.median(self.memory)
             S0 = self.K * np.median(np.abs(self.memory - median))
@@ -98,7 +98,7 @@ class Hampel(AnomalyDetectionAbstract):
                 suggested_value = self.memory[self.W+1]
                 status = self.OK
                 status_code = self.OK_CODE
-  
+
 
 
         # custom output because the normalization is in algorithm
@@ -117,7 +117,7 @@ class Hampel(AnomalyDetectionAbstract):
                 lines = [suggested_value]
                 self.visualization.update(value=lines, timestamp=timestamp,
                                         status_code=status_code)
-        
+
         self.count += 1
 
         return status, status_code

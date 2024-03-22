@@ -8,8 +8,8 @@ import rrcf
 from ast import literal_eval
 
 sys.path.insert(0,'./src')
-#sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -61,7 +61,7 @@ class RRCF_trees(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -73,7 +73,7 @@ class RRCF_trees(AnomalyDetectionAbstract):
         if(len(message_value['ftr_vector']) == 1):
             feature_vector = super().feature_construction(value=message_value['ftr_vector'],
                                                       timestamp=message_value['timestamp'])
-            
+
         else:
             feature_vector = list(message_value['ftr_vector'])
 
@@ -109,8 +109,8 @@ class RRCF_trees(AnomalyDetectionAbstract):
                                                     status_code=status_code,
                                                     value=value,
                                                     timestamp=timestamp)
-        
+
         self.status = status
         self.status_code = status_code
-        
+
         return status, status_code

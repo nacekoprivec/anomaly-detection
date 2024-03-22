@@ -3,13 +3,14 @@ import sys
 from pandas.core.frame import DataFrame
 import pandas as pd
 from ast import literal_eval
-from sklearn.cluster import DBSCAN 
+from sklearn.cluster import DBSCAN
 import json
 import numpy as np
 from scipy.spatial import distance
 
 sys.path.insert(0,'./src')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -76,7 +77,7 @@ class Clustering(AnomalyDetectionAbstract):
             self.retrain_interval = None
             self.samples_for_retrain = None
             self.memory_dataframe = None
-        
+
         # Initialize model
         self.trained = False
         if("train_data" in conf):
@@ -129,7 +130,7 @@ class Clustering(AnomalyDetectionAbstract):
                 if(euclidean_dist < self.treshold):
                     anomalous = False
                     break
-            
+
             if(anomalous):
                 status = "Error: outlier detected"
                 status_code = -1
@@ -146,7 +147,7 @@ class Clustering(AnomalyDetectionAbstract):
         self.status = status
         self.status_code = status_code
 
-        # Add to memory for retrain and execute retrain if needed 
+        # Add to memory for retrain and execute retrain if needed
         if (self.retrain_interval is not None):
             # Add to memory (timestamp and ftr_vector seperate so it does not
             # ceuse error)
@@ -168,7 +169,7 @@ class Clustering(AnomalyDetectionAbstract):
                 self.retrain_counter +=1
 
     def train_model(self, train_file: str = None,
-                    train_dataframe: DataFrame = None) -> None:  
+                    train_dataframe: DataFrame = None) -> None:
         if(train_dataframe is not None):
             # This is in case of retrain
             df = train_dataframe
@@ -184,7 +185,7 @@ class Clustering(AnomalyDetectionAbstract):
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["anomaly_algorithms_configurations"][self.index_in_combination]["train_data"] = path
                 else:
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
-            
+
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
 
@@ -195,7 +196,7 @@ class Clustering(AnomalyDetectionAbstract):
                              converters={"ftr_vector": literal_eval})
         else:
             raise Exception("train_file or train_dataframe must be specified.")
-        
+
         # Extract list of ftr_vectors and list of timestamps
         ftr_vector_list = df["ftr_vector"].tolist()
         timestamp_list = df["timestamp"].tolist()

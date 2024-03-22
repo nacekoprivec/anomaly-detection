@@ -5,26 +5,28 @@ import sys
 
 from typing import Any, Dict, List
 sys.path.insert(0,'./src')
-# Algorithm imports
-from src.anomalyDetection import AnomalyDetectionAbstract
-from borderCheck import BorderCheck
-from welford import Welford
-from EMA import EMA
-from filtering import Filtering
-from isolationForest import IsolationForest
-from GAN import GAN
-from PCA import PCA
-from hampel import Hampel
-from linearFit import LinearFit
-from combination import Combination
-from trend_classification import Trend_Classification
-from Cumulative import Cumulative
-from MACD import MACD
-from clustering import Clustering
 
-#TODO: imports
-#from fb_prophet import fb_Prophet
-#from RRCF_trees import RRCF_trees
+# Algorithm imports
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.border_check import BorderCheck
+from algorithms.welford import Welford
+from algorithms.ema import EMA
+from algorithms.filtering import Filtering
+from algorithms.isolation_forest import IsolationForest
+# from algorithms.gan import GAN
+from algorithms.pca import PCA
+from algorithms.hampel import Hampel
+from algorithms.linear_fit import LinearFit
+from algorithms.combination import Combination
+from algorithms.trend_classification import Trend_Classification
+from algorithms.cumulative import Cumulative
+from algorithms.macd import MACD
+from algorithms.clustering import Clustering
+from algorithms.percentile import Percentile
+
+# TODO: imports
+# from fb_prophet import fb_Prophet
+# from RRCF_trees import RRCF_trees
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
@@ -39,28 +41,64 @@ class ConsumerAbstract(ABC):
     configuration_location: str
 
     def __init__(self, configuration_location: str = None) -> None:
+        """
+        Initializes an instance of the class.
+
+        Args:
+            configuration_location (str, optional): The location of the configuration file. Defaults to None.
+
+        Returns:
+            None
+        """
         self.configuration_location = configuration_location
 
     @abstractmethod
     def configure(self, con: Dict[Any, Any],
                   configuration_location: str) -> None:
+        """
+        A method to configure the object with the provided configuration and location.
+
+        Args:
+            con (Dict[Any, Any]): The configuration dictionary.
+            configuration_location (str): The location of the configuration.
+
+        Returns:
+            None
+        """
         self.configuration_location = configuration_location
 
     @abstractmethod
     def read(self) -> None:
+        """
+        This is an abstract method that needs to be implemented by any class that inherits from this class.
+        It is used to read data from a source.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         pass
 
     # rewrites anomaly detection configuration
     def rewrite_configuration(self, anomaly_detection_conf: Dict[str, Any]
                               ) -> None:
+        """
+        Rewrites the configuration file with the provided anomaly detection configuration.
+
+        Parameters:
+            anomaly_detection_conf (Dict[str, Any]): The new anomaly detection configuration to be written to the file.
+
+        Returns:
+            None
+        """
         with open(self.configuration_location) as c:
             conf = json.load(c)
             conf["anomaly_detection_conf"] = anomaly_detection_conf
 
         with open(self.configuration_location, "w") as c:
             json.dump(conf, c)
-
-
 
 
 class ConsumerKafka(ConsumerAbstract):
@@ -85,7 +123,7 @@ class ConsumerKafka(ConsumerAbstract):
     def configure(self, con: Dict[Any, Any] = None) -> None:
         if(con is None):
             print("No configuration was given")
-            return 
+            return
 
         if("filtering" in con):
             self.filtering = con['filtering']
@@ -119,24 +157,24 @@ class ConsumerKafka(ConsumerAbstract):
                               algorithm_indx=algorithm_indx)
             self.anomalies.append(anomaly)
             algorithm_indx += 1
-            
+
     def read(self) -> None:
         for message in self.consumer:
             # Get topic and insert into correct algorithm
             #print(message)
             topic = message.topic
             #print('topic: ' + str(topic), flush=True)
-            
+
             algorithm_indxs = []
 
             for i, j in enumerate(self.topics):
                 if(j == topic):
                     algorithm_indxs.append(i)
             #print(f'{algorithm_indxs = }')
-            
+
             #this line was replaced with above loop (to insert the message into several algorithms at the same time)
             #algorithm_indx = self.topics.index(topic)
-            
+
             for algorithm_indx in algorithm_indxs:
                 #check if this topic needs filtering
                 if(self.filtering is not None and eval(self.filtering[algorithm_indx]) is not None):
@@ -149,7 +187,7 @@ class ConsumerKafka(ConsumerAbstract):
 
                     self.anomalies[algorithm_indx].message_insert(value)
 
-                
+
 
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
@@ -259,7 +297,7 @@ class ConsumerFile(ConsumerAbstract):
                 timestamp_index = header.index("timestamp")
             except ValueError:
                 timestamp_index = None
-            other_indicies = [i for i, x in enumerate(header) if (x != "timestamp")]
+            other_indicies = [i for i, x in enumerate(header) if ((x != "timestamp") and (x != "label") and (x != "labelInfo"))]
 
             # Iterate over each row in the csv using reader object
             for row in csv_reader:
@@ -271,7 +309,7 @@ class ConsumerFile(ConsumerAbstract):
                     except ValueError:
                         pass
                     d["timestamp"] = timestamp
-                
+
                 try:
                     ftr_vector = [float(row[i]) for i in other_indicies]
                 except:
@@ -288,7 +326,7 @@ class ConsumerFile(ConsumerAbstract):
 
                     if message is not None:
                         self.anomalies[i].message_insert(d)
-                    
+
 
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
@@ -364,7 +402,7 @@ class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
 
     def read(self) -> None:
         ConsumerFile.read(self)
-        
+
         # expects only one topic
         for message in self.consumer:
             value = message.value

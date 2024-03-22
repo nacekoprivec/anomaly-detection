@@ -6,7 +6,7 @@ import pandas as pd
 from prophet import Prophet
 import numpy as np
 
-from anomalyDetection import AnomalyDetectionAbstract
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -18,7 +18,7 @@ class fb_Prophet(AnomalyDetectionAbstract):
 
     uncertainty_interval: float
 
-    memory_dataframe: pd.DataFrame()
+    memory_dataframe: pd.DataFrame
     history_file: str
     min_samples: int
     max_samples: int
@@ -80,7 +80,7 @@ class fb_Prophet(AnomalyDetectionAbstract):
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
             #print('check NOK', flush = True)
-           
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -111,7 +111,7 @@ class fb_Prophet(AnomalyDetectionAbstract):
                                             ignore_index=True)
 
                 #print(f'Memory dataframe now has {self.memory_dataframe.shape[0]} samples')
-                
+
                 status = self.UNDEFINED
                 status_code = self.UNDEFIEND_CODE
 
@@ -120,7 +120,7 @@ class fb_Prophet(AnomalyDetectionAbstract):
                                                         status_code=status_code,
                                                         value=value,
                                                         timestamp=timestamp)
-            
+
                 # Remenber status for unittests
                 self.status = status
                 self.status_code = status_code
@@ -131,7 +131,7 @@ class fb_Prophet(AnomalyDetectionAbstract):
 
             #find boundary with closest timestamp to inserted message
             b_idx = np.argmin([abs(string_timestamp - self.intervals[:,0][i]) for i in range(len(self.intervals))])
-            
+
             # Check if the value is in boundries
             boundries = self.intervals[b_idx]
             if (value < boundries[2]):

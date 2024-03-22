@@ -4,6 +4,16 @@ Keep pilot specific data into `pilots/` folder. This data should not be added to
 
 For experiments and testing use experimental artificial labelled datasets in corresponding files in the main directory.
 
+## CSV files
+
+CSV files should contain the following field:
+
+* `timestamp` - defining timestamp
+* `label` - `True` or `False` defining if a field is an anomaly or not - field is optional for evaluation datasets
+* `labelInfo` - custom field defining extend of the anomaly for labelled dataset
+
+Any other fields will be interpreted as columns of a feature vector.
+
 ## Test datasets
 
 ### Artificial data-set for testing time-series additive outlier detecion methods.

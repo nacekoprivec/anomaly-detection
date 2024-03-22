@@ -3,15 +3,13 @@ import numpy as np
 import sys
 import json
 from pandas.core.frame import DataFrame
-from tensorflow.keras import backend as K
-import tensorflow as tf
-from tensorflow import keras
 import pandas as pd
 from ast import literal_eval
+
 #sys.path.insert(0,'./src')
-#sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from src.anomalyDetection import AnomalyDetectionAbstract
-from isolationForest import IsolationForest
+
+from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.isolation_forest import IsolationForest
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -61,7 +59,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -70,7 +68,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
         super().message_insert(message_value)
 
         # Check feature vector
-        
+
 
         value = message_value["ftr_vector"]
         value = value[0]
@@ -113,11 +111,11 @@ class Trend_Classification(AnomalyDetectionAbstract):
 
         if(len(self.prediction_memory) > self.prediction_conv):
             self.prediction_memory = self.prediction_memory[-self.prediction_conv:]
-        
+
         if(len(self.prediction_memory) >= self.prediction_conv):
             averaged_prediction = np.average(self.prediction_memory) #on the interval [0, 2]
 
-            value_normalized = 1 + (averaged_prediction-1)*amplitude 
+            value_normalized = 1 + (averaged_prediction-1)*amplitude
             if(value_normalized > 2):
                 status = "Error: measurement above upper limit"
                 status_code = -1
@@ -138,7 +136,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
                         status = self.OK
                         status_code = self.OK_CODE
                         break
-        
+
         self.status = status
         self.status_code = status_code
 
@@ -147,7 +145,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
                                                 value=message_value["ftr_vector"],
                                                 timestamp=timestamp)
 
-        
+
         return status, status_code
 
 
@@ -158,7 +156,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
         for i in range(self.num_samples):
             a = np.random.randint(0, 3)
             noise = np.random.normal(loc = 0, scale = self.train_noise, size = self.N)
-            
+
             if(a == 1):
                 #no trend
                 sample = np.ones(self.N)*0.5 + noise
@@ -168,7 +166,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
             else:
                 #downtrend
                 sample = np.linspace(1, 0, self.N) + noise
-                
+
             label = np.array([0, 0, 0])
             label[a] = 1
 

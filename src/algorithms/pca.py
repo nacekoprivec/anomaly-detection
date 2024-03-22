@@ -9,32 +9,26 @@ import pandas as pd
 from ast import literal_eval
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
 from normalization import NormalizationAbstract, LastNAverage,\
     PeriodicLastNAverage
+from algorithms.isolation_forest import IsolationForest
 
-class IsolationForest(AnomalyDetectionAbstract):
-    name: str = "Isolation forest"
-    
-    # method specific
+
+class PCA(AnomalyDetectionAbstract):
+    name: str = "PCA"
+
     N: int
-    max_samples: int
-    model_name: str
-    memory: List[float]
-    isolation_score: float
-    warning_stages: List[float]
+    N_components: int
+    N_past_data: int
+    PCA_transformed: List[float]
 
-    # retrain information
-    samples_from_retrain: int
-    retrain_interval: int
-    samples_for_retrain: int
+    # Retrain information
     retrain_file: str
-    trained: bool
-    memory_dataframe: DataFrame
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -51,13 +45,14 @@ class IsolationForest(AnomalyDetectionAbstract):
         self.max_features = conf["train_conf"]["max_features"]
         self.model_name = conf["train_conf"]["model_name"]
         self.max_samples = conf["train_conf"]["max_samples"]
-        self.input_vector_size = conf["input_vector_size"]
+        self.N_components = conf["train_conf"]["N_components"]
+
 
         # Retrain configuration
         if("retrain_interval" in conf):
             self.retrain_counter = 0
-            self.retrain_interval = conf["retrain_interval"]
             self.retrain_file = conf["retrain_file"]
+            self.retrain_interval = conf["retrain_interval"]
             self.samples_from_retrain = 0
             if("samples_for_retrain" in conf):
                 self.samples_for_retrain = conf["samples_for_retrain"]
@@ -82,17 +77,13 @@ class IsolationForest(AnomalyDetectionAbstract):
             self.memory_dataframe = None
 
         # Initialize model
-        self.trained = False
         if("load_model_from" in conf):
-            self.model = self.load_model(conf["load_model_from"])
+            self.load_model(conf["load_model_from"])
         elif("train_data" in conf):
-            self.train_model(conf["train_data"])
-        elif(self.retrain_interval is not None):
-            self.model = sklearn.ensemble.IsolationForest(
-                max_samples=self.max_samples, max_features=self.max_features)
+            self.train_model(train_file = conf["train_data"])
         else:
-            raise Exception("The configuration must specify either \
-                            load_model_from, train_data or train_interval")
+            raise Exception("Model or train dataset must be specified to\
+                            initialize model.")
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
@@ -107,14 +98,14 @@ class IsolationForest(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
             return status, status_code
 
-        #value = message_value["ftr_vector"]
-        #value = value[0]
+        value = message_value["ftr_vector"]
+        value = value[0]
 
         if(self.use_cols is not None):
             value = []
@@ -125,23 +116,26 @@ class IsolationForest(AnomalyDetectionAbstract):
             value = message_value["ftr_vector"]
 
         timestamp = message_value["timestamp"]
+
         feature_vector = super().feature_construction(value=value,
                                                       timestamp=timestamp)
-        # print("feature vector:", feature_vector)
 
-        if (not feature_vector or not self.trained):
+
+        if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
             # create all additional features.
             status = self.UNDEFINED
             status_code = self.UNDEFIEND_CODE
         else:
             feature_vector = np.array(feature_vector)
-            # Model prediction
-            isolation_score = self.model.predict(feature_vector.reshape(1, -1))
-            if(isolation_score == 1):
+            # print(feature_vector)
+            #Model prediction
+            PCA_transformed = self.PCA.transform(feature_vector.reshape(1, -1))
+            IsolationForest_transformed =  self.IsolationForest.predict(PCA_transformed.reshape(1, -1))
+            if(IsolationForest_transformed == 1):
                 status = self.OK
                 status_code = self.OK_CODE
-            elif(isolation_score == -1):
+            elif(IsolationForest_transformed == -1):
                 status = "Error: outlier detected"
                 status_code = -1
             else:
@@ -155,14 +149,14 @@ class IsolationForest(AnomalyDetectionAbstract):
         self.status = status
         self.status_code = status_code
 
-        # Add to memory for retrain and execute retrain if needed 
+        # Add to memory for retrain and execute retrain if needed
         if (self.retrain_interval is not None):
             # Add to memory (timestamp and ftr_vector seperate so it does not
             # ceuse error)
             new_row = {"timestamp": timestamp, "ftr_vector": value}
             self.memory_dataframe = self.memory_dataframe.append(new_row,
                                                                  ignore_index=True)
-            
+
             # Cut if needed
             if(self.samples_for_retrain is not None):
                 self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
@@ -170,24 +164,31 @@ class IsolationForest(AnomalyDetectionAbstract):
 
             # Retrain if needed (and possible)
             if(self.samples_from_retrain >= self.retrain_interval and
-                (self.samples_for_retrain == self.memory_dataframe.shape[0] or
-                self.samples_for_retrain is None)):
+                self.samples_for_retrain == self.memory_dataframe.shape[0]):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
+
         return status, status_code
 
-    def save_model(self, filename: str) -> None:
-        with open("models/" + filename, 'wb') as f:
-            pickle.dump(self.model, f)
+    def save_model(self, filename):
+        with open("models/" + filename + "_PCA", 'wb') as f:
+            #print("Saving PCA")
+            pickle.dump(self.PCA, f)
 
-    def load_model(self, filename: str) -> None:
-        with open(filename, 'rb') as f:
+        with open("models/" + filename + "_IsolationForest", 'wb') as f:
+            #print("Saving isolationForest")
+            pickle.dump(self.IsolationForest, f)
+
+    def load_model(self, filename):
+        with open(filename + "_PCA", 'rb') as f:
             clf = pickle.load(f)
-        return(clf)
+        self.PCA = clf
+        with open(filename + "_IsolationForest", 'rb') as f:
+            clf = pickle.load(f)
+        self.IsolationForest = clf
 
-    def train_model(self, train_file: str = None,
-                    train_dataframe: DataFrame = None) -> None:  
+    def train_model(self, train_file: str = None, train_dataframe: DataFrame = None) -> None:
         if(train_dataframe is not None):
             # This is in case of retrain
             df = train_dataframe
@@ -203,32 +204,34 @@ class IsolationForest(AnomalyDetectionAbstract):
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["anomaly_algorithms_configurations"][self.index_in_combination]["train_data"] = path
                 else:
                     whole_conf["anomaly_detection_conf"][self.algorithm_indx]["train_data"] = path
-            
+
             with open("configuration/" + self.configuration_location, "w") as conf:
                 json.dump(whole_conf, conf)
 
-        elif(train_file is not None):
-            # Load data from location stored in "filename" (ussually for
-            # initial model training)
-            
-            # Changed 25.3. by Gal
-            # df = pd.read_csv(train_file, skiprows=1, delimiter = ",")
+            # Extract list of ftr_vectors and list of timestamps
+            ftr_vector_list = df["ftr_vector"].tolist()
+            timestamp_list = df["timestamp"].tolist()
 
-            # Read csv and eval ftr_vector strings
-            df = pd.read_csv(train_file, skiprows=0, delimiter=",",
-                             usecols=(0, 1,),
-                             converters={"ftr_vector": literal_eval})
+            # Create a new  dataframe with features as columns
+            df = pd.DataFrame.from_records(ftr_vector_list)
+            df.insert(loc=0, column="timestamp", value=timestamp_list)
+            # Transfer to numpy
+            df = df.to_numpy()
+
+        elif(train_file is not None):
+            df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,), converters={'ftr_vector': literal_eval})
+            vals = df_['ftr_vector'].values
+            vals = np.array([np.array(xi) for xi in vals])
+            values = np.array(vals)
+
+            #values = np.lib.stride_tricks.sliding_window_view(values, (self.input_vector_size))
+            #values = [vals[x:x+self.input_vector_size] for x in range(len(vals) - self.input_vector_size + 1)]
+            timestamps = np.array(df_['timestamp'].values)
+            timestamps = np.reshape(timestamps, (-1, 1))
+            df = np.concatenate([timestamps,values], axis = 1)
         else:
             raise Exception("train_file or train_dataframe must be specified.")
-        
-        # Extract list of ftr_vectors and list of timestamps
-        ftr_vector_list = df["ftr_vector"].values.tolist()
-        timestamp_list = df["timestamp"].values.tolist()
-        # Create a new  dataframe with features as columns
-        df = pd.DataFrame(ftr_vector_list)
-        df.insert(loc=0, column="timestamp", value=timestamp_list)
-        # Transfer to numpy and extract data and timestamps
-        df = df.to_numpy()
+
         timestamps = np.array(df[:,0])
         data = np.array(df[:,1:(1 + self.input_vector_size)])
 
@@ -240,10 +243,15 @@ class IsolationForest(AnomalyDetectionAbstract):
         # Fit IsolationForest model to data (if there was enoug samples to
         # construct at leat one feature)
         if(len(features) > 0):
-            self.model = sklearn.ensemble.IsolationForest(
+            N_components = self.N_components
+
+            self.PCA = sklearn.decomposition.PCA(n_components = N_components)
+            self.PCA.fit(features)
+            transformed = self.PCA.transform(features)
+
+            self.IsolationForest = sklearn.ensemble.IsolationForest(
                 max_samples = self.max_samples,
                 max_features = self.max_features
-                ).fit(features)
+                ).fit(transformed)
 
             self.save_model(self.model_name)
-            self.trained = True

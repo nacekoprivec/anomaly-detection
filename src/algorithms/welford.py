@@ -5,8 +5,8 @@ import sys
 import math
 
 sys.path.insert(0,'./src')
-sys.path.insert(1, 'C:/Users/Matic/SIHT/anomaly_det/anomalyDetection/')
-from anomalyDetection import AnomalyDetectionAbstract
+
+from anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization
@@ -53,7 +53,7 @@ class Welford(AnomalyDetectionAbstract):
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
-        
+
         if(self.filtering is not None and eval(self.filtering) is not None):
             #extract target time and tolerance
             target_time, tolerance = eval(self.filtering)
@@ -69,7 +69,7 @@ class Welford(AnomalyDetectionAbstract):
             #                                    status_code=status_code,
             #                                    value=message_value["ftr_vector"],
             #                                    timestamp=message_value["timestamp"])
-            
+
             # Remenber status for unittests
             self.status = status
             self.status_code = status_code
@@ -82,7 +82,7 @@ class Welford(AnomalyDetectionAbstract):
 
         feature_vector = super().feature_construction(value=message_value['ftr_vector'],
                                                       timestamp=message_value['timestamp'])
-        
+
 
         if (feature_vector == False):
             # If this happens the memory does not contain enough samples to
@@ -152,7 +152,7 @@ class Welford(AnomalyDetectionAbstract):
                 lines = [value]
                 self.visualization.update(value=lines, timestamp=timestamp,
                                         status_code=status_code)
-            
+
             self.count += 1
             # adjust mean and stdev for the current window
             if(self.N is not None):
@@ -166,7 +166,7 @@ class Welford(AnomalyDetectionAbstract):
 
                     # if standard deviation is 0 it causes error in the next
                     # iteration (UL and LL are the same) so a small number is
-                    # choosen instead 
+                    # choosen instead
                     if(self.s == 0):
                         self.s = np.nextafter(0, 1)
 
@@ -183,11 +183,11 @@ class Welford(AnomalyDetectionAbstract):
 
                 # if standard deviation is 0 it causes error in the next
                 # iteration (UL and LL are the same) so a small number is
-                # choosen instead 
+                # choosen instead
                 if(self.s == 0):
                     self.s = np.nextafter(0, 1)
 
                 self.LL = self.mean - self.X*(math.sqrt(self.s/self.count))
                 self.UL = self.mean + self.X*(math.sqrt(self.s/self.count))
-    
+
         return status, status_code
