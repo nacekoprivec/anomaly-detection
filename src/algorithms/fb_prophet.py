@@ -3,10 +3,10 @@ import sys
 from pandas._libs.tslibs.timestamps import Timestamp
 from pandas.core.frame import DataFrame
 import pandas as pd
-from prophet import Prophet
+from algorithms.prophet import Prophet
 import numpy as np
 
-from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization

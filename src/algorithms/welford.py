@@ -6,7 +6,7 @@ import math
 
 sys.path.insert(0,'./src')
 
-from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.anomaly_detection import AnomalyDetectionAbstract
 from output import OutputAbstract, TerminalOutput, FileOutput, KafkaOutput
 from visualization import VisualizationAbstract, GraphVisualization,\
     HistogramVisualization, StatusPointsVisualization

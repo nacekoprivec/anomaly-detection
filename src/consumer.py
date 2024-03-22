@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 sys.path.insert(0,'./src')
 
 # Algorithm imports
-from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.anomaly_detection import AnomalyDetectionAbstract
 from algorithms.border_check import BorderCheck
 from algorithms.welford import Welford
 from algorithms.ema import EMA
