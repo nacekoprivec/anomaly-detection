@@ -44,13 +44,13 @@ class TerminalOutput(OutputAbstract):
         # Nothing to configure
         pass
 
-    def send_out(self,  value: Any, suggested_value: Any = None, 
+    def send_out(self,  value: Any, suggested_value: Any = None,
                 status: str = "", timestamp: Any = 0, status_code: int = None,
                 algorithm: str = "Unknown") -> None:
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
-        if(status_code != 1 or self.send_ok):    
-            o = str(timestamp) + ": " + status + "(value: " + str(value) + ")" + ", Algorithm: " + algorithm
+        if(status_code != 1 or self.send_ok):
+            o = str(timestamp) + ": " + status + " (value: " + str(value) + ")" + ", Algorithm: " + algorithm
             if(suggested_value is not None):
                 o = o + ", Suggested value: " + str(suggested_value)
             print(o)
@@ -186,14 +186,14 @@ class KafkaOutput(OutputAbstract):
         if("has_suggested_value" in conf):
             self.has_suggested_value = conf["has_suggested_value"]
         self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                         value_serializer=lambda x: 
+                         value_serializer=lambda x:
                          dumps(x).encode('utf-8'))
 
     def send_out(self, suggested_value: Any = None,status: str = "",
                  timestamp: Any = None, status_code: int = None,
                 value: Any = None,
                  algorithm: str = "Unknown") -> None:
-        
+
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
         if(status_code != 1 or self.send_ok):
@@ -209,7 +209,7 @@ class KafkaOutput(OutputAbstract):
                 to_write["status_code"] = status_code
             if((suggested_value is not None) and self.has_suggested_value):
                 to_write["suggested_value"] = suggested_value
-            
+
             kafka_topic = "anomalies_" + str(self.node_id)
 
             self.producer.send(kafka_topic, value=to_write)
@@ -266,7 +266,7 @@ class InfluxOutput(OutputAbstract):
                 value: Any = "",
                  algorithm: str = "Unknown") -> None:
 
-        print("measurement " + self.measurement + "; influx seind out call " + str(value) + ", " + str(status), flush=True) 
+        print("measurement " + self.measurement + "; influx seind out call " + str(value) + ", " + str(status), flush=True)
 
         # Send to kafka only if an anomaly is detected (or if it is specified
         # that ok values are to be sent)
