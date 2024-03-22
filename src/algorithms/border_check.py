@@ -17,6 +17,7 @@ class BorderCheck(AnomalyDetectionAbstract):
     LL: float
     warning_stages: List[float]
     name: str = "Border check"
+    filtering: None
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
@@ -30,10 +31,9 @@ class BorderCheck(AnomalyDetectionAbstract):
         super().configure(conf, configuration_location=configuration_location,
                           algorithm_indx=algorithm_indx)
 
+        # algorithm specific parameters
         self.LL = conf["LL"]
         self.UL = conf["UL"]
-        self.filtering = conf["filtering"]
-
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
 

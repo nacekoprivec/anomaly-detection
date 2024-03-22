@@ -195,6 +195,12 @@ class AnomalyDetectionAbstract(ABC):
         else:
             self.use_cols = None
 
+        # parse filtering
+        if ("filtering" in conf):
+            self.filtering = eval(conf["filtering"])
+        else:
+            self.filtering = None
+
     def check_ftr_vector(self, message_value: Dict[Any, Any]) -> bool:
         # Check for ftr_vector field
         if(message_value == None):
