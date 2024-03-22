@@ -1,5 +1,7 @@
 # Anomaly detection for streaming data
 
+Anomaly detection service is used to detect anomalies in streaming data (time series). It implements several methods from several ML frameworks.
+
 ## Usage
 `python main.py [-h] [-c CONFIG] [--f]`
 
@@ -59,34 +61,30 @@ graph LR;
    ConsumerFileKafka-->ConsumerKafka;
    ConsumerFileKafka-->ConsumerFile;
    ConsumerAbstract-->ConsumerFile;
-
-
-
-
 ```
 
 ### Configuration file
 The program is configured through configuration file specified with -c flag (located in configuration folder). It is a JSON file with the following structure:
 ```json
 {
-    ...
-    consumer configuration
-    ...
-    "anomaly_detection_alg": ["list of anomaly detection algorithms"],
+    // ...
+    // consumer configuration
+    // ...
+    "anomaly_detection_alg": ["alg1", "alg2", "algN"],
     "anomaly_detection_conf": [{
-        ...
-        anomaly detection configuration
-        ...
+        // ...
+        // anomaly detection configuration
+        // ...
         "input_vector_size": ...,
         "averages": [...],
         "shifts": [...],
         "time_features": [...],
-        "normalization": "normalization component", # optional
-        "normalization_conf": "normalization component configuration", # optional
+        "normalization": "normalization component", // optional
+        "normalization_conf": "normalization component configuration", // optional
         "output": ["list of output components"],
         "output_conf": ["list of output components configurations"],
-        "visualization": "visualization component", # optional
-        "visualization_conf": "visualization component configuration" # optional
+        "visualization": "visualization component", // optional
+        "visualization_conf": "visualization component configuration" // optional
       }]
 }
 ```
@@ -118,7 +116,7 @@ Consumer components differ in where the data is read from.
 **Input format:**
    * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
-      ```
+      ```json
       {
       "ftr_vector":  array (a feature vector) of values,
       "timestamp": timestamp of the data in datastream as strings in unix timestamp format
@@ -132,7 +130,7 @@ Consumer components differ in where the data is read from.
 **Input format:**
    * CSV: The csv can have a "timestamp" (strings in unix timestamp format) column. All other columns are considered values for detecting anomalies.
    * JSON: The JSON file must be of shape:
-      ```
+      ```json
       {
       "ftr_vector":  array (a feature vector) of values,
       "timestamp": timestamp of the data in datastream as strings in unix timestamp format
@@ -156,7 +154,7 @@ Output component differs in where the data is outputted to. more than one output
 
 2. **Kafka output:** Value is outputed to separate kafka topic. <br>
 **Output format:** The outputted object is of form:
-```
+```json
 {
  "algorithm": anomaly detection algorithm used,
  "value": the sample from the datastream,

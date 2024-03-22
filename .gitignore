@@ -201,11 +201,10 @@ data/retrain
 data/JEMS
 
 # data batches
-data/Braila_new_data
-data/Continental
-data/dump
-data/log/Alicante
-data/log/Braila
-data/log/file_analysis
-data/log/images
-data/log/test
+data/pilot/*
+
+# notebooks
+notebooks/pilots/*
+
+# models
+models/*
