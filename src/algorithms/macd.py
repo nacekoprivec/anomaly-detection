@@ -4,7 +4,7 @@
 from typing import Any, Dict
 
 # local imports
-from anomaly_detection import AnomalyDetectionAbstract
+from algorithms.anomaly_detection import AnomalyDetectionAbstract
 
 class MACD(AnomalyDetectionAbstract):
     name: str = "MACD"
