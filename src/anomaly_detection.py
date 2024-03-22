@@ -95,11 +95,6 @@ class AnomalyDetectionAbstract(ABC):
         # FEATURE CONSTRUCTION CONFIGURATION
         self.input_vector_size = conf["input_vector_size"]
 
-        if("braila_fall_feature" in conf):
-            self.braila_fall = conf["braila_fall_feature"]
-        else:
-            self.braila_fall = []
-
         if("averages" in conf):
             self.averages = conf["averages"]
         else:
@@ -401,7 +396,7 @@ class AnomalyDetectionAbstract(ABC):
 
         # Requires datetime format
         # Check for keywords specified in time_features
-        if("month" in self.time_features):
+        if ("month" in self.time_features):
             time_features.append(int(dt.month))
         if ("day" in self.time_features):
             time_features.append(int(dt.day))
@@ -411,7 +406,6 @@ class AnomalyDetectionAbstract(ABC):
             time_features.append(int(dt.hour))
         if ("minute" in self.time_features):
             time_features.append(int(dt.minute))
-
 
         return time_features
 

@@ -14,7 +14,7 @@ from algorithms.isolation_forest import IsolationForest
 from algorithms.gan import GAN
 from algorithms.pca import PCA
 from algorithms.hampel import Hampel
-from algorithms.linearFit import LinearFit
+from algorithms.linear_fit import LinearFit
 from algorithms.macd import MACD
 import time
 import numpy as np
