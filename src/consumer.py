@@ -62,8 +62,6 @@ class ConsumerAbstract(ABC):
             json.dump(conf, c)
 
 
-
-
 class ConsumerKafka(ConsumerAbstract):
     anomalies: List["AnomalyDetectionAbstract"]
     anomaly_names: List[str]
