@@ -23,11 +23,11 @@ from algorithms.border_check import BorderCheck
 from algorithms.welford import Welford
 from algorithms.ema import EMA
 from algorithms.filtering import Filtering
-from algorithms.isolationForest import IsolationForest
-from algorithms.GAN import GAN
-from algorithms.PCA import PCA
+from algorithms.isolation_forest import IsolationForest
+from algorithms.gan import GAN
+from algorithms.pca import PCA
 from algorithms.hampel import Hampel
-from algorithms.MACD import MACD
+from algorithms.macd import MACD
 from algorithms.clustering import Clustering
 from algorithms.combination import Combination, AND, OR
 
