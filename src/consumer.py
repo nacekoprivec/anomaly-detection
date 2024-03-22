@@ -24,9 +24,9 @@ from algorithms.macd import MACD
 from algorithms.clustering import Clustering
 from algorithms.percentile import Percentile
 
-#TODO: imports
-#from fb_prophet import fb_Prophet
-#from RRCF_trees import RRCF_trees
+# TODO: imports
+# from fb_prophet import fb_Prophet
+# from RRCF_trees import RRCF_trees
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads
@@ -41,20 +41,58 @@ class ConsumerAbstract(ABC):
     configuration_location: str
 
     def __init__(self, configuration_location: str = None) -> None:
+        """
+        Initializes an instance of the class.
+
+        Args:
+            configuration_location (str, optional): The location of the configuration file. Defaults to None.
+
+        Returns:
+            None
+        """
         self.configuration_location = configuration_location
 
     @abstractmethod
     def configure(self, con: Dict[Any, Any],
                   configuration_location: str) -> None:
+        """
+        A method to configure the object with the provided configuration and location.
+
+        Args:
+            con (Dict[Any, Any]): The configuration dictionary.
+            configuration_location (str): The location of the configuration.
+
+        Returns:
+            None
+        """
         self.configuration_location = configuration_location
 
     @abstractmethod
     def read(self) -> None:
+        """
+        This is an abstract method that needs to be implemented by any class that inherits from this class.
+        It is used to read data from a source.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         pass
 
     # rewrites anomaly detection configuration
     def rewrite_configuration(self, anomaly_detection_conf: Dict[str, Any]
                               ) -> None:
+        """
+        Rewrites the configuration file with the provided anomaly detection configuration.
+
+        Parameters:
+            anomaly_detection_conf (Dict[str, Any]): The new anomaly detection configuration to be written to the file.
+
+        Returns:
+            None
+        """
         with open(self.configuration_location) as c:
             conf = json.load(c)
             conf["anomaly_detection_conf"] = anomaly_detection_conf

@@ -10,6 +10,15 @@ class MACD(AnomalyDetectionAbstract):
     name: str = "MACD"
 
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
+        """
+        Initialize the class with optional configuration settings.
+
+        Parameters:
+            conf (Dict[Any, Any]): A dictionary containing configuration settings. Defaults to None.
+
+        Returns:
+            None
+        """
         super().__init__()
         if(conf is not None):
             self.configure(conf)
