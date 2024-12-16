@@ -7,6 +7,8 @@ import pandas as pd
 import rrcf
 from ast import literal_eval
 
+#TODO: add rrcf in requirements.txt
+
 sys.path.insert(0,'./src')
 
 from algorithms.anomaly_detection import AnomalyDetectionAbstract
@@ -27,6 +29,7 @@ class RRCF_trees(AnomalyDetectionAbstract):
     def configure(self, conf: Dict[Any, Any] = None,
                   configuration_location: str = None,
                   algorithm_indx: int = None) -> None:
+        
         super().configure(conf, configuration_location=configuration_location,
                           algorithm_indx=algorithm_indx)
 

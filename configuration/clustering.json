@@ -1,0 +1,1 @@
+{"file_name": "data/ads-1.csv", "anomaly_detection_alg": ["Clustering()"], "anomaly_detection_conf": [{"input_vector_size": 1, "eps": 2, "min_samples": 3, "treshold": 0.3, "retrain_interval": 100, "samples_for_retrain": 50, "retrain_file": "data/ads-1_train_unlabeled.csv", "train_data": "data/ads-1_train_unlabeled.csv", "output": ["TerminalOutput()"], "output_conf": [{}]}]}

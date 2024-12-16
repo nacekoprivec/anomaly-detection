@@ -253,7 +253,9 @@ class GAN(AnomalyDetectionAbstract):
 
         elif(train_file is not None):
             df_ = pd.read_csv(train_file, skiprows=0, delimiter = ",", usecols = (0, 1,))
-            vals = df_['ftr_vector'].values
+            ''' vals = df_['ftr_vector'].values
+            vals = np.array([np.array([xi]) for xi in vals]) '''
+            vals = df_['ftr_vector'].astype(float)  # Ensure numeric type
             vals = np.array([np.array([xi]) for xi in vals])
             try:
                 self.min = min(min(vals, key=min))

@@ -7,4 +7,4 @@ pandas==1.2.3
 scipy==1.6.1
 scikit_learn==1.0.1
 matplotlib==3.3.4
-influxdb_client==1.20.0
+influxdb_client==1.20.0 pip install tensorflow==2.4.0

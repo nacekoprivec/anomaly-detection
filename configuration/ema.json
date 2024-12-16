@@ -1,0 +1,15 @@
+{
+    "file_name": "data/ads-1.csv",
+    "anomaly_detection_alg": ["EMA()"],
+    "anomaly_detection_conf": [
+        {
+            "input_vector_size": 1,
+            "N": 10,
+            "LL": -1.0,
+            "UL": 1.0,
+            "warning_stages": [0.7, 0.9],
+            "output": ["TerminalOutput()"],
+            "output_conf": [{}]
+        }
+    ]
+}

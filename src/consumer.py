@@ -11,9 +11,10 @@ from algorithms.anomaly_detection import AnomalyDetectionAbstract
 from algorithms.border_check import BorderCheck
 from algorithms.welford import Welford
 from algorithms.ema import EMA
+from algorithms.ema_percentile import EMA_Percentile
 from algorithms.filtering import Filtering
 from algorithms.isolation_forest import IsolationForest
-# from algorithms.gan import GAN
+from algorithms.gan import GAN
 from algorithms.pca import PCA
 from algorithms.hampel import Hampel
 from algorithms.linear_fit import LinearFit
@@ -24,9 +25,11 @@ from algorithms.macd import MACD
 from algorithms.clustering import Clustering
 from algorithms.percentile import Percentile
 
+from algorithms.rrcf_trees import RRCF_trees
+
 # TODO: imports
-# from fb_prophet import fb_Prophet
-# from RRCF_trees import RRCF_trees
+# from algorithms.fb_prophet import fb_Prophet
+
 
 from kafka import KafkaConsumer, TopicPartition
 from json import loads

@@ -5,6 +5,8 @@ import json
 from pandas.core.frame import DataFrame
 import pandas as pd
 from ast import literal_eval
+import tensorflow as tf
+
 
 #sys.path.insert(0,'./src')
 
