@@ -410,3 +410,4 @@ class ConsumerFileKafka(ConsumerKafka, ConsumerFile):
         for message in self.consumer:
             value = message.value
             self.anomaly.message_insert(value)
+

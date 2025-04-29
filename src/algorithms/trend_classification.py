@@ -108,6 +108,7 @@ class Trend_Classification(AnomalyDetectionAbstract):
                 prediction = 1
             else:
                 self.FV = (self.FV - np.average(self.FV))/max(self.FV) - min(self.FV)
+                self.FV = np.atleast_2d(self.FV).astype(np.float32) #Ensure data is float32
                 prediction = np.argmax(self.model.predict(np.atleast_2d(self.FV)), axis = 1)
             self.prediction_memory.append(prediction[0])
 
