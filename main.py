@@ -64,6 +64,9 @@ def merge_param_dicts(dicts):
     merged = defaultdict(set)
     for d in dicts:
         for k, v in d.items():
+            # Serialize dicts to string to make them hashable
+            if isinstance(v, dict):
+                v = json.dumps(v, sort_keys=True)
             merged[k].add(v)
 
     # Convert sets to sorted lists
@@ -108,28 +111,26 @@ def start_consumer(args: argparse.Namespace) -> None:
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
-                "clustering": { # Fix
+                "clustering": {
                     "param_grid": {
-                        "file_name": "data/ads-1.csv",
+                        "file_name": ["data/ads-1.csv"],
                         "anomaly_detection_alg": ["Clustering()"],
-                        "anomaly_detection_conf": [{
-                            "input_vector_size": [1],
-                            "eps": [2],
-                            "min_samples": [3],
-                            "treshold": [0.3],
-                            "retrain_interval": [100],
-                            "samples_for_retrain": [50],
-                            "retrain_file": ["data/ads-1_train_unlabeled.csv"],
-                            "train_data": ["data/ads-1_train_unlabeled.csv"],
-                            "output": ["TerminalOutput()"],
-                            "output_conf": [{}]
-                        }]
+                        "anomaly_detection_conf": [
+                            {
+                                "eps": [0.5, 1.0, 2.0],  
+                                "min_samples": [3, 5, 10],
+                                "treshold": [0.2, 0.3, 0.4],  
+                                "retrain_interval": [50, 100, 200],
+                                "samples_for_retrain": [20, 50, 100],
+                                "retrain_file": ["data/ads-1_train_unlabeled.csv"],
+                                "train_data": ["data/ads-1_train_unlabeled.csv"]
+                            }
+                        ]
                     },
                     "fixed_params": {
-                        "warning_stages": [0.0, 0.0]
+                        "warning_stages": [0.0, 0.0],
                     }
                 },
-
                 "cumulative": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -172,7 +173,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
-                "fb_prophet": {},
+                "fb_prophet": {},  #TODO: Fix algorithm   
 
                 "filtering": {
                     "param_grid": {
@@ -191,7 +192,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "gan": { # Fix
+                "gan": { #TODO: Fix, merge doesn't vary train_conf
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["GAN()"],
@@ -200,14 +201,15 @@ def start_consumer(args: argparse.Namespace) -> None:
                             "train_data": ["data/ads-1_train.csv"],
                             "train_conf": [{
                                 "model_name": ["GAN_sensor_cleaning"],
-                                "N_shifts": [0],
-                                "N_latent": [3],
-                                "K": [0.4],
-                                "len_window": [500]
+                                "N_shifts": [0, 1, 2],
+                                "N_latent": [2, 3, 5],
+                                "K": [0.2, 0.4, 0.6],
+                                "len_window": [250, 500, 1000]
                             }],
                         }]
                     },
                     "fixed_params": {
+                       
                         "warning_stages": [0.0, 0.0]
                     }
                 },
@@ -229,7 +231,27 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "isolation_forest": {},
+                "isolation_forest": { #TODO: Fix
+                    "param_grid": {
+
+                        "file_name": "data/ads-1.csv",
+                        "anomaly_detection_alg": ["IsolationForest()"],
+                        "anomaly_detection_conf": [
+                            {
+                            "train_conf": {
+                                "max_samples": [50, 100, 200],
+                                "max_features": [0.5, 0.75, 1.0],
+                                "model_name": ["isolation_forest_model.pkl"],
+                                "input_vector_size": [3, 5, 7]
+                            },
+                            "retrain_interval": [50, 100],
+                            "samples_for_retrain": [100, 200, 300],
+                            "retrain_file": ["ads-1_train.csv"],
+                            "train_data": ["ads-1_train.csv"]
+                            }
+                        ]
+                    }
+                    },
 
                 "linear_fit": {
                     "param_grid": {
@@ -267,7 +289,29 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "pca": {},
+                "pca": { #TODO. Fix
+                    "param_grid":{{
+                        "file_name": "data/ads-2.csv",
+                        "anomaly_detection_alg": ["PCA()"],
+                        "anomaly_detection_conf": [
+                            {
+                            "train_conf": {
+                                "max_features": [0.5, 0.75, 1.0],
+                                "model_name": ["pca_model_v1", "pca_model_v2"],
+                                "max_samples": [50, 100, 200],
+                                "N_components": [1, 2, 3]
+                            },
+                            "input_vector_size": [1],
+                            "retrain_interval": [50, 100],
+                            "retrain_file": ["ads-1_train.csv"],
+                            "samples_for_retrain": [100, 200, 300],
+                            "train_data": ["ads-1_train.csv"],
+                            "output": ["TerminalOutput()"],
+                            "output_conf": [{}]
+                            }
+                        ]
+                        }
+                }}, 
 
                 "rrcf_trees": { # very slow
                     "param_grid": {
@@ -332,7 +376,7 @@ def start_consumer(args: argparse.Namespace) -> None:
             }
 
         # Selected algorithm
-        selected_algorithm = "cumulative"  
+        selected_algorithm = "isolation_forest" 
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts
