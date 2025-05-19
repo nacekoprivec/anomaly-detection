@@ -14,7 +14,7 @@ from src.consumer import ConsumerAbstract, ConsumerFile, ConsumerKafka
 
 from src.AnomalyDetectorWrapper import AnomalyDetectorWrapper
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 import numpy as np
 
 
@@ -64,9 +64,6 @@ def merge_param_dicts(dicts):
     merged = defaultdict(set)
     for d in dicts:
         for k, v in d.items():
-            # Serialize dicts to string to make them hashable
-            if isinstance(v, dict):
-                v = json.dumps(v, sort_keys=True)
             merged[k].add(v)
 
     # Convert sets to sorted lists
@@ -89,6 +86,8 @@ def start_consumer(args: argparse.Namespace) -> None:
     
     elif args.param_tunning:
 
+        start_time = time.time()
+
         #BorderCheck parameter combinations
         param_grid = {}
 
@@ -99,12 +98,12 @@ def start_consumer(args: argparse.Namespace) -> None:
         }
 
         param_options = {
-                "border_check": {
+                "border_check": { " Best parameters: {'UL': 0.8, 'LL': -0.5} Best F1 score: 0.04919561669386804 === Program completed in 85.21 seconds ==="
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["BorderCheck()"],
                         "anomaly_detection_conf": [{
-                            "UL": [0.5, 0.7, 0,8], 
+                            "UL": [0.5, 0.7, 0.8], 
                             "LL": [-0.5, -0.7, -0.8],  
                         }]
                     },
@@ -131,6 +130,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                         "warning_stages": [0.0, 0.0],
                     }
                 },
+
                 "cumulative": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -173,7 +173,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
-                "fb_prophet": {},  #TODO: Fix algorithm   
+                "fb_prophet": {},
 
                 "filtering": {
                     "param_grid": {
@@ -192,7 +192,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "gan": { #TODO: Fix, merge doesn't vary train_conf
+                "gan": { # Fix
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["GAN()"],
@@ -201,15 +201,14 @@ def start_consumer(args: argparse.Namespace) -> None:
                             "train_data": ["data/ads-1_train.csv"],
                             "train_conf": [{
                                 "model_name": ["GAN_sensor_cleaning"],
-                                "N_shifts": [0, 1, 2],
-                                "N_latent": [2, 3, 5],
-                                "K": [0.2, 0.4, 0.6],
-                                "len_window": [250, 500, 1000]
+                                "N_shifts": [0],
+                                "N_latent": [3],
+                                "K": [0.4],
+                                "len_window": [500]
                             }],
                         }]
                     },
                     "fixed_params": {
-                       
                         "warning_stages": [0.0, 0.0]
                     }
                 },
@@ -231,27 +230,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "isolation_forest": { #TODO: Fix
-                    "param_grid": {
-
-                        "file_name": "data/ads-1.csv",
-                        "anomaly_detection_alg": ["IsolationForest()"],
-                        "anomaly_detection_conf": [
-                            {
-                            "train_conf": {
-                                "max_samples": [50, 100, 200],
-                                "max_features": [0.5, 0.75, 1.0],
-                                "model_name": ["isolation_forest_model.pkl"],
-                                "input_vector_size": [3, 5, 7]
-                            },
-                            "retrain_interval": [50, 100],
-                            "samples_for_retrain": [100, 200, 300],
-                            "retrain_file": ["ads-1_train.csv"],
-                            "train_data": ["ads-1_train.csv"]
-                            }
-                        ]
-                    }
-                    },
+                "isolation_forest": {},
 
                 "linear_fit": {
                     "param_grid": {
@@ -289,29 +268,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "pca": { #TODO. Fix
-                    "param_grid":{{
-                        "file_name": "data/ads-2.csv",
-                        "anomaly_detection_alg": ["PCA()"],
-                        "anomaly_detection_conf": [
-                            {
-                            "train_conf": {
-                                "max_features": [0.5, 0.75, 1.0],
-                                "model_name": ["pca_model_v1", "pca_model_v2"],
-                                "max_samples": [50, 100, 200],
-                                "N_components": [1, 2, 3]
-                            },
-                            "input_vector_size": [1],
-                            "retrain_interval": [50, 100],
-                            "retrain_file": ["ads-1_train.csv"],
-                            "samples_for_retrain": [100, 200, 300],
-                            "train_data": ["ads-1_train.csv"],
-                            "output": ["TerminalOutput()"],
-                            "output_conf": [{}]
-                            }
-                        ]
-                        }
-                }}, 
+                "pca": {},
 
                 "rrcf_trees": { # very slow
                     "param_grid": {
@@ -376,7 +333,7 @@ def start_consumer(args: argparse.Namespace) -> None:
             }
 
         # Selected algorithm
-        selected_algorithm = "isolation_forest" 
+        selected_algorithm = "border_check"  
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts
@@ -393,13 +350,16 @@ def start_consumer(args: argparse.Namespace) -> None:
         )
 
         # Run GridSearchCV
-        grid = GridSearchCV(
+        grid = RandomizedSearchCV(
             model,
-            param_grid,
+            param_distributions=param_grid,
+            n_iter=20,  # Adjust for speed/coverage tradeoff
             scoring=custom_scorer,
             cv=2,
-            n_jobs=-1
-        )
+            n_jobs=-1,
+            random_state=42
+    )
+
 
         X_dummy = np.zeros((100, 1))
         grid.fit(X_dummy)
@@ -409,6 +369,10 @@ def start_consumer(args: argparse.Namespace) -> None:
 
         print("Best parameters:", grid.best_params_)
         print("Best F1 score:", grid.best_score_)
+
+        end_time = time.time() 
+        elapsed_time = end_time - start_time
+        print(f"=== Program completed in {elapsed_time:.2f} seconds ===")
 
     elif args.test:
         test_instance = Test(configuration_location=args.config)

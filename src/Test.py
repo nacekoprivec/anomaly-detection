@@ -160,16 +160,8 @@ class Test(ConsumerAbstract):
         """Calculates confusion matrix for anomaly detection"""
         data = self.data_buffer[-1]
         is_anomaly = data[0][2] == "True"
-        if (
-        data[1] is not None and 
-        isinstance(data[1], list) and 
-        len(data[1]) > 0 and 
-        data[1][0] is not None
-            ):
-            predicted_anomaly = data[1][0].split(":")[0]
-        else:
-            print("[WARNING] Invalid prediction data:", data[1])
-            return  
+        predicted_anomaly = data[1][0].split(":")[0]
+
 
         if is_anomaly:
             if predicted_anomaly == "Error":
