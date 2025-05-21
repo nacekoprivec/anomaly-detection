@@ -16,11 +16,22 @@ class AnomalyDetectorWrapper(BaseEstimator):
         # Merge fixed and variable params
         combined_conf = {**self.fixed_params, **self.kwargs}
 
+        #for gan
+        #keys_to_move = ["model_name", "N_shifts", "N_latent", "K", "len_window"]
+
+        #for isolation forest
+        #keys_to_move = ["max_samples", "max_features", "model_name"]
+
+
+        #for training
+        #train_conf = {k: combined_conf.pop(k) for k in keys_to_move if k in combined_conf}
+
         config = {
             "file_name": self.file,
             "anomaly_detection_alg": [self.anomaly_class],
             "anomaly_detection_conf": [{
             **combined_conf,
+            #for training "train_conf": train_conf,
         }],
         }
 

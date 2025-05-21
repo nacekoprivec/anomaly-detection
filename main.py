@@ -98,7 +98,8 @@ def start_consumer(args: argparse.Namespace) -> None:
         }
 
         param_options = {
-                "border_check": { " Best parameters: {'UL': 0.8, 'LL': -0.5} Best F1 score: 0.04919561669386804 === Program completed in 85.21 seconds ==="
+                # " Best parameters: {'UL': 0.8, 'LL': -0.5} Best F1 score: 0.04919561669386804 === Program completed in 85.21 seconds ==="
+                "border_check": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["BorderCheck()"],
@@ -110,7 +111,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
-                "clustering": {
+                "clustering": { #fix 
                     "param_grid": {
                         "file_name": ["data/ads-1.csv"],
                         "anomaly_detection_alg": ["Clustering()"],
@@ -131,20 +132,26 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
+                #Best parameters: {'decay': 0.3, 'averaging': 10, 'UL': 1.0, 'LL': -2.0}
+                #Best F1 score: 0.02551418901327779
+                #=== Program completed in 117.29 seconds ===
                 "cumulative": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Cumulative()"],
                         "anomaly_detection_conf": [{
-                            "decay": [0.1, 0.2],      
+                            "decay": [0.1, 0.2, 0.3],      
                             "averaging": [5, 10],        
-                            "UL": [1.0, 1.5],              
-                            "LL": [-1.0, -1.5]             
+                            "UL": [1.0, 1.5, 2.0],              
+                            "LL": [-1.0, -1.5, -2.0],             
                         }]
                     },
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
+                #Best parameters: {'window': 20, 'start_on': 20, 'period': 30, 'percentile': 5}
+                #Best F1 score: 0.01749068636736756
+                #=== Program completed in 124.34 seconds ===
                 "ema_percentile": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -153,13 +160,17 @@ def start_consumer(args: argparse.Namespace) -> None:
                             "percentile": [5, 10 , 15],
                             "window": [10, 20, 50],
                             "start_on": [10, 20, 30],
-                            "period": [10],
+                            "period": [10, 20, 30],
+                            
                         }]
                     },
                     "fixed_params": {
                     }
                 },
 
+                #Best parameters: {'UL': 0.5, 'N': 5, 'LL': -0.5}
+                #Best F1 score: 0.0295510513354802
+                #=== Program completed in 138.36 seconds ===
                 "ema": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv", 
@@ -174,7 +185,10 @@ def start_consumer(args: argparse.Namespace) -> None:
                 },
 
                 "fb_prophet": {},
-
+                
+                #Best parameters: {'mode': 1, 'filter_order': 6, 'cutoff_frequency': 0.2, 'UL': 0.5, 'LL': -1.5}
+                #Best F1 score: 0.2741433021806854
+                #=== Program completed in 111.79 seconds ===
                 "filtering": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -192,20 +206,21 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "gan": { # Fix
+                #Best parameters: {'train_data': 'data/ads-1_train.csv', 'model_name': 'GAN_sensor_cleaning', 'len_window': 250, 'filtering': 'None', 'N_shifts': 0, 'N_latent': 4, 'K': 0.4}
+                #Best F1 score: 0.04179557610566512
+                #=== Program completed in 2506.18 seconds === RandomizedSearchCV
+                "gan": { 
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["GAN()"],
                         "anomaly_detection_conf": [{
                             "filtering": ["None"],
                             "train_data": ["data/ads-1_train.csv"],
-                            "train_conf": [{
-                                "model_name": ["GAN_sensor_cleaning"],
-                                "N_shifts": [0],
-                                "N_latent": [3],
-                                "K": [0.4],
-                                "len_window": [500]
-                            }],
+                            "model_name": ["GAN_sensor_cleaning"],
+                            "N_shifts": [0, 1, 2],
+                            "N_latent": [2, 3, 4],
+                            "K": [0.3, 0.4, 0.5],
+                            "len_window": [250, 500, 750],
                         }]
                     },
                     "fixed_params": {
@@ -213,14 +228,14 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "hampel": {
+                "hampel": { #fix 
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Hampel()"],
                         "anomaly_detection_conf": [{
-                            "n_sigmas": [2, 3, 4],    
-                            "W": [3, 5, 7],        
-                            "K": [1.4826, 2.0, 2.5],  
+                            "n_sigmas": [2, 3, 4, 5],    
+                            "W": [3, 5, 7, 9],        
+                            "K": [1.5, 2.0, 2.5, 3.0],  
                         }]
                     },
                     "fixed_params": {
@@ -230,8 +245,29 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "isolation_forest": {},
+                "isolation_forest": { #fix
+                    "param_grid": {
+                        "file_name": "data/ads-1.csv",
+                        "anomaly_detection_alg": ["IsolationForest()"],
+                        "anomaly_detection_conf": [{
+                        
+                        "retrain_interval": [25, 50, 100],
+                        "samples_for_retrain": [100, 200, 400],
+                        "max_samples": [64, 128, 256],
+                        "max_features": [0.5, 0.75, 1.0],
+                        "model_name": "isolation_forest_model.pkl",
+                        }]
+                    },
+                    "fixed_params": {
+                        "train_data": "ads-1_train.csv",
+                        "filtering": "None",
+                        "warning_stages": [0.0, 0.0]
+                    }
+                },
 
+                #Best parameters: {'confidence_norm': 0.2, 'UL': 1.2, 'N': 5, 'LL': -0.8}
+                #Best F1 score: 0.041811846689895474
+                #=== Program completed in 212.13 seconds ===
                 "linear_fit": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -251,6 +287,9 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
+                #Best parameters: {'period2': 26, 'period1': 8, 'UL': 0.8, 'LL': -0.8}
+                #Best F1 score: 0.04912280701754385
+                #=== Program completed in 129.50 seconds ===
                 "macd": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -331,9 +370,10 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 }
             }
+        
 
         # Selected algorithm
-        selected_algorithm = "border_check"  
+        selected_algorithm = "rrcf_trees"  # Change this to the desired algorithm
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts

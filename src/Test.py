@@ -186,10 +186,20 @@ class Test(ConsumerAbstract):
 
     def confusion_matrix(self) -> None:
         """Confusion matrix for anomaly detection"""
-        self.Precision = self.TP/(self.TP+self.FP)
-        self.Recall = self.TP/(self.TP+self.FN)
-        self.F1 = 2*(self.Precision*self.Recall)/(self.Precision+self.Recall)
-        print("F1 score: " + str(self.F1), flush=True)
+        if (self.TP + self.FP) > 0:
+            self.Precision = self.TP / (self.TP + self.FP)
+        else:
+            self.Precision = 0.0
+
+        if (self.TP + self.FN) > 0:
+            self.Recall = self.TP / (self.TP + self.FN)
+        else:
+            self.Recall = 0.0
+
+        if (self.Precision + self.Recall) > 0:
+            self.F1 = 2 * (self.Precision * self.Recall) / (self.Precision + self.Recall)
+        else:
+            self.F1 = 0.0
 
 
     def filter_by_time(self, message, target_time, tolerance):
