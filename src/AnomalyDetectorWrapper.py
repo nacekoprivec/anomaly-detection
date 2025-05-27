@@ -22,6 +22,9 @@ class AnomalyDetectorWrapper(BaseEstimator):
         #for isolation forest
         #keys_to_move = ["max_samples", "max_features", "model_name"]
 
+        #for pca
+        #keys_to_move = ["max_samples", "max_features", "model_name", "N_components"]
+
 
         #for training
         #train_conf = {k: combined_conf.pop(k) for k in keys_to_move if k in combined_conf}
@@ -31,15 +34,15 @@ class AnomalyDetectorWrapper(BaseEstimator):
             "anomaly_detection_alg": [self.anomaly_class],
             "anomaly_detection_conf": [{
             **combined_conf,
-            #for training "train_conf": train_conf,
+
+            #for training 
+            #"train_conf": train_conf,
         }],
         }
-
-
+        
         test_instance = Test(config)
         test_instance.read()
         test_instance.confusion_matrix()
-
         self.f1 = test_instance.F1
         self.y_true_ = np.array(test_instance.y_true)
         return self

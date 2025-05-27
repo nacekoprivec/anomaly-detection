@@ -49,9 +49,10 @@ from consumer import ConsumerAbstract
 
 class Test(ConsumerAbstract):
     def __init__(self, conf: Dict[Any, Any] = None, configuration_location: str = None) -> None:
-        super().__init__(configuration_location=configuration_location)
+        super().__init__(configuration_location=configuration_location) # for clustering testing configuration_location="clustering.json" | isol_forest "isolation_forest.json"
         self.data_buffer = []  # Store manually inserted data
 
+        self.conf = conf
         self.anomaly_counter = [] 
         self.indx = 0
         self.y_true = []
@@ -160,8 +161,11 @@ class Test(ConsumerAbstract):
         """Calculates confusion matrix for anomaly detection"""
         data = self.data_buffer[-1]
         is_anomaly = data[0][2] == "True"
+        if data[0] is None or data[1] is None:
+            print("Prediction data is missing or malformed.", data)
+            return 
+        
         predicted_anomaly = data[1][0].split(":")[0]
-
 
         if is_anomaly:
             if predicted_anomaly == "Error":
@@ -200,6 +204,8 @@ class Test(ConsumerAbstract):
             self.F1 = 2 * (self.Precision * self.Recall) / (self.Precision + self.Recall)
         else:
             self.F1 = 0.0
+
+    
 
 
     def filter_by_time(self, message, target_time, tolerance):

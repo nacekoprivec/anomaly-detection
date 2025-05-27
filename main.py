@@ -111,7 +111,10 @@ def start_consumer(args: argparse.Namespace) -> None:
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
-                "clustering": { #fix 
+                #Best parameters: {'treshold': 0.4, 'samples_for_retrain': 100, 'retrain_interval': 200, 'min_samples': 10, 'eps': 1.0}
+                #Best F1 score: 0.043254034327372404
+                #=== Program completed in 659.01 seconds ===
+                "clustering": {  
                     "param_grid": {
                         "file_name": ["data/ads-1.csv"],
                         "anomaly_detection_alg": ["Clustering()"],
@@ -122,14 +125,14 @@ def start_consumer(args: argparse.Namespace) -> None:
                                 "treshold": [0.2, 0.3, 0.4],  
                                 "retrain_interval": [50, 100, 200],
                                 "samples_for_retrain": [20, 50, 100],
-                                "retrain_file": ["data/ads-1_train_unlabeled.csv"],
-                                "train_data": ["data/ads-1_train_unlabeled.csv"]
+                                
                             }
                         ]
                     },
                     "fixed_params": {
-                        "warning_stages": [0.0, 0.0],
-                    }
+                        "retrain_file": "data/ads-1_train_unlabeled.csv",
+                        "train_data": "data/ads-1_train_unlabeled.csv"                    
+                        }
                 },
 
                 #Best parameters: {'decay': 0.3, 'averaging': 10, 'UL': 1.0, 'LL': -2.0}
@@ -228,14 +231,14 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "hampel": { #fix 
+                "hampel": { #TODO: check if parameters are correct 
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Hampel()"],
                         "anomaly_detection_conf": [{
-                            "n_sigmas": [2, 3, 4, 5],    
-                            "W": [3, 5, 7, 9],        
-                            "K": [1.5, 2.0, 2.5, 3.0],  
+                            "n_sigmas": [1.5, 2.0],
+                            "W": [3, 5],
+                            "K": [1.2, 1.5, 2.0]
                         }]
                     },
                     "fixed_params": {
@@ -245,21 +248,21 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "isolation_forest": { #fix
+                "isolation_forest": { #TODO: check if train data/retrain right & long to run
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["IsolationForest()"],
                         "anomaly_detection_conf": [{
-                        
                         "retrain_interval": [25, 50, 100],
                         "samples_for_retrain": [100, 200, 400],
                         "max_samples": [64, 128, 256],
                         "max_features": [0.5, 0.75, 1.0],
-                        "model_name": "isolation_forest_model.pkl",
                         }]
                     },
                     "fixed_params": {
-                        "train_data": "ads-1_train.csv",
+                        "model_name": "isolation_forest_model.pkl",
+                        "train_data": "data/ads-1_train.csv",
+                        "retrain_file": "ads-1_train_unlabeled.csv",
                         "filtering": "None",
                         "warning_stages": [0.0, 0.0]
                     }
@@ -307,7 +310,27 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "pca": {},
+                "pca": { # very slow
+                    "param_grid": {
+                        "file_name": "data/ads-2.csv",
+                        "anomaly_detection_alg": ["PCA()"],
+                        "anomaly_detection_conf": [{
+                            "max_features": [0.5, 0.75, 1.0],
+                            "max_samples": [50, 100, 200],
+                            "N_components": [0.9, 0.95, 1],    
+                        }]
+                    },
+                    "fixed_params": {
+                        "input_vector_size": 1,
+                        "retrain_interval": 50,
+                        "model_name": "pca_model",
+                        "retrain_file": "data/ads-1_train.csv",
+                        "samples_for_retrain": 200,
+                        "train_data": "data/ads-1_train.csv",
+                        "output": ["TerminalOutput()"],
+                        "output_conf": [{}]
+                    }
+                },
 
                 "rrcf_trees": { # very slow
                     "param_grid": {
@@ -373,7 +396,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         
 
         # Selected algorithm
-        selected_algorithm = "rrcf_trees"  # Change this to the desired algorithm
+        selected_algorithm = "border_check"  # Change this to the desired algorithm
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts
@@ -413,6 +436,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         end_time = time.time() 
         elapsed_time = end_time - start_time
         print(f"=== Program completed in {elapsed_time:.2f} seconds ===")
+        exit(0)
 
     elif args.test:
         test_instance = Test(configuration_location=args.config)
@@ -424,7 +448,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         consumer = ConsumerKafka(configuration_location=args.config)
         
     print("=== Service starting ===", flush=True)
-    #consumer.read()
+    consumer.read()
 
 def main() -> None:
     """
@@ -472,8 +496,8 @@ def main() -> None:
         "-t", 
         "--test", 
         dest="test", 
-        action="store_true",
-        help="Confusion matrix for anomaly detection."
+        default="config1.json",
+        help=u"Config file located in ./config/ directory."
     )
 
     parser.add_argument(

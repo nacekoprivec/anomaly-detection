@@ -39,7 +39,6 @@ class Clustering(AnomalyDetectionAbstract):
         if(conf is not None):
             self.configure(conf)
 
-
     def configure(self, conf: Dict[Any, Any] = None,
                   configuration_location: str = None,
                   algorithm_indx: int = None) -> None:
@@ -63,11 +62,13 @@ class Clustering(AnomalyDetectionAbstract):
 
             # Retrain memory initialization
             # Retrain memory is of shape [timestamp, ftr_vector]
+            
             if("train_data" in conf):
                 self.memory_dataframe = pd.read_csv(conf["train_data"],
                                                     skiprows=0,
                                                     delimiter=",",
                                                     converters={"ftr_vector": literal_eval})
+                
                 if(self.samples_for_retrain is not None):
                     self.memory_dataframe = self.memory_dataframe.iloc[-self.samples_for_retrain:]
             else:
@@ -167,6 +168,7 @@ class Clustering(AnomalyDetectionAbstract):
                 self.samples_from_retrain = 0
                 self.train_model(train_dataframe=self.memory_dataframe)
                 self.retrain_counter +=1
+        return status, status_code #is this needed
 
     def train_model(self, train_file: str = None,
                     train_dataframe: DataFrame = None) -> None:
@@ -190,10 +192,10 @@ class Clustering(AnomalyDetectionAbstract):
                 json.dump(whole_conf, conf)
 
         elif(train_file is not None):
-            # Read csv and eval ftr_vector strings
             df = pd.read_csv(train_file, skiprows=0, delimiter=",",
                              usecols=(0, 1,),
                              converters={"ftr_vector": literal_eval})
+
         else:
             raise Exception("train_file or train_dataframe must be specified.")
 
@@ -230,3 +232,4 @@ class Clustering(AnomalyDetectionAbstract):
                     self.core_samples.append(fv.tolist())
 
             self.trained = True
+

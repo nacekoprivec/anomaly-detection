@@ -18,7 +18,6 @@ class Hampel(AnomalyDetectionAbstract):
     new_value: float
     K: float
 
-
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
         if(conf is not None):
@@ -38,7 +37,6 @@ class Hampel(AnomalyDetectionAbstract):
         self.K = conf["K"]
         self.n_sigmas = conf["n_sigmas"]
         self.count = 0
-
 
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         super().message_insert(message_value)
