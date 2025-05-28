@@ -49,7 +49,7 @@ def custom_scorer(estimator, X, y=None):
 def flatten_grid(conf_dict):
     """
     Converts a single dict (with lists as values) to a flat grid-style param dict
-    that can be used in GridSearchCV.
+    that can be used in RandomizedSearchCV.
     """
     from itertools import product
 
@@ -58,7 +58,7 @@ def flatten_grid(conf_dict):
     return combos
 
 def merge_param_dicts(dicts):
-    """Merge list of dicts into a dict of lists for GridSearchCV."""
+    """Merge list of dicts into a dict of lists for RandomizedSearchCV."""
     from collections import defaultdict
 
     merged = defaultdict(set)
@@ -396,7 +396,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         
 
         # Selected algorithm
-        selected_algorithm = "border_check"  # Change this to the desired algorithm
+        selected_algorithm = "hampel"  # Change this to the desired algorithm
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts
@@ -412,11 +412,11 @@ def start_consumer(args: argparse.Namespace) -> None:
             fixed_params=fixed_params
         )
 
-        # Run GridSearchCV
+        # Run RandomizedSearchCV
         grid = RandomizedSearchCV(
             model,
             param_distributions=param_grid,
-            n_iter=20,  # Adjust for speed/coverage tradeoff
+            n_iter=20,
             scoring=custom_scorer,
             cv=2,
             n_jobs=-1,

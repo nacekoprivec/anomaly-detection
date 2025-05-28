@@ -45,6 +45,8 @@ class AnomalyDetectorWrapper(BaseEstimator):
         test_instance.confusion_matrix()
         self.f1 = test_instance.F1
         self.y_true_ = np.array(test_instance.y_true)
+        print(f"precision: {test_instance.Precision}, recall: {test_instance.Recall}, F1: {self.f1}")
+        exit(0)
         return self
 
     def predict(self, X):
