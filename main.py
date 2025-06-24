@@ -14,7 +14,7 @@ from src.consumer import ConsumerAbstract, ConsumerFile, ConsumerKafka
 
 from src.AnomalyDetectorWrapper import AnomalyDetectorWrapper
 from sklearn.base import BaseEstimator
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import numpy as np
 
 
@@ -98,14 +98,17 @@ def start_consumer(args: argparse.Namespace) -> None:
         }
 
         param_options = {
-                # " Best parameters: {'UL': 0.8, 'LL': -0.5} Best F1 score: 0.04919561669386804 === Program completed in 85.21 seconds ==="
+                #Best parameters: {'UL': 3.0, 'LL': -0.4}
+                #Best F1 score: 0.6341463414634146
+                #=== Program completed in 109.75 seconds ===
+                # can't go further 
                 "border_check": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["BorderCheck()"],
                         "anomaly_detection_conf": [{
-                            "UL": [0.5, 0.7, 0.8], 
-                            "LL": [-0.5, -0.7, -0.8],  
+                            "UL": [2.6, 2.8, 3.0, 3.2, 3.4],
+                            "LL": [-0.6, -0.5, -0.4, -0.3, -0.2]
                         }]
                     },
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
@@ -116,7 +119,7 @@ def start_consumer(args: argparse.Namespace) -> None:
                 #=== Program completed in 659.01 seconds ===
                 "clustering": {  
                     "param_grid": {
-                        "file_name": ["data/ads-1.csv"],
+                        "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Clustering()"],
                         "anomaly_detection_conf": [
                             {
@@ -135,18 +138,19 @@ def start_consumer(args: argparse.Namespace) -> None:
                         }
                 },
 
-                #Best parameters: {'decay': 0.3, 'averaging': 10, 'UL': 1.0, 'LL': -2.0}
-                #Best F1 score: 0.02551418901327779
-                #=== Program completed in 117.29 seconds ===
+                #Best parameters: {'decay': 0.4, 'averaging': 35, 'UL': 0.7, 'LL': -1.0}
+                #Best F1 score: 0.03713527851458886
+                #=== Program completed in 92.64 seconds ===
+                # can't go further 
                 "cumulative": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Cumulative()"],
                         "anomaly_detection_conf": [{
-                            "decay": [0.1, 0.2, 0.3],      
-                            "averaging": [5, 10],        
-                            "UL": [1.0, 1.5, 2.0],              
-                            "LL": [-1.0, -1.5, -2.0],             
+                           "decay": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7],
+                            "averaging": [5, 10, 15, 20, 25, 30, 35],
+                            "UL": [0.3, 0.5, 0.7, 1.0, 1.3, 1.5, 2.0],
+                            "LL": [-3.0, -2.5, -2.0, -1.5, -1.0, -0.5]              
                         }]
                     },
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
@@ -155,15 +159,19 @@ def start_consumer(args: argparse.Namespace) -> None:
                 #Best parameters: {'window': 20, 'start_on': 20, 'period': 30, 'percentile': 5}
                 #Best F1 score: 0.01749068636736756
                 #=== Program completed in 124.34 seconds ===
+                #Best parameters: {'percentile': 3, 'period': 15, 'start_on': 20, 'window': 20}
+                #Best F1 score: 0.01749068636736756
+                #=== Program completed in 899.95 seconds === with GridSearchCV
+                # can't go further 
                 "ema_percentile": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["EMA_Percentile()"],
                         "anomaly_detection_conf": [{
-                            "percentile": [5, 10 , 15],
-                            "window": [10, 20, 50],
-                            "start_on": [10, 20, 30],
-                            "period": [10, 20, 30],
+                            "percentile": [3, 5, 7],     
+                            "window": [10, 20, 30],      
+                            "start_on": [10, 15, 20], 
+                            "period": [15, 20, 25],        
                             
                         }]
                     },
@@ -171,37 +179,39 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                #Best parameters: {'UL': 0.5, 'N': 5, 'LL': -0.5}
-                #Best F1 score: 0.0295510513354802
-                #=== Program completed in 138.36 seconds ===
+                #Best parameters: {'UL': 0.55, 'N': 3, 'LL': -0.45}
+                #Best F1 score: 0.0381791483113069
+                #=== Program completed in 48.13 seconds ===
                 "ema": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv", 
                         "anomaly_detection_alg": ["EMA()"],
                         "anomaly_detection_conf": [{
-                            "N": [5, 10, 20],
-                            "UL": [0.5, 1.0, 1.5],
-                            "LL": [-0.5, -1.0, -1.5]
+                            "N": [3,4,5, 6],
+                            "UL": [0.45, 0.5, 0.55],
+                            "LL": [-0.55, -0.5, -0.45]
                         }]
                     },
                     "fixed_params": {"warning_stages": [0.0, 0.0]}
                 },
 
                 "fb_prophet": {},
-                
-                #Best parameters: {'mode': 1, 'filter_order': 6, 'cutoff_frequency': 0.2, 'UL': 0.5, 'LL': -1.5}
-                #Best F1 score: 0.2741433021806854
-                #=== Program completed in 111.79 seconds ===
+
+                # Best parameters: {'LL': -1.2, 'UL': 0.25, 'cutoff_frequency': 0.22, 'filter_order': 5, 'mode': 1}
+                # Best F1 score: 0.4034090909090909
+                # === Program completed in 411.84 seconds ===
+                #Can't go further
                 "filtering": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Filtering()"],
                         "anomaly_detection_conf": [{
-                            "mode": [1, 2, 3],                  
-                            "filter_order": [2, 4, 6],           
-                            "cutoff_frequency": [0.05, 0.1, 0.2], 
-                            "UL": [0.5, 1.0, 1.5],               
-                            "LL": [-1.0, -0.5, -1.5],           
+                            # Only change the following parameters to find better value
+                            "mode": [1],  # keep original modes
+                            "filter_order": [4, 5, 6],  
+                            "cutoff_frequency": [0.20, 0.22, 0.24],  
+                            "UL": [0.20, 0.25, 0.30],  
+                            "LL": [-1.3, -1.2, -1.1] 
                         }]
                     },
                     "fixed_params": {
@@ -218,12 +228,12 @@ def start_consumer(args: argparse.Namespace) -> None:
                         "anomaly_detection_alg": ["GAN()"],
                         "anomaly_detection_conf": [{
                             "filtering": ["None"],
-                            "train_data": ["data/ads-1_train.csv"],
+                            "train_data": ["data/ads-1.csv"],
                             "model_name": ["GAN_sensor_cleaning"],
-                            "N_shifts": [0, 1, 2],
-                            "N_latent": [2, 3, 4],
-                            "K": [0.3, 0.4, 0.5],
-                            "len_window": [250, 500, 750],
+                           "N_shifts": [0, 1],           # Keep 0 (best), test 1
+                           "N_latent": [3, 4],           # 4 is best, try one below
+                           "K": [0.4, 0.45],             # Best was 0.4, try one close
+                           "len_window": [250, 300],     # 250 was best, small step
                         }]
                     },
                     "fixed_params": {
@@ -231,14 +241,18 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                "hampel": { #TODO: check if parameters are correct 
+                #Best parameters: {'K': 2.0, 'W': 12, 'n_sigmas': 2.0}
+                #Best F1 score: 0.021897810218978103
+                #=== Program completed in 168.53 seconds ===
+                #Can  go further
+                "hampel": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Hampel()"],
                         "anomaly_detection_conf": [{
-                            "n_sigmas": [1.5, 2.0],
-                            "W": [3, 5],
-                            "K": [1.2, 1.5, 2.0]
+                            "n_sigmas": [2.0, 3.0, 4.0],   # Center around your best
+                            "W": [10, 12, 13],
+                            "K": [2.0, 3.0, 4.0]  # Keep 1.0, test 0.5 and 1.2
                         }]
                     },
                     "fixed_params": {
@@ -268,18 +282,19 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                #Best parameters: {'confidence_norm': 0.2, 'UL': 1.2, 'N': 5, 'LL': -0.8}
-                #Best F1 score: 0.041811846689895474
-                #=== Program completed in 212.13 seconds ===
+
+                #Best parameters: {'confidence_norm': 0.2, 'UL': 0.8, 'N': 2, 'LL': -1.0}
+                #Best F1 score: 0.5822021116138762
+                #=== Program completed in 66.33 seconds ===
                 "linear_fit": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["LinearFit()"],
                         "anomaly_detection_conf": [{
-                            "UL": [0.8, 1.0, 1.2],         
-                            "LL": [-1.2, -1.0, -0.8],     
-                            "confidence_norm": [0.1, 0.2, 0.3], 
-                            "N": [5, 10, 20]    
+                            "UL": [0.6, 0.8, 1.0, 1.2, 2.0, 3.0],
+                            "LL": [-1.2, -1.0, -0.8, -0.5, -0.2],
+                            "confidence_norm": [0.05, 0.1, 0.2, 0.3],
+                            "N": [1, 2, 3, 4, 5, 6]
                         }]
                     },
                     "fixed_params": {
@@ -290,18 +305,19 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                #Best parameters: {'period2': 26, 'period1': 8, 'UL': 0.8, 'LL': -0.8}
-                #Best F1 score: 0.04912280701754385
-                #=== Program completed in 129.50 seconds ===
+                #Best parameters: {'period2': 32, 'period1': 6, 'UL': 1.0, 'LL': -0.8}
+                #Best F1 score: 0.1916932907348243
+                #=== Program completed in 49.68 seconds ===
+                #Cant go further
                 "macd": {
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["MACD()"],
                         "anomaly_detection_conf": [{
-                            "period1": [8, 12, 16],          
-                            "period2": [20, 26, 32],         
-                            "UL": [0.8, 1.0, 1.2],     
-                            "LL": [-1.2, -1.0, -0.8],      
+                            "period1": [4, 6, 8, 12, 16],          
+                            "period2": [20, 26, 32, 38],         
+                            "UL": [0.4, 0.6, 0.8, 1.0, 1.2],     
+                            "LL": [-1.5, -1.0, -0.8, -0.6, -0.5],      
                         }]
                     },
                     "fixed_params": {
@@ -332,6 +348,10 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
+                #Params: {'tree_size': 128, 'num_trees': 50, 'UL': 0.7, 'LL': -0.7}, Mean F1 Score: 0.0
+                #Best parameters: {'tree_size': 128, 'num_trees': 100, 'UL': 0.3, 'LL': -0.5}
+                #Best F1 score: 0.0
+                # Doesn't use upper and lower limits, so UL and LL are not used
                 "rrcf_trees": { # very slow
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
@@ -352,17 +372,22 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
+
+                #Best parameters: {'train_noise': 0.01, 'prediction_conv': 5, 'num_samples': 1500, 'averaging': 3, 'amp_scale': 1.5, 'N': 20}
+                #Best F1 score: 0.049450056353716576
+                #=== Program completed in 2686.35 seconds ===
+
                 "trend_classification": { # very slow
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["Trend_Classification()"],
                         "anomaly_detection_conf": [{
-                            "num_samples": [500, 1000, 1500],        
-                            "N": [30, 50, 70],                       
-                            "averaging": [3, 5, 7],        
-                            "prediction_conv": [5, 10, 15],   
-                            "train_noise": [0.01, 0.05, 0.1],  
-                            "amp_scale": [1.0, 2.0, 3.0]        
+                            "num_samples": [1000, 1500],           
+                            "N": [20, 25],                          
+                            "averaging": [2, 3],                     
+                            "prediction_conv": [5, 10],              
+                            "train_noise": [0.01, 0.02],        
+                            "amp_scale": [1.0, 1.5]              
                         }]
                     },
                     "fixed_params": {
@@ -396,7 +421,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         
 
         # Selected algorithm
-        selected_algorithm = "hampel"  # Change this to the desired algorithm
+        selected_algorithm = "trend_classification"  # Change this to the desired algorithm
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts
@@ -412,16 +437,23 @@ def start_consumer(args: argparse.Namespace) -> None:
             fixed_params=fixed_params
         )
 
-        # Run RandomizedSearchCV
         grid = RandomizedSearchCV(
             model,
             param_distributions=param_grid,
-            n_iter=20,
+            n_iter=5,
             scoring=custom_scorer,
             cv=2,
             n_jobs=-1,
             random_state=42
-    )
+        )
+
+        # grid = GridSearchCV(
+        #     model,
+        #     param_grid=param_grid,   # param_grid instead of param_distributions
+        #     scoring=custom_scorer,
+        #     cv=2,
+        #     n_jobs=-1,
+        # )
 
 
         X_dummy = np.zeros((100, 1))
@@ -430,12 +462,12 @@ def start_consumer(args: argparse.Namespace) -> None:
         for mean_score, params in zip(grid.cv_results_['mean_test_score'], grid.cv_results_['params']):
             print(f"Params: {params}, Mean F1 Score: {mean_score}")
 
-        print("Best parameters:", grid.best_params_)
-        print("Best F1 score:", grid.best_score_)
+        print("#Best parameters:", grid.best_params_)
+        print("#Best F1 score:", grid.best_score_)
 
         end_time = time.time() 
         elapsed_time = end_time - start_time
-        print(f"=== Program completed in {elapsed_time:.2f} seconds ===")
+        print(f"#=== Program completed in {elapsed_time:.2f} seconds ===")
         exit(0)
 
     elif args.test:
