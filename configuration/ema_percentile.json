@@ -6,8 +6,8 @@
             "input_vector_size": 1,
             "percentile": 5,
             "window": 20,
-            "start_on": 10,
-            "period": 10,
+            "start_on": 20,
+            "period": 30,
             "output": ["TerminalOutput()"],
             "output_conf": [{}]
         }

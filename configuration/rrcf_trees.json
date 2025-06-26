@@ -2,13 +2,11 @@
     "file_name": "data/ads-1.csv",
     "anomaly_detection_alg": ["RRCF_trees()"],
     "anomaly_detection_conf": [{
-        "num_trees": 100,
-        "tree_size": 256,
+        "num_trees": 50,
+        "tree_size": 512,
         "filtering": "None",
         "input_vector_size": 1,
-        "warning_stages": [0.7, 0.9],
-        "UL": 0.5,
-        "LL": -0.5,
+        "threshold": 38,
         "output": ["TerminalOutput()"],
         "output_conf": [{}]
     }]

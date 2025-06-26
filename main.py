@@ -416,7 +416,6 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 }
             }
-        
 
         # Selected algorithm
         selected_algorithm = "rrcf_trees"  # Change this to the desired algorithm

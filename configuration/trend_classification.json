@@ -3,13 +3,12 @@
     "anomaly_detection_alg": ["Trend_Classification()"],
     "anomaly_detection_conf": [
       {
-        "num_samples": 1000,         
-        "N": 50,                    
-        "averaging": 5,           
-        "prediction_conv": 10,      
-        "train_noise": 0.05,        
-        "warning_stages": [0.1, 0.2],
-        "amp_scale": 2.0,
+        "num_samples": 1500,         
+        "N": 20,                    
+        "averaging": 3,           
+        "prediction_conv": 5,      
+        "train_noise": 0.01,        
+        "amp_scale": 1.5,
         "input_vector_size": 1,    
         "output": ["TerminalOutput()"],
         "output_conf": [{}]

@@ -4,11 +4,11 @@
     "anomaly_detection_conf": [
         {
             "input_vector_size": 1,
-            "warning_stages": [0.7, 0.9],
-            "decay": 0.1,
-            "averaging": 10,
-            "UL": 1,
-            "LL": -1,
+            "warning_stages": [0.5, -0.7],
+            "decay": 0.4,
+            "averaging": 35,
+            "UL": 0.7,
+            "LL": -1.0,
             "output": ["TerminalOutput()"],
             "output_conf": [{}]
         }

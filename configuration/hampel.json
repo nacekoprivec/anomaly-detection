@@ -4,9 +4,9 @@
     "anomaly_detection_conf": [
         {
             "input_vector_size": 1, 
-            "n_sigmas": 3,        
-            "W": 5,               
-            "K": 1.4826,     
+            "n_sigmas": 2.0,        
+            "W": 12,               
+            "K": 2,     
             "output": ["TerminalOutput()"],  
             "output_conf": [{}]
         }
