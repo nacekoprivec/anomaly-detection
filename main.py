@@ -348,19 +348,17 @@ def start_consumer(args: argparse.Namespace) -> None:
                     }
                 },
 
-                #Params: {'tree_size': 128, 'num_trees': 50, 'UL': 0.7, 'LL': -0.7}, Mean F1 Score: 0.0
-                #Best parameters: {'tree_size': 128, 'num_trees': 100, 'UL': 0.3, 'LL': -0.5}
-                #Best F1 score: 0.0
-                # Doesn't use upper and lower limits, so UL and LL are not used
+                #Best parameters: {'tree_size': 512, 'threshold': 38, 'num_trees': 50}
+                #Best F1 score: 0.4774998033199591
+                #=== Program completed in 1727.65 seconds ===
                 "rrcf_trees": { # very slow
                     "param_grid": {
                         "file_name": "data/ads-1.csv",
                         "anomaly_detection_alg": ["RRCF_trees()"],
                         "anomaly_detection_conf": [{
-                            "num_trees": [50, 100, 150],   
-                            "tree_size": [128, 256, 512],
-                            "UL": [0.3, 0.5, 0.7],   
-                            "LL": [-0.7, -0.5, -0.3]      
+                            "num_trees": [20, 25, 50],   
+                            "tree_size": [512, 1024],
+                            "threshold":  [36, 38],
                         }]
                     },
                     "fixed_params": {
@@ -421,7 +419,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         
 
         # Selected algorithm
-        selected_algorithm = "trend_classification"  # Change this to the desired algorithm
+        selected_algorithm = "rrcf_trees"  # Change this to the desired algorithm
         config = param_options[selected_algorithm]
 
         # Flatten config["param_grid"]["anomaly_detection_conf"] into list of dicts

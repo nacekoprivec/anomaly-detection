@@ -39,6 +39,9 @@ class RRCF_trees(AnomalyDetectionAbstract):
 
         self.filtering = conf["filtering"]
 
+        #detect anomalies
+        self.threshold = conf["threshold"]
+
         #initialise index
         self.index = 0
 
@@ -105,8 +108,14 @@ class RRCF_trees(AnomalyDetectionAbstract):
                 #compute anomaly score
                 anomaly_score += tree.codisp(self.index)/self.num_trees
             self.index +=1
-            status_code = anomaly_score
-            status = "RRCF anomaly score"
+
+            status = self.OK
+            status_code = self.OK_CODE
+
+            if(anomaly_score > self.threshold):
+                status = f"Error: Anomaly detected: {anomaly_score}"
+                status_code = anomaly_score
+                
 
             self.normalization_output_visualization(status=status,
                                                     status_code=status_code,
