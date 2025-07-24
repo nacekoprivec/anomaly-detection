@@ -88,7 +88,6 @@ def start_consumer(args: argparse.Namespace) -> None:
 
         start_time = time.time()
 
-        #BorderCheck parameter combinations
         param_grid = {}
 
         fixed_params = {
