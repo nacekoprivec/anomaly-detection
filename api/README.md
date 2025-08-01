@@ -11,7 +11,7 @@ use decorator dependenceis, they wont be sent to the functionm
 yield
 await asyncio.sleep(10) # non-blocking I/O operation
 
-
+uvicorn api.src.main:app --reload
 
 
 API for Anomaly Detection Algorithms
@@ -31,3 +31,6 @@ Project structure based on https://github.com/zhanymkanov/fastapi-best-practices
 RESOURCES
 https://fastapi.tiangolo.com/tutorial
 https://www.youtube.com/watch?v=rvFsGRvj9jo
+
+TEMPLATES
+https://themewagon.github.io/DashboardKit
