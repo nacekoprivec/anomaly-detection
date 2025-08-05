@@ -11,8 +11,9 @@ use decorator dependenceis, they wont be sent to the functionm
 yield
 await asyncio.sleep(10) # non-blocking I/O operation
 
+run app
+conda activate anomaly
 uvicorn api.src.main:app --reload
-
 
 API for Anomaly Detection Algorithms
 

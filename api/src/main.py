@@ -6,7 +6,6 @@ app = FastAPI()
 
 app.include_router(router)
     
-    
 @app.get("/")
 def read_root():
     return {"msg": "Anomaly Detection API"}
