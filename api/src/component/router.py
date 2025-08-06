@@ -10,6 +10,11 @@ from fastapi.responses import JSONResponse
 import main
 from .service import *
 
+import Test
+
+import pandas as pd
+
+
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
@@ -100,13 +105,21 @@ async def run(name: str):
 
         args = argparse.Namespace(
             config=config_to_use,
-            data_file=True,
+            data_file=False,
             data_both=False,
             watchdog=False,
-            test=False,
+            test=True,
             param_tunning=False
         )
-        main.start_consumer(args)
+
+        test_instance = main.start_consumer(args)
+        print("TP:", test_instance.TP)
+        print("TN:", test_instance.TN)
+        print("FP:", test_instance.FP)
+        print("FN:", test_instance.FN)
+        print("Precision:", test_instance.Precision)
+        print("Recall:", test_instance.Recall)
+        print("F1 Score:", test_instance.F1)
 
     except Exception as e:
         return JSONResponse(
@@ -119,3 +132,4 @@ async def run(name: str):
             os.remove(tmp_file_path)
         if os.path.exists(data_file_path):
             os.remove(data_file_path)
+    return JSONResponse(content={"status": "OK", "message": "Run completed successfully"})

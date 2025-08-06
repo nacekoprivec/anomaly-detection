@@ -470,7 +470,7 @@ def start_consumer(args: argparse.Namespace) -> None:
         test_instance = Test(configuration_location=args.config)
         test_instance.read()
         test_instance.confusion_matrix()
-        exit(0)
+        return test_instance
 
     else:
         consumer = ConsumerKafka(configuration_location=args.config)

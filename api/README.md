@@ -32,6 +32,12 @@ Project structure based on https://github.com/zhanymkanov/fastapi-best-practices
 RESOURCES
 https://fastapi.tiangolo.com/tutorial
 https://www.youtube.com/watch?v=rvFsGRvj9jo
+https://www.youtube.com/watch?v=E8lXC2mR6-k
+
+https://www.youtube.com/watch?v=aSdVU9-SxH4
 
 TEMPLATES
 https://themewagon.github.io/DashboardKit
+
+echo api
+https://www.youtube.com/watch?v=-oCHXAUwZt0
