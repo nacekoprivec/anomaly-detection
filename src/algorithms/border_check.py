@@ -63,6 +63,8 @@ class BorderCheck(AnomalyDetectionAbstract):
         self.warning_stages = conf["warning_stages"]
         self.warning_stages.sort()
 
+
+
     def message_insert(self, message_value: Dict[Any, Any]) -> Any:
         """
             A function to insert a message into the system, with optional filtering and normalization.

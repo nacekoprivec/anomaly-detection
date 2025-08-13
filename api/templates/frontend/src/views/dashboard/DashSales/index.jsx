@@ -17,23 +17,86 @@ import feedData from 'data/feedData';
 import productData from 'data/productTableData';
 
 import React, { useState } from 'react';
-import api from '../../../api'; // Import the API instance
+import api from '../../../api'; 
+import { useEffect } from 'react';
 
 // -----------------------|| DASHBOARD SALES ||-----------------------//
 export default function DashSales() {
-  const [inputValue, setInputValue] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('border_check.json');
+  const [config, setConfig] = useState(null);
+  const [overrides, setOverrides] = useState({});
   const [response, setResponse] = useState('');
+    const [file, setFile] = useState(null);
 
-  const handleInputChange = (e) => setInputValue(e.target.value);
 
-  const handleSend = async () => {
+  // Fetch config when method changes
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const res = await api.get(`/configuration/${selectedMethod}`);
+        setConfig(res.data);
+        setOverrides(res.data); 
+      } catch (error) {
+        setConfig(null);
+      }
+    }
+    fetchConfig();
+  }, [selectedMethod]);
+
+  // Handle dropdown change
+  const handleSelectChange = (e) => setSelectedMethod(e.target.value);
+
+  // Handle config field change
+  const handleConfigChange = (key, value) => {
+    setOverrides(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  // Send modified config
+  const handleSaveConfig = async () => {
     try {
-      const res = await api.post(`/run/${inputValue}`);
+      const res = await api.post(`/configuration/${selectedMethod}`, overrides);
       setResponse(res.data);
     } catch (error) {
       setResponse('Error: ' + error.message);
     }
   };
+
+  const handleRun = async () => {
+    try {
+      const res = await api.post(`/run/${selectedMethod}`);
+      setResponse(res.data);
+    } catch (error) {
+      setResponse('Error: ' + error.message);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setResponse("Please select a file first.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("config_name", selectedMethod);
+
+      const res = await api.post("/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setResponse(`Upload successful: ${JSON.stringify(res.data)}`);
+    } catch (error) {
+      setResponse("Error: " + error.message);
+    }
+  };
+
 
   return (
     <Row>
@@ -41,19 +104,147 @@ export default function DashSales() {
         <Card className="flat-card">
           <div className="row-table">
             <Card.Body className="col-sm-6 br">
-              <h1 className="mb-3">Sales Dashboard</h1>
-              {/* Text box and send button */}
+              <h1 className="mb-3">Anomaly Detection Dashboard</h1>
               <div className="mb-3">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  placeholder="Enter name"
+                <select
+                  value={selectedMethod}
+                  onChange={handleSelectChange}
                   className="form-control mb-2"
-                />
-                <button className="btn btn-primary" onClick={handleSend}>
-                  Send to API
+                >
+                  <option value="border_check.json">BorderCheck</option>
+                  <option value="clustering.json">Clustering</option>
+                  <option value="ema.json">EMA</option>
+                </select>
+                {config && (
+                  <div>
+                    {/* Render all top-level config fields */}
+                    {Object.entries(config).map(([key, value]) => {
+                      // Handle primitive values
+                      if (
+                        typeof value === 'string' ||
+                        typeof value === 'number'
+                      ) {
+                        return (
+                          <div className="mb-2" key={key}>
+                            <label>{key}</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={overrides[key] ?? ''}
+                              onChange={e => handleConfigChange(key, e.target.value)}
+                            />
+                          </div>
+                        );
+                      }
+                      // Handle arrays of primitives
+                      if (
+                        Array.isArray(value) &&
+                        value.every(
+                          v =>
+                            typeof v === 'string' ||
+                            typeof v === 'number'
+                        )
+                      ) {
+                        return (
+                          <div className="mb-2" key={key}>
+                            <label>{key}</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={overrides[key]?.join(',') ?? ''}
+                              onChange={e =>
+                                handleConfigChange(
+                                  key,
+                                  e.target.value.split(',')
+                                )
+                              }
+                            />
+                          </div>
+                        );
+                      }
+                      // Handle arrays of objects
+                      if (
+                        Array.isArray(value) &&
+                        value.every(v => typeof v === 'object')
+                      ) {
+                        return (
+                          <div className="mb-2" key={key}>
+                            <label>{key}</label>
+                            {value.map((obj, idx) => (
+                              <div key={idx} style={{ paddingLeft: 10, borderLeft: '2px solid #eee', marginBottom: 8 }}>
+                                {Object.entries(obj).map(([subKey, subValue]) => (
+                                  <div key={subKey}>
+                                    <label>{subKey}</label>
+                                    <input
+                                      type="text"
+                                      className="form-control"
+                                      value={overrides[key]?.[idx]?.[subKey] ?? subValue ?? ''}
+                                      onChange={e => {
+                                        // Update nested array of objects
+                                        setOverrides(prev => {
+                                          const arr = prev[key] ? [...prev[key]] : [...value];
+                                          arr[idx] = { ...arr[idx], [subKey]: e.target.value };
+                                          return { ...prev, [key]: arr };
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      // Handle objects
+                      if (typeof value === 'object') {
+                        return (
+                          <div className="mb-2" key={key}>
+                            <label>{key}</label>
+                            {Object.entries(value).map(([subKey, subValue]) => (
+                              <div key={subKey} style={{ paddingLeft: 10 }}>
+                                <label>{subKey}</label>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value={overrides[key]?.[subKey] ?? subValue ?? ''}
+                                  onChange={e => {
+                                    setOverrides(prev => ({
+                                      ...prev,
+                                      [key]: { ...(prev[key] || value), [subKey]: e.target.value }
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
+                
+                <div className="mb-3 d-flex align-items-center">
+                  <button className="btn btn-success" onClick={handleSaveConfig}>
+                  Save Config
+                  </button>
+                
+                <div>
+                  <button className="btn btn-primary ms-2" onClick={handleUpload}>
+                    Upload
+                  </button>
+                  <input type="file" accept=".csv" onChange={handleFileChange} />
+                </div>
+
+                <button
+                  className="btn btn-success ms-auto"
+                  onClick={handleRun}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  Run
                 </button>
+
+                </div>
                 {response && (
                   <div className="mt-2">
                     <strong>API Response:</strong> {JSON.stringify(response)}

@@ -19,98 +19,62 @@ class GraphVisualization(VisualizationAbstract):
     num_of_points: int
     num_of_lines: int
     linestyles: List[str]
-    lines: List[List[float]]
-
+    lines: List[Any]
+    
     def __init__(self, conf: Dict[Any, Any] = None) -> None:
         super().__init__()
-        if(conf is not None):
+        if conf is not None:
             self.configure(conf=conf)
         else:
-            default = {"num_of_points": 50,
-                       "num_of_lines": 1,
-                       "linestyles": ['ro']}
+            default = {"num_of_points": 50, "num_of_lines": 1, "linestyles": ['ro']}
             self.configure(conf=default)
 
     def configure(self, conf: Dict[Any, Any] = None) -> None:
         self.num_of_points = conf["num_of_points"]
         self.num_of_lines = conf["num_of_lines"]
         self.linestyles = conf["linestyles"]
-        if("demo_pause" in conf):
-            self.pause = conf["demo_pause"]
-        else:
-            self.pause = 0.1
-        self.lines = [[] for _ in range(self.num_of_lines)]
+        self.pause = conf.get("demo_pause", 0.1)
+
+        # Preallocate arrays for speed
+        self.x_data = np.zeros(self.num_of_points)
+        self.y_data = np.zeros((self.num_of_lines, self.num_of_points))
         self.count = 0
-        pass
 
-    def update(self, value: List[Any], timestamp: Any = 0,
-               status_code: int = None) -> None:
-        assert self.num_of_lines <= len(value), "Configuration specifies more lines that were given."
-        # value is an array
-        # [lastvalue, current_moving_average, current_moving_average+sigma,
-        # current_moving_average-sigma] how many of those you actually need
-        # depends on num of lines
-        y_data = [None]*self.num_of_lines
-
-        # define or update lines
-        if(self.lines[0] == []):
-            plt.ion()
-            fig_graph = plt.figure(figsize=(13, 6))
-            ax_graph = [None] * self.num_of_lines
-
-            x_data = [self.count]
-
-            for i in range(self.num_of_lines):
-                ax_graph[i] = fig_graph.add_subplot(111)
-            y_data = value.copy()
-            for i in range(self.num_of_lines):
-                self.lines[i], = ax_graph[i].plot(x_data, y_data[i],
-                                                  self.linestyles[i],
-                                                  alpha=0.8)
-                plt.show()
-
-        elif(len(self.lines[0].get_data()[0]) < self.num_of_points):
-
-            x_data = [None] * self.num_of_points
-            x_data = np.append(x_data, self.lines[0].get_data()[0])
-            x_data = np.append(x_data, self.count)
-            x_data = x_data[-self.num_of_points:]
-            for i in range(self.num_of_lines):
-                y_data[i] = [None]*self.num_of_points
-                y_data[i] = np.append(y_data[i], self.lines[i].get_data()[1])
-                y_data[i] = np.append(y_data[i], value[i])
-                y_data[i] = y_data[i][-self.num_of_points:]
-        else:
-            x_data = self.lines[0].get_data()[0]
-            x_data = np.append(x_data, self.count)
-            x_data = x_data[-self.num_of_points:]
-
-            for i in range(self.num_of_lines):
-                y_data[i] = self.lines[i].get_data()[1]
-                y_data[i] = np.append(y_data[i], value[i])
-                y_data[i] = y_data[i][-self.num_of_points:]
-
+        # Setup figure once
+        plt.ion()
+        self.fig, self.ax = plt.subplots(figsize=(13, 6))
+        self.lines = []
         for i in range(self.num_of_lines):
-            self.lines[i].set_ydata(y_data[i])
-            self.lines[i].set_xdata(x_data)
+            line, = self.ax.plot(self.x_data, self.y_data[i], self.linestyles[i % len(self.linestyles)], alpha=0.8)
+            self.lines.append(line)
+        plt.show()
 
-        # plot limits correction
-        if(value is not None):
-            if(isinstance(self.lines[0].get_data()[1], np.ndarray)):
+    def update(self, value: List[float], timestamp: Any = 0, status_code: int = None) -> None:
+        assert self.num_of_lines <= len(value), "More lines specified than values given."
 
-                Min = min(filter(lambda x: x is not None,self.lines[0].get_data()[1]))
-                Max = max(filter(lambda x: x is not None,self.lines[0].get_data()[1]))
-                for i in range(len(self.lines)):
-                    if (min(filter(lambda x: x is not None,self.lines[i].get_data()[1])) <= Min):
-                        Min = min(filter(lambda x: x is not None,self.lines[i].get_data()[1]))
-                    if (max(filter(lambda x: x is not None,self.lines[i].get_data()[1])) >= Max):
-                        Max = max(filter(lambda x: x is not None,self.lines[i].get_data()[1])) 
-            else:
-                Min = min(value)-0.1
-                Max = max(value)+0.1
-        plt.subplot(111).set_ylim([Min - 0.1, Max + 0.1])
-        plt.subplot(111).set_xlim([min(filter(lambda x: x is not None, x_data)) - 0.1, max(filter(lambda x: x is not None, x_data))+0.1])
-        plt.pause(self.pause)
+        # Shift x_data and y_data
+        self.x_data[:-1] = self.x_data[1:]
+        self.x_data[-1] = self.count
+        for i in range(self.num_of_lines):
+            self.y_data[i, :-1] = self.y_data[i, 1:]
+            self.y_data[i, -1] = value[i]
+
+        # Update plotted lines
+        for i in range(self.num_of_lines):
+            self.lines[i].set_xdata(self.x_data)
+            self.lines[i].set_ydata(self.y_data[i])
+
+        # Update plot limits efficiently
+        y_min = np.min(self.y_data)
+        y_max = np.max(self.y_data)
+        x_min = np.min(self.x_data)
+        x_max = np.max(self.x_data)
+        self.ax.set_xlim(x_min - 0.1, x_max + 0.1)
+        self.ax.set_ylim(y_min - 0.1, y_max + 0.1)
+
+        # Redraw efficiently
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
 
         self.count += 1
 

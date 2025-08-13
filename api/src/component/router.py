@@ -38,6 +38,18 @@ async def detect():
     main.start_consumer(args)
     return {"status": "OK"}
 
+@router.get("/configuration/{name}")
+async def detect_with_custom_config(name: str):
+    try:
+        config = load_config(name)
+        return JSONResponse(content=config)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)}
+        )
+
+
 @router.post("/configuration/{name}")
 async def detect_with_custom_config(name: str, request: Request):
     tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
@@ -93,7 +105,7 @@ async def upload(
         )
 
 @router.post("/run/{name}")
-async def run(name: str):
+async def run(name: str = "border_check.json"):
     tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
     data_file_path = os.path.join(DATA_DIR, "tmp.csv")
 
@@ -132,4 +144,10 @@ async def run(name: str):
             os.remove(tmp_file_path)
         if os.path.exists(data_file_path):
             os.remove(data_file_path)
-    return JSONResponse(content={"status": "OK", "message": "Run completed successfully"})
+    return JSONResponse(content={
+    "name": config_to_use,
+    "result": "TP: {}, TN: {},FP: {}, FN: {},Precision: {}, Recall: {}, F1 Score: {}".format(
+                test_instance.TP, test_instance.TN, test_instance.FP, test_instance.FN,
+                test_instance.Precision, test_instance.Recall, test_instance.F1
+            )
+        })

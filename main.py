@@ -17,6 +17,9 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import numpy as np
 
+from itertools import product
+
+
 
 def ping_watchdog(process: Process) -> None:
     """
@@ -51,7 +54,6 @@ def flatten_grid(conf_dict):
     Converts a single dict (with lists as values) to a flat grid-style param dict
     that can be used in RandomizedSearchCV.
     """
-    from itertools import product
 
     keys, values = zip(*conf_dict.items())
     combos = [dict(zip(keys, v)) for v in product(*values)]
