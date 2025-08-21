@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
+from sqlalchemy import Float
 
 import main
 from .service import *
@@ -14,6 +15,12 @@ import Test
 
 import pandas as pd
 
+from datetime import datetime
+
+from .models import Log, Anomaly 
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
+from ..database import get_db
 
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
@@ -105,16 +112,18 @@ async def upload(
         )
 
 @router.post("/run/{name}")
-async def run(name: str = "border_check.json"):
+async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
     tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
     data_file_path = os.path.join(DATA_DIR, "tmp.csv")
 
     try:
+        # Pick which config to use
         if os.path.exists(tmp_file_path):
             config_to_use = os.path.basename(tmp_file_path)
         else:
             config_to_use = name
 
+        # Build args (as if from argparse)
         args = argparse.Namespace(
             config=config_to_use,
             data_file=False,
@@ -124,14 +133,27 @@ async def run(name: str = "border_check.json"):
             param_tunning=False
         )
 
+        # Run process
+        start_time = datetime.now()
+        config_db = load_config(config_to_use)
+
         test_instance = main.start_consumer(args)
-        print("TP:", test_instance.TP)
-        print("TN:", test_instance.TN)
-        print("FP:", test_instance.FP)
-        print("FN:", test_instance.FN)
-        print("Precision:", test_instance.Precision)
-        print("Recall:", test_instance.Recall)
-        print("F1 Score:", test_instance.F1)
+
+        end_time = datetime.now()
+        duration = end_time - start_time
+
+        create_log(db, start_time, end_time, config_db, test_instance.detected_anomalies)
+        logs = get_logs(db)
+
+        for log in logs:
+            config_dict = json.loads(log.config) 
+            print(f"Log ID: {log.id}")
+            print(f"Start Time: {log.start_timedate}")
+            print(f"End Time:   {log.end_timedate}")
+            print("Config:")
+            print(json.dumps(config_dict, indent=4)) 
+            print("-" * 60)
+
 
     except Exception as e:
         return JSONResponse(
@@ -151,3 +173,5 @@ async def run(name: str = "border_check.json"):
                 test_instance.Precision, test_instance.Recall, test_instance.F1
             )
         })
+
+

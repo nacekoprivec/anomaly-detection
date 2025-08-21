@@ -21,11 +21,11 @@ It will allow users to upload data file, allow option to detect streaming data f
 It will provide default configurations and allow manual configuration  of those variables, and run anomaly detection. (check valid input)
 It will also provide console output for algorithm results(confusion matrix)
 It will provide visual output of results (graph)
+It will have database to store info such as table anomaly(id, timestamp,ftr_vector), inside log table confusion matrix, start time, end time, configuration used as string. You will be able to see logs and all anomalies for each log. Optionally you will be able to read and delete logs.
 
 
 It might allow user authentication and authorization for secure access to the API.
 It might have option of automatic hypertunning based on user provided data and algorithm configuration. 
-It might have database to store info
 
 Project structure based on https://github.com/zhanymkanov/fastapi-best-practices?tab=readme-ov-file#project-structure
 

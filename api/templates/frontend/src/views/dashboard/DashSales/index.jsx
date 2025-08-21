@@ -174,7 +174,7 @@ export default function DashSales() {
                               <div key={idx} style={{ paddingLeft: 10, borderLeft: '2px solid #eee', marginBottom: 8 }}>
                                 {Object.entries(obj).map(([subKey, subValue]) => (
                                   <div key={subKey}>
-                                    <label>{subKey}</label>
+                                    <label>{subKey}</label> 
                                     <input
                                       type="text"
                                       className="form-control"

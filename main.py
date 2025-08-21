@@ -19,8 +19,6 @@ import numpy as np
 
 from itertools import product
 
-
-
 def ping_watchdog(process: Process) -> None:
     """
     Function to ping the watchdog at regular intervals.

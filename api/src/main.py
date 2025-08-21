@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 import argparse
 from .component.router import router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,

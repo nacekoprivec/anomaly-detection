@@ -67,6 +67,8 @@ class Test(ConsumerAbstract):
         self.Recall : float = 0.0
         self.F1 : float = 0.0
         
+        self.detected_anomalies = {}
+        
         if conf:
             self.configure(con=conf)
         elif configuration_location:
@@ -167,10 +169,15 @@ class Test(ConsumerAbstract):
         
         predicted_anomaly = data[1][0].split(":")[0]
 
+        timestamp = float(data[0][0])
+        ftr_vector = float(data[0][1])
+
         if is_anomaly:
             if predicted_anomaly == "Error":
                 self.TP += 1
                 self.anomaly_counter.append(1)
+
+                self.detected_anomalies[timestamp] = ftr_vector
             else:
                 self.FN += 1
                 self.anomaly_counter.append(0)
@@ -181,6 +188,8 @@ class Test(ConsumerAbstract):
             if predicted_anomaly == "Error":
                 self.FP += 1
                 self.anomaly_counter.append(1)
+
+                self.detected_anomalies[timestamp] = ftr_vector
             else:
                 self.TN += 1
                 self.anomaly_counter.append(0)
