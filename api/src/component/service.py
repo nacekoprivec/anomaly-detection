@@ -11,6 +11,7 @@ from .models import *
 from ..database import get_db
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from datetime import timedelta
 
 def handle_configuration(body: dict) -> str:
     with open("C:\\Users\\nacek\\OneDrive\\Desktop\\siht\\anomaly-detection\\configuration", "r") as f:
@@ -34,11 +35,15 @@ def handle_configuration(body: dict) -> str:
 # CRUD
 # Create logs
 
-def create_log(db: Session, start_time, end_time, config, anomalies: dict = None):
+def create_log(db: Session, start_time, end_time, config, duration_seconds, precision, recall, f1, anomalies: dict = None):
     log_entry = Log(
         start_timedate=start_time,
         end_timedate=end_time,
-        config=json.dumps(config)
+        config=json.dumps(config),
+        duration_seconds=duration_seconds,
+        precision=precision,
+        recall=recall,
+        f1=f1
     )
     db.add(log_entry)
     db.commit()
@@ -75,19 +80,36 @@ def get_anomaly(db: Session, anomaly_id: int):
 
 # Delete logs/anomalies
 
-def delete_log(db: Session, log_id: int):
-    log = db.query(Log).filter(Log.id == log_id).first()
-    if log:
-        db.delete(log)
-        db.commit()
-    return log
+def delete_log(log_id: int, db: Session):
+    try:
+        log = db.query(Log).filter(Log.id == log_id).first()
+        if log:
+            db.delete(log)
+            db.commit()
+        return log
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting log: {e}")
+        return None
 
-def delete_anomaly(db: Session, anomaly_id: int):
-    anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
-    if anomaly:
-        db.delete(anomaly)
+def delete_anomaly(anomaly_id: int, db: Session):
+    try:
+        anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
+        if anomaly:
+            db.delete(anomaly)
+            db.commit()
+        return anomaly
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting anomaly: {e}")
+        return None
         db.commit()
     return anomaly
+
+# Format HH:MM:SS
+def format_seconds(seconds: float) -> str:
+    seconds = round(seconds)
+    return str(timedelta(seconds=seconds))
 
 # Print Statements
 

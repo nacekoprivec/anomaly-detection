@@ -20,14 +20,17 @@ import React, { useState } from 'react';
 import api from '../../../api'; 
 import { useEffect } from 'react';
 
+import { Spinner } from "react-bootstrap";
+
+
 // -----------------------|| DASHBOARD SALES ||-----------------------//
 export default function DashSales() {
   const [selectedMethod, setSelectedMethod] = useState('border_check.json');
   const [config, setConfig] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [response, setResponse] = useState('');
-    const [file, setFile] = useState(null);
-
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Fetch config when method changes
   useEffect(() => {
@@ -66,12 +69,14 @@ export default function DashSales() {
   };
 
   const handleRun = async () => {
+    setLoading(true);
     try {
       const res = await api.post(`/run/${selectedMethod}`);
       setResponse(res.data);
     } catch (error) {
       setResponse('Error: ' + error.message);
     }
+    setLoading(false);
   };
 
   const handleUpload = async () => {
@@ -98,6 +103,8 @@ export default function DashSales() {
   };
 
 
+
+
   return (
     <Row>
       <Col md={12} xl={6} className="mb-3">
@@ -113,7 +120,19 @@ export default function DashSales() {
                 >
                   <option value="border_check.json">BorderCheck</option>
                   <option value="clustering.json">Clustering</option>
+                  <option value="cumulative.json">Cumulative</option>
+                  <option value="ema_percentile.json">EMAPercentile</option>
                   <option value="ema.json">EMA</option>
+                  <option value="filtering.json">Filtering</option>
+                  <option value="gan.json">GAN</option>
+                  <option value="hampel.json">Hampel</option>
+                  <option value="isolation_forest.json">IsolationForest</option>
+                  <option value="linear_fit.json">LinearFit</option>
+                  <option value="macd.json">MACD</option>
+                  <option value="pca.json">PCA</option>
+                  <option value="rrcf_trees.json">RRCF</option>
+                  <option value="trend_classification.json">TrendClassification</option>
+                  <option value="welford.json">Welford</option>
                 </select>
                 {config && (
                   <div>
@@ -236,13 +255,15 @@ export default function DashSales() {
                   <input type="file" accept=".csv" onChange={handleFileChange} />
                 </div>
 
-                <button
+                {loading ? (
+              <Spinner animation="border" style={{ marginLeft: 'auto' }} />) : (
+              <button
                   className="btn btn-success ms-auto"
                   onClick={handleRun}
                   style={{ marginLeft: 'auto' }}
                 >
                   Run
-                </button>
+                </button> )}
 
                 </div>
                 {response && (

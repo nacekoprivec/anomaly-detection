@@ -59,13 +59,13 @@ class Test(ConsumerAbstract):
         self.X = []
         self.y = []
         #Confusion matrix
-        self.TP : int = 0
-        self.FP : int = 0
-        self.TN : int = 0
-        self.FN : int = 0
-        self.Precision : float = 0.0
-        self.Recall : float = 0.0
-        self.F1 : float = 0.0
+        self.tp : int = 0
+        self.fp : int = 0
+        self.tn : int = 0
+        self.fn : int = 0
+        self.precision : float = 0.0
+        self.recall : float = 0.0
+        self.f1 : float = 0.0
         
         self.detected_anomalies = {}
         
@@ -174,24 +174,24 @@ class Test(ConsumerAbstract):
 
         if is_anomaly:
             if predicted_anomaly == "Error":
-                self.TP += 1
+                self.tp += 1
                 self.anomaly_counter.append(1)
 
                 self.detected_anomalies[timestamp] = ftr_vector
             else:
-                self.FN += 1
+                self.fn += 1
                 self.anomaly_counter.append(0)
             
             self.y_true.append(1)
 
         else:
             if predicted_anomaly == "Error":
-                self.FP += 1
+                self.fp += 1
                 self.anomaly_counter.append(1)
 
                 self.detected_anomalies[timestamp] = ftr_vector
             else:
-                self.TN += 1
+                self.tn += 1
                 self.anomaly_counter.append(0)
 
             self.y_true.append(0)
@@ -199,20 +199,20 @@ class Test(ConsumerAbstract):
 
     def confusion_matrix(self) -> None:
         """Confusion matrix for anomaly detection"""
-        if (self.TP + self.FP) > 0:
-            self.Precision = self.TP / (self.TP + self.FP)
+        if (self.tp + self.fp) > 0:
+            self.precision = self.tp / (self.tp + self.fp)
         else:
-            self.Precision = 0.0
+            self.precision = 0.0
 
-        if (self.TP + self.FN) > 0:
-            self.Recall = self.TP / (self.TP + self.FN)
+        if (self.tp + self.fn) > 0:
+            self.recall = self.tp / (self.tp + self.fn)
         else:
-            self.Recall = 0.0
+            self.recall = 0.0
 
-        if (self.Precision + self.Recall) > 0:
-            self.F1 = 2 * (self.Precision * self.Recall) / (self.Precision + self.Recall)
+        if (self.precision + self.recall) > 0:
+            self.f1 = 2 * (self.precision * self.recall) / (self.precision + self.recall)
         else:
-            self.F1 = 0.0
+            self.f1 = 0.0
 
     
 

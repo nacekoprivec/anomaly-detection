@@ -2,12 +2,17 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+import os
 # ✅ import your models
 from src.database import Base, engine
 import src.component.models  
+from src.database import BASE_DIR
+
 
 # Alembic Config object
+db_path = os.path.join(BASE_DIR, "test.db")
 config = context.config
+config.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
 
 # Interpret the config file for logging
 if config.config_file_name is not None:

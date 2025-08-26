@@ -22,6 +22,8 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
 
+from .schemas import *
+
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
@@ -141,8 +143,9 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
 
         end_time = datetime.now()
         duration = end_time - start_time
+        duration_seconds = duration.total_seconds()
 
-        create_log(db, start_time, end_time, config_db, test_instance.detected_anomalies)
+        create_log(db, start_time, end_time, config_db,duration_seconds, test_instance.precision, test_instance.recall, test_instance.f1, test_instance.detected_anomalies)
         logs = get_logs(db)
 
         for log in logs:
@@ -150,8 +153,9 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
             print(f"Log ID: {log.id}")
             print(f"Start Time: {log.start_timedate}")
             print(f"End Time:   {log.end_timedate}")
-            print("Config:")
-            print(json.dumps(config_dict, indent=4)) 
+            print(json.dumps(config_dict, indent=4))
+            print(f"Duration: {log.duration_seconds} seconds")
+            print(f"Precision: {log.precision}, Recall: {log.recall}, F1 Score: {log.f1}")
             print("-" * 60)
 
 
@@ -169,9 +173,41 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
     return JSONResponse(content={
     "name": config_to_use,
     "result": "TP: {}, TN: {},FP: {}, FN: {},Precision: {}, Recall: {}, F1 Score: {}".format(
-                test_instance.TP, test_instance.TN, test_instance.FP, test_instance.FN,
-                test_instance.Precision, test_instance.Recall, test_instance.F1
+                test_instance.tp, test_instance.tn, test_instance.fp, test_instance.fn,
+                test_instance.precision, test_instance.recall, test_instance.f1
             )
         })
 
 
+@router.get("/logs")
+async def get_logs_db(db: Session = Depends(get_db)):
+    logs = db.query(Log).all()
+    return [
+        {
+            "id": log.id,
+            "start_timedate": log.start_timedate,
+            "end_timedate": log.end_timedate,
+            "config": json.loads(log.config),
+            "duration_formated": format_seconds(log.duration_seconds),
+            "precision": log.precision,
+            "recall": log.recall,
+            "f1": log.f1,
+            "anomalies": [
+                {"id": a.id, "timestamp": a.timestamp, "ftr_vector": a.ftr_vector}
+                for a in log.anomalies
+            ]
+        }
+        for log in logs
+    ]
+
+@router.delete("/logs/{log_id}")
+def delete_log_db(log_id: int, db: Session = Depends(get_db)):
+    delete_log(log_id, db)
+    return JSONResponse(content={"status": "OK"})
+
+@router.get("/available_configs")
+async def get_available_configs():
+    return [
+        {"name": config.name, "value": config.value}
+        for config in AvailableConfigs
+    ]
