@@ -1,3 +1,31 @@
+TODO: 
+Fix gan, trend_C, 
+Name of detectors should be unique
+add status
+change log config when modifying detector
+
+After 10s go through all anomaly detectors and triger test class.
+Fetch data from website (ID, create your own date, vodostaj). 
+Process datapoint.
+Send proccesed datapoint to anomaly detector, which updates everything for its log and adds datapoint to datapoint class.
+Pause 10s, loop until stop key is pressed
+
+
+Tasks:
+- Fetch streaming data from http://hmljn.arso.gov.si/vode/podatki/stanje_voda_samodejne.html (UNIX time)
+    - Exctract timestamp, vodostaj
+- Modify existing anomaly detection to read and process streaming data
+- Modify API so it works with streaming data
+    - Modify database so log it stores TP, FP, TN, FN.
+    - Add isAnomaly to each datapoint
+    - Rename anomaly to DataPoint (also change relationship)
+    - Each detector should have ID, status, created_timedate. Store in database (also make CRUD)
+    - Execute migrations
+- Make multiple running instances of anomaly detectors avaliable at the same time 
+- Dashboard should have anomaly detectors list, which enables you to see each instance
+- Logs tab stores past runs
+
+
 #FastAPI guidelines#
 Use response model
 Use annotated 

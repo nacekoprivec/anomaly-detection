@@ -11,10 +11,13 @@ from .models import *
 from ..database import get_db
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import time, timedelta
+from typing import Optional
+import pandas as pd
+import time
 
 def handle_configuration(body: dict) -> str:
-    with open("C:\\Users\\nacek\\OneDrive\\Desktop\\siht\\anomaly-detection\\configuration", "r") as f:
+    with open("C:\\Users\\nacek\\OneDrive\\Desktop\\siht\\DataPoint-detection\\configuration", "r") as f:
         required_config = json.load(f)
 
     for key, default_value in required_config.items():
@@ -31,39 +34,82 @@ def handle_configuration(body: dict) -> str:
 
     return config_path
 
+def scrape_data(n: int):
+    url = "http://hmljn.arso.gov.si/vode/podatki/stanje_voda_samodejne.html"
+    tables = pd.read_html(url)
 
-# CRUD
-# Create logs
+    df = tables[2]
 
-def create_log(db: Session, start_time, end_time, config, duration_seconds, precision, recall, f1, anomalies: dict = None):
-    log_entry = Log(
-        start_timedate=start_time,
-        end_timedate=end_time,
-        config=json.dumps(config),
-        duration_seconds=duration_seconds,
-        precision=precision,
-        recall=recall,
-        f1=f1
+    vodostaj = df["Vodostaj", "cm"].head(n)  
+
+    timestamp = float(time.time())
+
+    datapoints = []
+    for idx, value in enumerate(vodostaj):
+        datapoints.append({
+            "place_id": idx,     
+            "timestamp": timestamp,
+            "vodostaj": float(value) if pd.notna(value) else None
+        })
+    return datapoints
+
+# Calculate confusion matrix
+
+def confusion_matrix(tp, fp, fn, tn) -> None:
+        """Confusion matrix for anomaly detection"""
+        if (tp + fp) > 0:
+            precision = tp / (tp + fp)
+        else:
+            precision = 0.0
+
+        if (tp + fn) > 0:
+            recall = tp / (tp + fn)
+        else:
+            recall = 0.0
+
+        if (precision + recall) > 0:
+            f1 = 2 * (precision * recall) / (precision + recall)
+        else:
+            f1 = 0.0
+
+        return [precision, recall, f1]
+
+# CREATE anomaly detectors/logs/datapoints
+def create_anomaly_detector(db: Session, name: str, description: str = None) -> AnomalyDetector:
+    detector = AnomalyDetector(
+        name=name,
+        description=description,
+        updated_at=datetime.now(timezone.utc)
     )
+    db.add(detector)
+    db.commit()
+    db.refresh(detector)
+    return detector
+
+def create_log(db: Session, config):
+    log_entry = Log(
+        config=json.dumps(config)
+    )
+
     db.add(log_entry)
     db.commit()
     db.refresh(log_entry)
 
-    # If anomalies provided, save them
-    if anomalies:
-        for ts, ftr in anomalies.items():
-            anomaly = Anomaly(
-                timestamp=ts,
-                ftr_vector=ftr,
-                log_id=log_entry.id
-            )
-            db.add(anomaly)
-        db.commit()
-
     return log_entry
 
+def create_datapoint(db: Session, timestamp: float, ftr_vector: float, is_anomaly: int, log_id: int) -> DataPoint:
+    datapoint = DataPoint(
+        timestamp=timestamp,
+        ftr_vector=ftr_vector,
+        is_anomaly=is_anomaly,
+        log_id=log_id
+    )
+    db.add(datapoint)
+    db.commit()
+    db.refresh(datapoint)
+    return datapoint
 
-# Read logs/anomalies
+# READ logs/datapoints/anomaly detectors
 
 def get_logs(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Log).offset(skip).limit(limit).all()
@@ -72,13 +118,55 @@ def get_logs(db: Session, skip: int = 0, limit: int = 10):
 def get_log(db: Session, log_id: int):
     return db.query(Log).filter(Log.id == log_id).first()
 
-def get_anomalies(db: Session, log_id: int):
-    return db.query(Anomaly).filter(Anomaly.log_id == log_id).all()
+def get_datapoints(db: Session, log_id: int):
+    return db.query(DataPoint).filter(DataPoint.log_id == log_id).all()
 
-def get_anomaly(db: Session, anomaly_id: int):
-    return db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
+def get_datapoint(db: Session, datapoint_id: int):
+    return db.query(DataPoint).filter(DataPoint.id == datapoint_id).first()
 
-# Delete logs/anomalies
+def get_anomaly_detector(db: Session, detector_id: int):
+    return db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+
+def get_anomaly_detectors(db: Session, skip: int = 0, limit: int = 50):
+    return db.query(AnomalyDetector).offset(skip).limit(limit).all()
+
+# UPDATE anomaly detector/log
+
+def update_anomaly_detector(
+    db: Session,
+    detector_id: int,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    updated_at: Optional[datetime] = None
+):
+    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    if not detector:
+        return None
+    if name is not None:
+        detector.name = name
+    if description is not None:
+        detector.description = description
+    detector.updated_at = updated_at or datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(detector)
+    return detector
+
+# Delete logs/datapoints/anomaly detectors
+
+def delete_anomaly_detector(detector_id: int, db: Session):
+    try:
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        log = db.query(Log).filter(Log.detector_id == detector_id).first()
+        if detector:
+            log.end_at = datetime.now(timezone.utc)
+            db.delete(detector)
+            db.commit()
+        return detector
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting anomaly detector: {e}")
+        return None
 
 def delete_log(log_id: int, db: Session):
     try:
@@ -92,29 +180,31 @@ def delete_log(log_id: int, db: Session):
         print(f"Error deleting log: {e}")
         return None
 
-def delete_anomaly(anomaly_id: int, db: Session):
+def delete_datapoint(datapoint_id: int, db: Session):
     try:
-        anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
-        if anomaly:
-            db.delete(anomaly)
+        DataPoint = db.query(DataPoint).filter(DataPoint.id == datapoint_id).first()
+        if DataPoint:
+            db.delete(DataPoint)
             db.commit()
-        return anomaly
+        return DataPoint
     except Exception as e:
         db.rollback()
-        print(f"Error deleting anomaly: {e}")
+        print(f"Error deleting DataPoint: {e}")
         return None
         db.commit()
-    return anomaly
+    return DataPoint
 
 # Format HH:MM:SS
 def format_seconds(seconds: float) -> str:
+    if seconds is None:
+        return "N/A"
     seconds = round(seconds)
-    return str(timedelta(seconds=seconds))
+    return seconds
 
 # Print Statements
 
-def detect_anomalies():
-    print("Detecting anomalies...")
+def detect_datapoints():
+    print("Detecting datapoints...")
 
     return 0
 

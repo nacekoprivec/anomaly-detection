@@ -1,6 +1,8 @@
 import enum
+from pydantic import BaseModel, constr, Field
+from typing import Optional
 
-from algorithms.ema import EMA
+
 class AvailableConfigs(enum.Enum):
     BorderCheck = "border_check.json"
     Clustering = "clustering.json"
@@ -17,4 +19,15 @@ class AvailableConfigs(enum.Enum):
     RRCF = "rrcf_trees.json"
     TrendClassification = "trend_classification.json"
     Welford = "welford.json"
-    
+
+class ConfigNameModel(BaseModel):
+    name: str = Field(..., max_length=10, pattern=r'^[A-Za-z]{3}[A-Za-z0-9_]{0,7}$') 
+
+class DetectorCreateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+    config_name: str
+
+class DetectorUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None

@@ -67,7 +67,7 @@ class Test(ConsumerAbstract):
         self.recall : float = 0.0
         self.f1 : float = 0.0
         
-        self.detected_anomalies = {}
+        self.is_anomaly = 0
         
         if conf:
             self.configure(con=conf)
@@ -156,6 +156,26 @@ class Test(ConsumerAbstract):
                         self.data_buffer.append((row, self.anomalies[i].message_insert(d)))
                         self.calculate_confusion_matrix()
 
+    def read_streaming_data(self, entry):
+        timestamp = entry[0]
+        ftr_vector = entry[1]
+
+        d = {}
+        d["timestamp"] = timestamp
+        d["ftr_vector"] = ftr_vector
+        message = d
+
+        for i, a in enumerate(self.anomalies):
+            if(self.filtering is not None and eval(self.filtering[i]) is not None):
+                #extract target time and tolerance
+                target_time, tolerance = eval(self.filtering[i])
+                message = self.filter_by_time(d, target_time, tolerance)
+
+            if message is not None:    
+                self.data_buffer.append((row, self.anomalies[i].message_insert(d)))
+                self.calculate_confusion_matrix()
+     
+
 
                
 
@@ -176,8 +196,8 @@ class Test(ConsumerAbstract):
             if predicted_anomaly == "Error":
                 self.tp += 1
                 self.anomaly_counter.append(1)
+                self.is_anomaly = 1
 
-                self.detected_anomalies[timestamp] = ftr_vector
             else:
                 self.fn += 1
                 self.anomaly_counter.append(0)
@@ -188,8 +208,7 @@ class Test(ConsumerAbstract):
             if predicted_anomaly == "Error":
                 self.fp += 1
                 self.anomaly_counter.append(1)
-
-                self.detected_anomalies[timestamp] = ftr_vector
+                self.is_anomaly = 1
             else:
                 self.tn += 1
                 self.anomaly_counter.append(0)
