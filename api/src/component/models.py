@@ -12,7 +12,7 @@ class AnomalyDetector(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    status = Column(String, nullable=True, default="inactive")
+    status = Column(String, nullable=True, default="inactive") # e.g., active, inactive, error
 
     # 1 - n relationship
     logs = relationship("Log", back_populates="detector")
@@ -27,6 +27,7 @@ class Log(Base):
     start_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     end_at = Column(DateTime, index=True)
     config = Column(Text, nullable=False) 
+    config_name = Column(String, nullable=True, index=True)
 
     duration_seconds = Column(Integer, nullable=True, index=True)
 
@@ -40,23 +41,5 @@ class Log(Base):
 
     # n - 1 relationship
     detector = relationship("AnomalyDetector", back_populates="logs")
-
-    # 1 - n relationship
-    datapoints = relationship("DataPoint", back_populates="log", cascade="all, delete-orphan")
-
-
-class DataPoint(Base):
-    __tablename__ = "datapoints"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(Float, nullable=False)
-    ftr_vector = Column(Float, nullable=False)
-    is_anomaly = Column(Integer, nullable=True, default=0)
-
-    log_id = Column(Integer, ForeignKey("logs.id"), nullable=False)
-
-    # n - 1 relationship
-    log = relationship("Log", back_populates="datapoints")
-
 
 Base.metadata.create_all(bind=engine)

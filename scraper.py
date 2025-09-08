@@ -11,7 +11,7 @@ df = tables[2]
 # Combine the multi-level header into single row
 
 #print first ID 0                 Mura      Gornja Radgona     74.0   79.700   pada        19.2 , just the first 0
-vodostaj = df["Vodostaj", "cm"].head(5)   # first 5 rows
+vodostaj = df["Vodostaj", "cm"].head(3)   # first 5 rows
 
 # Get current Unix timestamp (float)
 timestamp = float(time.time())
@@ -20,7 +20,7 @@ timestamp = float(time.time())
 datapoints = []
 for idx, value in enumerate(vodostaj):
     datapoints.append({
-        "place_id": idx,       # 0,1,2,3,4
+        "place_id": idx+1,       # 0,1,2,3,4
         "timestamp": timestamp,
         "vodostaj": float(value) if pd.notna(value) else None
     })

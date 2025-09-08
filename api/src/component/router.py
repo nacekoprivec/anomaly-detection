@@ -17,7 +17,7 @@ import pandas as pd
 
 from datetime import datetime
 
-from .models import Log, DataPoint, AnomalyDetector 
+from .models import Log, AnomalyDetector 
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -68,38 +68,43 @@ async def detect_with_custom_config(config_name: str, request: Request):
             content={"status": "error", "message": f"{e} - {overrides}"}
         )
 
-@router.post("/upload")
-async def upload(
-    file: UploadFile = File(...),
-    config_name: Optional[str] = Form(None)
+### Anomaly Detectors Crud operations
+
+@router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
+async def is_anomaly(
+    detector_id: int,
+    timestamp: str,
+    ftr_vector: float,
+    db: Session = Depends(get_db)
 ):
-    tmp_config_path = None
+    """
+    Check if the given vodostaj is an anomaly.
+    Data comes both from the URL and JSON body.
+    """
     try:
-        os.makedirs(DATA_DIR, exist_ok=True)
-        data_file_path = os.path.join(DATA_DIR, "tmp.csv")
-        with open(data_file_path, "wb") as f:
-            f.write(await file.read())
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if not detector:
+            raise HTTPException(status_code=404, detail="Detector not found")
+        data = {
+                    "timestamp": float(timestamp),
+                    "ftr_vector": [ftr_vector]  
+        }
+        
+        args = argparse.Namespace(
+                            config="ema.json",
+                            data_file=False,
+                            data_both=False,
+                            watchdog=False,
+                            test=True,
+                            param_tunning=False,
+                            data=data
+                        )
 
-        config_to_load = config_name or "tmp.json"
-        base_config = load_config(config_to_load)
-        base_config["file_name"] = "data/tmp.csv"
-
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False, dir=CONFIG_DIR) as tmp_file:
-            json.dump(base_config, tmp_file)
-            tmp_config_path = tmp_file.name
-
-        return JSONResponse(content={
-            "status": "OK",
-            "used_config": os.path.basename(tmp_config_path),
-            "used_data_file": "tmp.csv"
-        })
+        test_instance = main.start_consumer(args)
+        return test_instance.pred_is_anomaly
 
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": str(e)}
-        )
+        raise HTTPException(status_code=400, detail=str(e))
     
 @router.post("/detectors/")
 def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db)):
@@ -190,6 +195,12 @@ def delete_detector_db(detector_id: int, db: Session = Depends(get_db)):
     delete_anomaly_detector(detector_id, db)
     return JSONResponse(content={"status": "OK"})
 
+@router.delete("/detectors")
+def delete_all_detectors_db(db: Session = Depends(get_db)):
+    delete_all_detectors(db)
+    return JSONResponse(content={"status": "OK"})
+
+### Logs Crud operations
 @router.get("/logs")
 async def get_logs_db(db: Session = Depends(get_db)):
     logs = db.query(Log).all()
@@ -203,19 +214,18 @@ async def get_logs_db(db: Session = Depends(get_db)):
             "precision": log.precision,
             "recall": log.recall,
             "f1": log.f1,
-            "datapoints": [
-                {"id": a.id, "timestamp": a.timestamp, "ftr_vector": a.ftr_vector}
-                for a in log.datapoints
-            ]
         }
         for log in logs
     ]
 
-
-
 @router.delete("/logs/{log_id}")
 def delete_log_db(log_id: int, db: Session = Depends(get_db)):
     delete_log(log_id, db)
+    return JSONResponse(content={"status": "OK"})
+
+@router.delete("/logs")
+def delete_logs_db(db: Session = Depends(get_db)):
+    delete_all_logs(db)
     return JSONResponse(content={"status": "OK"})
 
 @router.post("/run/{name}")
@@ -272,8 +282,6 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
                 test_instance.precision, test_instance.recall, test_instance.f1
             )
         })
-
-
 
 
 @router.get("/available_configs")

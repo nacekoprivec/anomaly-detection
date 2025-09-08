@@ -47,7 +47,7 @@ def scrape_data(n: int):
     datapoints = []
     for idx, value in enumerate(vodostaj):
         datapoints.append({
-            "place_id": idx,     
+            "place_id": n-idx,     
             "timestamp": timestamp,
             "vodostaj": float(value) if pd.notna(value) else None
         })
@@ -97,18 +97,6 @@ def create_log(db: Session, config):
 
     return log_entry
 
-def create_datapoint(db: Session, timestamp: float, ftr_vector: float, is_anomaly: int, log_id: int) -> DataPoint:
-    datapoint = DataPoint(
-        timestamp=timestamp,
-        ftr_vector=ftr_vector,
-        is_anomaly=is_anomaly,
-        log_id=log_id
-    )
-    db.add(datapoint)
-    db.commit()
-    db.refresh(datapoint)
-    return datapoint
-
 # READ logs/datapoints/anomaly detectors
 
 def get_logs(db: Session, skip: int = 0, limit: int = 10):
@@ -117,12 +105,6 @@ def get_logs(db: Session, skip: int = 0, limit: int = 10):
 
 def get_log(db: Session, log_id: int):
     return db.query(Log).filter(Log.id == log_id).first()
-
-def get_datapoints(db: Session, log_id: int):
-    return db.query(DataPoint).filter(DataPoint.log_id == log_id).all()
-
-def get_datapoint(db: Session, datapoint_id: int):
-    return db.query(DataPoint).filter(DataPoint.id == datapoint_id).first()
 
 def get_anomaly_detector(db: Session, detector_id: int):
     return db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
@@ -179,20 +161,26 @@ def delete_log(log_id: int, db: Session):
         db.rollback()
         print(f"Error deleting log: {e}")
         return None
-
-def delete_datapoint(datapoint_id: int, db: Session):
+    
+def delete_all_logs(db: Session):
     try:
-        DataPoint = db.query(DataPoint).filter(DataPoint.id == datapoint_id).first()
-        if DataPoint:
-            db.delete(DataPoint)
-            db.commit()
-        return DataPoint
+        num_deleted = db.query(Log).delete()
+        db.commit()
+        return num_deleted
     except Exception as e:
         db.rollback()
-        print(f"Error deleting DataPoint: {e}")
-        return None
+        print(f"Error deleting all logs: {e}")
+        return 0
+
+def delete_all_detectors(db: Session):
+    try:
+        num_deleted = db.query(AnomalyDetector).delete()
         db.commit()
-    return DataPoint
+        return num_deleted
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting all detectors: {e}")
+        return 0
 
 # Format HH:MM:SS
 def format_seconds(seconds: float) -> str:

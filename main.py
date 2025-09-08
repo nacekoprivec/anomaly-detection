@@ -468,8 +468,7 @@ def start_consumer(args: argparse.Namespace) -> None:
 
     elif args.test:
         test_instance = Test(configuration_location=args.config)
-        test_instance.read_streaming_data(args.entry)
-        test_instance.confusion_matrix()
+        test_instance.read_streaming_data(args.data)
         return test_instance
 
     else:

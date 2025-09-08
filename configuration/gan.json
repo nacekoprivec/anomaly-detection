@@ -5,7 +5,7 @@
     "anomaly_detection_conf": [
         {   
             "filtering":"None",
-            "train_data": "data/ads-1_train.csv",
+            "train_data": "data/ads-1.csv",
             "train_conf":{
                 "model_name": "GAN_sensor_cleaning",
                 "N_shifts": 0,

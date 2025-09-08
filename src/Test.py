@@ -67,7 +67,7 @@ class Test(ConsumerAbstract):
         self.recall : float = 0.0
         self.f1 : float = 0.0
         
-        self.is_anomaly = 0
+        self.pred_is_anomaly = 0
         
         if conf:
             self.configure(con=conf)
@@ -154,15 +154,10 @@ class Test(ConsumerAbstract):
 
                     if message is not None:    
                         self.data_buffer.append((row, self.anomalies[i].message_insert(d)))
-                        self.calculate_confusion_matrix()
+                        #self.calculate_confusion_matrix()
 
-    def read_streaming_data(self, entry):
-        timestamp = entry[0]
-        ftr_vector = entry[1]
-
-        d = {}
-        d["timestamp"] = timestamp
-        d["ftr_vector"] = ftr_vector
+    def read_streaming_data(self, d):
+        
         message = d
 
         for i, a in enumerate(self.anomalies):
@@ -172,66 +167,79 @@ class Test(ConsumerAbstract):
                 message = self.filter_by_time(d, target_time, tolerance)
 
             if message is not None:    
-                self.data_buffer.append((row, self.anomalies[i].message_insert(d)))
-                self.calculate_confusion_matrix()
-     
+                self.data_buffer.append((message, self.anomalies[i].message_insert(d)))
+                #self.calculate_confusion_matrix()
+                self.classify_data()
+                #print("printing data buffer", self.data_buffer[0], "\n", self.pred_is_anomaly, "\n")
 
+    def classify_data(self) -> None:
+        """Classifies the latest anomaly detection result."""
 
-               
-
-    def calculate_confusion_matrix(self) -> None:
-        """Calculates confusion matrix for anomaly detection"""
         data = self.data_buffer[-1]
-        is_anomaly = data[0][2] == "True"
+
         if data[0] is None or data[1] is None:
             print("Prediction data is missing or malformed.", data)
             return 
         
         predicted_anomaly = data[1][0].split(":")[0]
+        
+        if predicted_anomaly == "Error":
+            self.pred_is_anomaly = 1
+    
 
-        timestamp = float(data[0][0])
-        ftr_vector = float(data[0][1])
+    # def calculate_confusion_matrix(self) -> None:
+    #     """Calculates confusion matrix for anomaly detection"""
+    #     data = self.data_buffer[-1]
+    #     is_anomaly = data[0][2] == "True"
+    #     if data[0] is None or data[1] is None:
+    #         print("Prediction data is missing or malformed.", data)
+    #         return 
+        
+    #     predicted_anomaly = data[1][0].split(":")[0]
 
-        if is_anomaly:
-            if predicted_anomaly == "Error":
-                self.tp += 1
-                self.anomaly_counter.append(1)
-                self.is_anomaly = 1
+    #     timestamp = float(data[0][0])
+    #     ftr_vector = float(data[0][1])
 
-            else:
-                self.fn += 1
-                self.anomaly_counter.append(0)
+    #     if is_anomaly:
+    #         if predicted_anomaly == "Error":
+    #             self.tp += 1
+    #             self.anomaly_counter.append(1)
+    #             self.is_anomaly = 1
+
+    #         else:
+    #             self.fn += 1
+    #             self.anomaly_counter.append(0)
             
-            self.y_true.append(1)
+    #         self.y_true.append(1)
 
-        else:
-            if predicted_anomaly == "Error":
-                self.fp += 1
-                self.anomaly_counter.append(1)
-                self.is_anomaly = 1
-            else:
-                self.tn += 1
-                self.anomaly_counter.append(0)
+    #     else:
+    #         if predicted_anomaly == "Error":
+    #             self.fp += 1
+    #             self.anomaly_counter.append(1)
+    #             self.is_anomaly = 1
+    #         else:
+    #             self.tn += 1
+    #             self.anomaly_counter.append(0)
 
-            self.y_true.append(0)
+    #         self.y_true.append(0)
 
 
-    def confusion_matrix(self) -> None:
-        """Confusion matrix for anomaly detection"""
-        if (self.tp + self.fp) > 0:
-            self.precision = self.tp / (self.tp + self.fp)
-        else:
-            self.precision = 0.0
+    # def confusion_matrix(self) -> None:
+    #     """Confusion matrix for anomaly detection"""
+    #     if (self.tp + self.fp) > 0:
+    #         self.precision = self.tp / (self.tp + self.fp)
+    #     else:
+    #         self.precision = 0.0
 
-        if (self.tp + self.fn) > 0:
-            self.recall = self.tp / (self.tp + self.fn)
-        else:
-            self.recall = 0.0
+    #     if (self.tp + self.fn) > 0:
+    #         self.recall = self.tp / (self.tp + self.fn)
+    #     else:
+    #         self.recall = 0.0
 
-        if (self.precision + self.recall) > 0:
-            self.f1 = 2 * (self.precision * self.recall) / (self.precision + self.recall)
-        else:
-            self.f1 = 0.0
+    #     if (self.precision + self.recall) > 0:
+    #         self.f1 = 2 * (self.precision * self.recall) / (self.precision + self.recall)
+    #     else:
+    #         self.f1 = 0.0
 
     
 
