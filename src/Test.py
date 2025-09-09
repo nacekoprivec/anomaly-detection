@@ -157,9 +157,7 @@ class Test(ConsumerAbstract):
                         #self.calculate_confusion_matrix()
 
     def read_streaming_data(self, d):
-        
         message = d
-
         for i, a in enumerate(self.anomalies):
             if(self.filtering is not None and eval(self.filtering[i]) is not None):
                 #extract target time and tolerance

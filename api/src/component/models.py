@@ -12,7 +12,7 @@ class AnomalyDetector(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    status = Column(String, nullable=True, default="inactive") # e.g., active, inactive, error
+    status = Column(String, nullable=False, default="inactive") # e.g., active, inactive, error
 
     # 1 - n relationship
     logs = relationship("Log", back_populates="detector")

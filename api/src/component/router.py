@@ -31,10 +31,7 @@ DATA_DIR = os.path.abspath("data")
 
 router = APIRouter()
 
-def load_config(conf_name: str) -> Dict[str, Any]:
-    config_file = os.path.join(CONFIG_DIR, conf_name)
-    with open(config_file, "r") as f:
-        return json.load(f)
+
 
 @router.get("/configuration/{config_name}")
 async def detect_with_custom_config(config_name: str):
@@ -69,6 +66,14 @@ async def detect_with_custom_config(config_name: str, request: Request):
         )
 
 ### Anomaly Detectors Crud operations
+
+@router.get("/detectors/{detector_id}/parameters")
+async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db)):
+    log = db.query(Log).filter(Log.detector_id == detector_id).order_by(Log.start_at.desc()).first()
+    config = json.loads(log.config) if log and log.config else {}
+    if not log:
+        raise HTTPException(status_code=404, detail="config not found")
+    return config["anomaly_detection_conf"]
 
 @router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
 async def is_anomaly(
@@ -192,8 +197,8 @@ def update_anomaly_detector_db(detector_id: int, request: DetectorUpdateRequest,
 
 @router.delete("/detectors/{detector_id}")
 def delete_detector_db(detector_id: int, db: Session = Depends(get_db)):
-    delete_anomaly_detector(detector_id, db)
-    return JSONResponse(content={"status": "OK"})
+    res = delete_anomaly_detector(detector_id, db)
+    return JSONResponse(content={"status": res})
 
 @router.delete("/detectors")
 def delete_all_detectors_db(db: Session = Depends(get_db)):

@@ -1,19 +1,13 @@
 TODO: 
 strend_C, 
-Name of detectors should be unique
-add status
 change log config when modifying detector
-fix confusion matrix
-
-
+fix deleting log (updating detector)
+add stop detectors
+ask about deleting detectors, if it makes sense to store logs
  
 Tasks:
-- create detector/{id} & modifiable configuration 
-- delete detector/{id}
-- change detector configuration
-- stop
-- post(detector/{id}/timestamp&ftr_vector)
-    - return is_anomaly and configuration used
+
+
 
 
 

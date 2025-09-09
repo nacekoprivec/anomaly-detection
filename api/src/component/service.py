@@ -1,4 +1,6 @@
+import os
 import numpy as np
+from api.src.component.schemas import AvailableConfigs
 import main
 
 import argparse
@@ -15,6 +17,16 @@ from datetime import time, timedelta
 from typing import Optional
 import pandas as pd
 import time
+from typing import Dict, Any, Optional
+
+# depracated later
+CONFIG_DIR = os.path.abspath("configuration")
+DATA_DIR = os.path.abspath("data")
+
+def load_config(conf_name: str) -> Dict[str, Any]:
+    config_file = os.path.join(CONFIG_DIR, conf_name)
+    with open(config_file, "r") as f:
+        return json.load(f)
 
 def handle_configuration(body: dict) -> str:
     with open("C:\\Users\\nacek\\OneDrive\\Desktop\\siht\\DataPoint-detection\\configuration", "r") as f:
@@ -75,20 +87,53 @@ def confusion_matrix(tp, fp, fn, tn) -> None:
         return [precision, recall, f1]
 
 # CREATE anomaly detectors/logs/datapoints
-def create_anomaly_detector(db: Session, name: str, description: str = None) -> AnomalyDetector:
-    detector = AnomalyDetector(
-        name=name,
-        description=description,
-        updated_at=datetime.now(timezone.utc)
-    )
-    db.add(detector)
-    db.commit()
-    db.refresh(detector)
-    return detector
+def create_anomaly_detector(db: Session, name: str, description: str = None, config_name: str = "border_check.json") -> AnomalyDetector:
+    try:
+        config_data = load_config(config_name)
 
+        detector = AnomalyDetector(
+            name=name,
+            description=description,
+            updated_at=datetime.now(timezone.utc),
+            status="active"
+        )
+        db.add(detector)
+        db.flush() 
+
+        log_entry = Log(
+            detector_id=detector.id,
+            config=json.dumps(config_data),
+            config_name=config_name,
+        )
+        db.add(log_entry)
+        db.commit()
+        db.refresh(detector)
+
+        return detector
+
+    except FileNotFoundError:
+        db.rollback()
+        raise HTTPException(
+            status_code=404,
+            detail=f"Config file '{config_name.value}' not found."
+        )
+    except json.JSONDecodeError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Config file '{config_name.value}' contains invalid JSON."
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error: {e}"
+        )
+
+# deprecated
 def create_log(db: Session, config):
     log_entry = Log(
-        config=json.dumps(config)
+        config=json.dumps(config),
     )
 
     db.add(log_entry)
@@ -101,7 +146,6 @@ def create_log(db: Session, config):
 
 def get_logs(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Log).offset(skip).limit(limit).all()
-
 
 def get_log(db: Session, log_id: int):
     return db.query(Log).filter(Log.id == log_id).first()
@@ -119,7 +163,6 @@ def update_anomaly_detector(
     detector_id: int,
     name: Optional[str] = None,
     description: Optional[str] = None,
-    updated_at: Optional[datetime] = None
 ):
     detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
     if not detector:
@@ -128,7 +171,7 @@ def update_anomaly_detector(
         detector.name = name
     if description is not None:
         detector.description = description
-    detector.updated_at = updated_at or datetime.now(timezone.utc)
+    detector.updated_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(detector)
@@ -142,12 +185,15 @@ def delete_anomaly_detector(detector_id: int, db: Session):
         log = db.query(Log).filter(Log.detector_id == detector_id).first()
         if detector:
             log.end_at = datetime.now(timezone.utc)
-            db.delete(detector)
+            log.duration_seconds = int((log.end_at - log.start_at).total_seconds())
+            db.add(log)
+            detector.status = "inactive"
+            db.add(detector)
             db.commit()
         return detector
     except Exception as e:
         db.rollback()
-        print(f"Error deleting anomaly detector: {e}")
+        print(f"Error stopping anomaly detector: {e}")
         return None
 
 def delete_log(log_id: int, db: Session):
