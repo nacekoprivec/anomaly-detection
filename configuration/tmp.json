@@ -1,0 +1,1 @@
+{"file_name": "data/ads-2.csv", "anomaly_detection_alg": ["BorderCheck()"], "anomaly_detection_conf": [{"input_vector_size": 1, "warning_stages": [2.5, 0], "UL": 3, "LL": -0.4, "output": ["TerminalOutput()"], "output_conf": [{}]}]}

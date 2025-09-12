@@ -9,14 +9,7 @@
             "UL": 3.0,
             "LL": -0.4,
             "output": ["TerminalOutput()"],
-            "output_conf": [{}],
-            "visualization": "GraphVisualization()",
-            "visualization_conf":
-                {
-                    "num_of_points": 1000,
-                    "num_of_lines": 1,
-                    "linestyles":["wo", "r-", "b--", "b--"]
-                }
+            "output_conf": [{}]
         }
     ]
 }

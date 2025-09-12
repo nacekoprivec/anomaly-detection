@@ -20,7 +20,11 @@ import React, { useState } from 'react';
 import api from '../../../api'; 
 import { useEffect } from 'react';
 
-import { Spinner } from "react-bootstrap";
+import { Spinner, Accordion } from "react-bootstrap";
+
+import IconButton from "@mui/material/IconButton";
+import DeleteIcon from "@mui/icons-material/Delete";
+import Button from '@mui/material/Button';
 
 
 // -----------------------|| DASHBOARD SALES ||-----------------------//
@@ -29,8 +33,8 @@ export default function DashSales() {
   const [config, setConfig] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [response, setResponse] = useState('');
-  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [detectors, setDetectors] = useState([]);
 
   // Fetch config when method changes
   useEffect(() => {
@@ -54,10 +58,6 @@ export default function DashSales() {
     setOverrides(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
   // Send modified config
   const handleSaveConfig = async () => {
     try {
@@ -79,29 +79,19 @@ export default function DashSales() {
     setLoading(false);
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setResponse("Please select a file first.");
-      return;
-    }
+async function fetchDetectors() {
+  try {
+    const res = await api.get("/detectors");
+    setDetectors(res.data);  
+  } catch (error) {
+    setDetectors([]);
+  }
+}
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("config_name", selectedMethod);
-
-      const res = await api.post("/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setResponse(`Upload successful: ${JSON.stringify(res.data)}`);
-    } catch (error) {
-      setResponse("Error: " + error.message);
-    }
-  };
-
+// run once on mount
+useEffect(() => {
+  fetchDetectors();
+}, []);
 
 
 function ConfigDropdown({ selectedMethod, setSelectedMethod }) {
@@ -137,297 +127,309 @@ function ConfigDropdown({ selectedMethod, setSelectedMethod }) {
     </select>
   );
 }
+function ConfigEditor({ data, overrides, setOverrides, parentKey = "" }) {
+  const handleChange = (key, value) => {
+    setOverrides(prev => {
+      const keys = parentKey ? parentKey.split(".") : [];
+      let updated = { ...prev };
+
+      let ref = updated;
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        ref[k] = { ...ref[k] };
+        ref = ref[k];
+      }
+      ref[key] = value;
+      return updated;
+    });
+  };
+
+  return (
+    <div style={{ paddingLeft: parentKey ? 15 : 0, borderLeft: parentKey ? "1px solid #eee" : "none" }}>
+      {Object.entries(data).map(([key, value]) => {
+        const path = parentKey ? `${parentKey}.${key}` : key;
+
+        if (typeof value === "string" || typeof value === "number") {
+          return (
+            <div className="mb-2" key={path}>
+              <label>{key}</label>
+              <input
+                type="text"
+                className="form-control"
+                value={overrides?.[key] ?? value}
+                onChange={e => handleChange(key, e.target.value)}
+              />
+            </div>
+          );
+        }
+
+        if (Array.isArray(value)) {
+          const isObjectArray = value.every(v => typeof v === "object" && v !== null);
+
+          if (isObjectArray) {
+            return (
+              <div key={path} className="mb-2">
+                <label>{key}</label>
+                {value.map((item, index) => (
+                  <ConfigEditor
+                    key={`${path}.${index}`}
+                    data={item}
+                    overrides={overrides?.[key]?.[index] ?? item}
+                    setOverrides={(newOverrides) => {
+                      setOverrides(prev => ({
+                        ...prev,
+                        [key]: [
+                          ...(prev?.[key] ?? []).slice(0, index),
+                          newOverrides,
+                          ...(prev?.[key] ?? []).slice(index + 1)
+                        ]
+                      }));
+                    }}
+                    parentKey={`${path}.${index}`}
+                  
+                  />
+                ))}
+              </div>
+            );
+          } else {
+            return (
+              <div className="mb-2" key={path}>
+                <label>{key}</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={overrides?.[key]?.join(",") ?? value.join(",")}
+                  onChange={e => handleChange(key, e.target.value.split(","))}
+                />
+              </div>
+            );
+          }
+        }
+
+        if (typeof value === "object" && value !== null) {
+          return (
+            <div key={path} className="mb-2">
+              <label>{key}</label>
+              <ConfigEditor
+                data={value}
+                overrides={overrides?.[key] ?? value}
+                setOverrides={(newOverrides) => {
+                  setOverrides(prev => ({
+                    ...prev,
+                    [key]: newOverrides
+                  }));
+                }}
+                parentKey={path}
+              />
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+}
+
+
+
+function DetectorCard({ detector }) {
+  const [selectedMethod, setSelectedMethod] = useState('border_check.json');
+  const [config, setConfig] = useState(null);
+  const [overrides, setOverrides] = useState({});
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [timestamp, setTimestamp] = useState('');
+  const [ftrVector, setFtrVector] = useState('');
+
+  // Fetch config when method changes
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const res = await api.get(`/configuration/${selectedMethod}`);
+        setConfig(res.data);
+        setOverrides(res.data);
+      } catch {
+        setConfig(null);
+      }
+    }
+    fetchConfig();
+  }, [selectedMethod]);
+
+  const handleConfigChange = (key, value) => {
+    setOverrides(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const res = await api.post(`/configuration/${selectedMethod}`, overrides);
+      setResponse(res.data);
+    } catch (error) {
+      setResponse('Error: ' + error.message);
+    }
+  };
+
+  const handleRun = async () => {
+    setLoading(true);
+    try {
+      const res = await api.post(`/run/${selectedMethod}`, {
+        timestamp,
+        ftr_vector: ftrVector.split(',').map(Number) 
+      });
+      setResponse(res.data);
+    } catch (error) {
+      setResponse('Error: ' + error.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <Card className="mb-3">
+      <Card.Body>
+        <Accordion alwaysOpen>
+        <Accordion.Header>
+                    <div className="d-flex justify-content-between align-items-center w-100">
+            <span>
+              <strong>{detector.name}</strong> Detector
+            </span>
+            <span
+              className={`badge ${
+                detector.status === "active"
+                  ? "bg-success"
+                : detector.status === "error"
+                  ? "bg-danger"
+                  : "bg-secondary"
+              }`}
+            >
+              {detector.status}
+            </span>
+            
+          </div>
+        </Accordion.Header>
+        <Accordion.Body>
+        {/* Display detector info */}
+        {Object.entries(detector).map(([key, value]) => (
+          key !== 'name' && key !== 'status' && (
+          <div className="mb-2" key={key}>
+            <strong>{key}:</strong> {JSON.stringify(value)}
+          </div>
+          )
+        ))}
+
+        {/* Config dropdown */}
+        <ConfigDropdown
+          selectedMethod={selectedMethod}
+          setSelectedMethod={setSelectedMethod}
+        />
+
+        {/* Timestamp + feature vector inputs */}
+        <div className="mb-2">
+          <label>Timestamp</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder='e.g. "123.456"'
+            value={timestamp}
+            onChange={e => setTimestamp(e.target.value)}
+          />
+        </div>
+        <div className="mb-2">
+          <label>Feature Vector</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="e.g. 1,2,3,4"
+            value={ftrVector}
+            onChange={e => setFtrVector(e.target.value)}
+          />
+        </div>
+
+        {/* Render config editor */}
+        {config && (
+        <ConfigEditor
+          data={config}
+          overrides={overrides}
+          setOverrides={setOverrides}
+        />
+      )}
+
+        {/* Actions */}
+        <div className="mb-3 d-flex align-items-center">
+          <button className="btn btn-success" onClick={handleSaveConfig}>
+            Save Config
+          </button>
+
+          <button
+  className={`ms-2 btn ${detector.status === "inactive" ? "btn-success" : "btn-danger"}`}
+  onClick={async () => {
+    try {
+      const newStatus = detector.status === "inactive" ? "active" : "inactive";
+
+      // Send PUT or POST request to backend
+      await api.put(`/detectors/${detector.id}/${newStatus}`);
+
+      // Update state so UI re-renders
+      setDetectors(prev =>
+        prev.map(d =>
+          d.id === detector.id ? { ...d, status: newStatus } : d
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling detector status:", error);
+    }
+  }}
+>
+  {detector.status === "inactive" ? "Activate" : "Deactivate"}
+</button>
+          
+          <Button startIcon={<DeleteIcon /> } color="error" onClick={async () => {
+            try {
+                if (confirm("Are you sure you want to delete this detector?")) {
+                    await api.delete(`/detectors/${detector.id}`);
+                }
+            } catch (error) {
+              console.error("Error deleting detector:", error);
+            }
+          }}>
+          </Button>
+          {loading ? (
+            <Spinner animation="border" style={{ marginLeft: 'auto' }} />
+          ) : (
+            <button
+              className="btn btn-success ms-auto"
+              onClick={handleRun}
+              style={{ marginLeft: 'auto' }}
+            >
+              Run
+            </button>
+          )}
+        </div>
+
+        {response && (
+          <div className="mt-2">
+            <strong>API Response:</strong> {JSON.stringify(response)}
+          </div>
+        )}
+        </Accordion.Body>
+        </Accordion>
+      </Card.Body>
+    </Card>
+  );
+}
+
 
   return (
     <Row>
       <Col md={12} xl={6} className="mb-3">
         <Card className="flat-card">
           <div className="row-table">
-            <Card.Body className="col-sm-6 br">
-              <h1 className="mb-3">Anomaly Detection Dashboard</h1>
-              <div className="mb-3">
-                <ConfigDropdown selectedMethod={selectedMethod} setSelectedMethod={setSelectedMethod} />
-                {config && (
-                  <div>
-                    {/* Render all top-level config fields */}
-                    {Object.entries(config).map(([key, value]) => {
-                      // Handle primitive values
-                      if (
-                        typeof value === 'string' ||
-                        typeof value === 'number'
-                      ) {
-                        return (
-                          <div className="mb-2" key={key}>
-                            <label>{key}</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={overrides[key] ?? ''}
-                              onChange={e => handleConfigChange(key, e.target.value)}
-                            />
-                          </div>
-                        );
-                      }
-                      // Handle arrays of primitives
-                      if (
-                        Array.isArray(value) &&
-                        value.every(
-                          v =>
-                            typeof v === 'string' ||
-                            typeof v === 'number'
-                        )
-                      ) {
-                        return (
-                          <div className="mb-2" key={key}>
-                            <label>{key}</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={overrides[key]?.join(',') ?? ''}
-                              onChange={e =>
-                                handleConfigChange(
-                                  key,
-                                  e.target.value.split(',')
-                                )
-                              }
-                            />
-                          </div>
-                        );
-                      }
-                      // Handle arrays of objects
-                      if (
-                        Array.isArray(value) &&
-                        value.every(v => typeof v === 'object')
-                      ) {
-                        return (
-                          <div className="mb-2" key={key}>
-                            <label>{key}</label>
-                            {value.map((obj, idx) => (
-                              <div key={idx} style={{ paddingLeft: 10, borderLeft: '2px solid #eee', marginBottom: 8 }}>
-                                {Object.entries(obj).map(([subKey, subValue]) => (
-                                  <div key={subKey}>
-                                    <label>{subKey}</label> 
-                                    <input
-                                      type="text"
-                                      className="form-control"
-                                      value={overrides[key]?.[idx]?.[subKey] ?? subValue ?? ''}
-                                      onChange={e => {
-                                        // Update nested array of objects
-                                        setOverrides(prev => {
-                                          const arr = prev[key] ? [...prev[key]] : [...value];
-                                          arr[idx] = { ...arr[idx], [subKey]: e.target.value };
-                                          return { ...prev, [key]: arr };
-                                        });
-                                      }}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      // Handle objects
-                      if (typeof value === 'object') {
-                        return (
-                          <div className="mb-2" key={key}>
-                            <label>{key}</label>
-                            {Object.entries(value).map(([subKey, subValue]) => (
-                              <div key={subKey} style={{ paddingLeft: 10 }}>
-                                <label>{subKey}</label>
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  value={overrides[key]?.[subKey] ?? subValue ?? ''}
-                                  onChange={e => {
-                                    setOverrides(prev => ({
-                                      ...prev,
-                                      [key]: { ...(prev[key] || value), [subKey]: e.target.value }
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                )}
-                
-                <div className="mb-3 d-flex align-items-center">
-                  <button className="btn btn-success" onClick={handleSaveConfig}>
-                  Save Config
-                  </button>
-                
-                <div>
-                  <button className="btn btn-primary ms-2" onClick={handleUpload}>
-                    Upload
-                  </button>
-                  <input type="file" accept=".csv" onChange={handleFileChange} />
-                </div>
-
-                {loading ? (
-              <Spinner animation="border" style={{ marginLeft: 'auto' }} />) : (
-              <button
-                  className="btn btn-success ms-auto"
-                  onClick={handleRun}
-                  style={{ marginLeft: 'auto' }}
-                >
-                  Run
-                </button> )}
-
-                </div>
-                {response && (
-                  <div className="mt-2">
-                    <strong>API Response:</strong> {JSON.stringify(response)}
-                  </div>
-                )}
-              </div>
+            <Card.Body className="col-sm-12 br">
+              {detectors.map(det => (
+                <DetectorCard key={det.id} detector={det} />
+              ))}
             </Card.Body>
           </div>
         </Card>
-      </Col>
-      <Col md={12} xl={6}>
-        <Card className="flat-card">
-          <div className="row-table">
-            <Card.Body className="col-sm-6 br">
-              <FlatCard params={{ title: 'Customers', iconClass: 'text-primary mb-1', icon: 'group', value: '1000' }} />
-            </Card.Body>
-            <Card.Body className="col-sm-6 d-none d-md-table-cell d-lg-table-cell d-xl-table-cell card-body br">
-              <FlatCard params={{ title: 'Revenue', iconClass: 'text-primary mb-1', icon: 'language', value: '1252' }} />
-            </Card.Body>
-            <Card.Body className="col-sm-6 card-bod">
-              <FlatCard params={{ title: 'Growth', iconClass: 'text-primary mb-1', icon: 'unarchive', value: '600' }} />
-            </Card.Body>
-          </div>
-          <div className="row-table">
-            <Card.Body className="col-sm-6 br">
-              <FlatCard
-                params={{
-                  title: 'Returns',
-                  iconClass: 'text-primary mb-1',
-                  icon: 'swap_horizontal_circle',
-                  value: '3550'
-                }}
-              />
-            </Card.Body>
-            <Card.Body className="col-sm-6 d-none d-md-table-cell d-lg-table-cell d-xl-table-cell card-body br">
-              <FlatCard params={{ title: 'Downloads', iconClass: 'text-primary mb-1', icon: 'cloud_download', value: '3550' }} />
-            </Card.Body>
-            <Card.Body className="col-sm-6 card-bod">
-              <FlatCard params={{ title: 'Order', iconClass: 'text-primary mb-1', icon: 'shopping_cart', value: '100%' }} />
-            </Card.Body>
-          </div>
-        </Card>
-        <Row>
-          <Col md={6}>
-            <Card className="support-bar overflow-hidden">
-              <Card.Body className="pb-0">
-                <h2 className="m-0">53.94%</h2>
-                <span className="text-primary">Conversion Rate</span>
-                <p className="mb-3 mt-3">Number of conversions divided by the total visitors. </p>
-              </Card.Body>
-              <Chart {...SalesSupportChartData()} />
-              <Card.Footer className="border-0 bg-primary text-white background-pattern-white">
-                <Row className="text-center">
-                  <Col>
-                    <h4 className="m-0 text-white">10</h4>
-                    <span>2018</span>
-                  </Col>
-                  <Col>
-                    <h4 className="m-0 text-white">15</h4>
-                    <span>2017</span>
-                  </Col>
-                  <Col>
-                    <h4 className="m-0 text-white">13</h4>
-                    <span>2016</span>
-                  </Col>
-                </Row>
-              </Card.Footer>
-            </Card>
-          </Col>
-          <Col md={6}>
-            <Card className="support-bar overflow-hidden">
-              <Card.Body className="pb-0">
-                <h2 className="m-0">1432</h2>
-                <span className="text-primary">Order Delivered</span>
-                <p className="mb-3 mt-3">Number of conversions divided by the total visitors. </p>
-              </Card.Body>
-              <Card.Footer className="border-0">
-                <Row className="text-center">
-                  <Col>
-                    <h4 className="m-0">130</h4>
-                    <span>May</span>
-                  </Col>
-                  <Col>
-                    <h4 className="m-0">251</h4>
-                    <span>June</span>
-                  </Col>
-                  <Col>
-                    <h4 className="m-0 ">235</h4>
-                    <span>July</span>
-                  </Col>
-                </Row>
-              </Card.Footer>
-              <Chart type="bar" {...SalesSupportChartData1()} />
-            </Card>
-          </Col>
-        </Row>
-      </Col>
-      <Col md={12} xl={6}>
-        <Card>
-          <Card.Header>
-            <h5>Department wise monthly sales report</h5>
-          </Card.Header>
-          <Card.Body>
-            <Row className="pb-2">
-              <div className="col-auto m-b-10">
-                <h3 className="mb-1">$21,356.46</h3>
-                <span>Total Sales</span>
-              </div>
-              <div className="col-auto m-b-10">
-                <h3 className="mb-1">$1935.6</h3>
-                <span>Average</span>
-              </div>
-            </Row>
-            <Chart {...SalesAccountChartData()} />
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col md={12} xl={6}>
-        <Card>
-          <Card.Body>
-            <h6>Customer Satisfaction</h6>
-            <span>It takes continuous effort to maintain high customer satisfaction levels Internal and external.</span>
-            <Row className="d-flex justify-content-center align-items-center">
-              <Col>
-                <Chart type="pie" {...SalesCustomerSatisfactionChartData()} />
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        {/* Product Table */}
-        <ProductTable {...productData} />
-      </Col>
-      <Col md={12} xl={6}>
-        <Row>
-          <Col sm={6}>
-            <ProductCard params={{ title: 'Total Profit', primaryText: '$1,783', icon: 'card_giftcard' }} />
-          </Col>
-          <Col sm={6}>
-            <ProductCard params={{ variant: 'primary', title: 'Total Orders', primaryText: '15,830', icon: 'local_mall' }} />
-          </Col>
-          <Col sm={6}>
-            <ProductCard params={{ variant: 'primary', title: 'Average Price', primaryText: '$6,780', icon: 'monetization_on' }} />
-          </Col>
-          <Col sm={6}>
-            <ProductCard params={{ title: 'Product Sold', primaryText: '6,784', icon: 'local_offer' }} />
-          </Col>
-        </Row>
-        {/* Feed Table */}
-        <FeedTable {...feedData} />
       </Col>
     </Row>
   );

@@ -3,6 +3,7 @@ import json
 import tempfile
 import argparse
 from typing import Dict, Any, Optional
+import traceback
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
@@ -25,13 +26,10 @@ from ..database import get_db
 from .schemas import *
 from .exceptions import *
 
-
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
 router = APIRouter()
-
-
 
 @router.get("/configuration/{config_name}")
 async def detect_with_custom_config(config_name: str):
@@ -88,15 +86,20 @@ async def is_anomaly(
     """
     try:
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if detector.status != "active":
+            raise HTTPException(status_code=400, detail="Detector is not active")
+        
+        log = db.query(Log).filter(Log.detector_id == detector_id).order_by(Log.start_at.desc()).first()
+
         if not detector:
             raise HTTPException(status_code=404, detail="Detector not found")
         data = {
                     "timestamp": float(timestamp),
                     "ftr_vector": [ftr_vector]  
         }
-        
+        print(log.config_name)
         args = argparse.Namespace(
-                            config="ema.json",
+                            config=log.config_name,
                             data_file=False,
                             data_both=False,
                             watchdog=False,
@@ -109,7 +112,14 @@ async def is_anomaly(
         return test_instance.pred_is_anomaly
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": str(e),
+                "type": e.__class__.__name__,
+                "traceback": traceback.format_exc()
+            }
+        )
     
 @router.post("/detectors/")
 def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db)):
@@ -128,7 +138,8 @@ def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db
     log = Log(
         detector_id=detector.id,
         start_at=datetime.now(timezone.utc),
-        config=json.dumps(config_dict)
+        config=json.dumps(config_dict),
+        config_name=request.config_name
     )
     db.add(log)
     db.commit()
@@ -141,7 +152,8 @@ def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db
             "name": detector.name,
             "description": detector.description,
             "created_at": detector.created_at,
-            "updated_at": detector.updated_at
+            "updated_at": detector.updated_at,
+            "status": detector.status
         },
         "log": {
             "id": log.id,
@@ -150,7 +162,7 @@ def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db
         }
     }
 
-@router.get("/detectors/")
+@router.get("/detectors")
 def get_detectors(db: Session = Depends(get_db)):
     detectors = db.query(AnomalyDetector).all()
     return [
@@ -159,7 +171,8 @@ def get_detectors(db: Session = Depends(get_db)):
             "name": detector.name,
             "description": detector.description,
             "created_at": detector.created_at,
-            "updated_at": detector.updated_at
+            "updated_at": detector.updated_at,
+            "status": detector.status
         }
         for detector in detectors
     ]
@@ -174,7 +187,24 @@ def get_detector(detector_id: int, db: Session = Depends(get_db)):
         "name": detector.name,
         "description": detector.description,
         "created_at": detector.created_at,
-        "updated_at": detector.updated_at
+        "updated_at": detector.updated_at,
+        "status": detector.status
+    }
+
+# detector set status
+@router.put("/detectors/{detector_id}/{status}")
+def set_detector_status_db(detector_id: int, status: str, db: Session = Depends(get_db)):
+    print("Setting status to:", status)
+    detector = set_detector_status(detector_id, status, db)
+    if not detector:
+        raise HTTPException(status_code=404, detail="Detector not found")
+    return {
+        "id": detector.id,
+        "name": detector.name,
+        "description": detector.description,
+        "created_at": detector.created_at,
+        "updated_at": detector.updated_at,
+        "status": detector.status
     }
 
 @router.put("/detectors/{detector_id}")
@@ -192,7 +222,8 @@ def update_anomaly_detector_db(detector_id: int, request: DetectorUpdateRequest,
         "name": detector.name,
         "description": detector.description,
         "created_at": detector.created_at,
-        "updated_at": detector.updated_at
+        "updated_at": detector.updated_at,
+        "status": detector.status
     }
 
 @router.delete("/detectors/{detector_id}")
@@ -215,10 +246,7 @@ async def get_logs_db(db: Session = Depends(get_db)):
             "start_at": log.start_at,
             "end_at": log.end_at,
             "config": json.loads(log.config),
-            "duration_formated": format_seconds(log.duration_seconds),
-            "precision": log.precision,
-            "recall": log.recall,
-            "f1": log.f1,
+            "duration_formated": format_seconds(log.duration_seconds)
         }
         for log in logs
     ]
@@ -258,17 +286,6 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
 
         test_instance = main.start_consumer(args)
 
-        # for log in logs:
-        #     config_dict = json.loads(log.config) 
-        #     print(f"Log ID: {log.id}")
-        #     print(f"Start Time: {log.start_at}")
-        #     print(f"End Time:   {log.end_timedate}")
-        #     print(json.dumps(config_dict, indent=4))
-        #     print(f"Duration: {log.duration_seconds} seconds")
-        #     print(f"Precision: {log.precision}, Recall: {log.recall}, F1 Score: {log.f1}")
-        #     print("-" * 60)
-
-
     except Exception as e:
         return JSONResponse(
             status_code=500,
@@ -287,6 +304,7 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
                 test_instance.precision, test_instance.recall, test_instance.f1
             )
         })
+
 
 
 @router.get("/available_configs")

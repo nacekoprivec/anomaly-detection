@@ -31,3 +31,6 @@ class DetectorCreateRequest(BaseModel):
 class DetectorUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    
+class StatusUpdate(BaseModel):
+    status: str

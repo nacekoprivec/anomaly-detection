@@ -12,7 +12,7 @@ class AnomalyDetector(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    status = Column(String, nullable=False, default="inactive") # e.g., active, inactive, error
+    status = Column(String, nullable=True, default="inactive") # e.g., active, inactive, error
 
     # 1 - n relationship
     logs = relationship("Log", back_populates="detector")
@@ -30,15 +30,6 @@ class Log(Base):
     config_name = Column(String, nullable=True, index=True)
 
     duration_seconds = Column(Integer, nullable=True, index=True)
-
-    tp = Column(Integer, nullable=True, index=True, default=0)
-    tn = Column(Integer, nullable=True, index=True, default=0)
-    fp = Column(Integer, nullable=True, index=True, default=0)
-    fn = Column(Integer, nullable=True, index=True, default=0)
-    precision = Column(Float, nullable=True, index=True)
-    recall = Column(Float, nullable=True, index=True)
-    f1 = Column(Float, nullable=True, index=True)
-
     # n - 1 relationship
     detector = relationship("AnomalyDetector", back_populates="logs")
 

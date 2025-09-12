@@ -4,12 +4,13 @@ change log config when modifying detector
 fix deleting log (updating detector)
 add stop detectors
 ask about deleting detectors, if it makes sense to store logs
- 
+
 Tasks:
-
-
-
-
+- button to delete detector
+- fix save config (it has to be saved for each detector)
+- option to make detector inactive or active
+- + button to create detector, you can input the parameters and choose dropdown config
+- use docker
 
 #FastAPI guidelines#
 Use response model

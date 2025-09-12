@@ -227,6 +227,22 @@ def delete_all_detectors(db: Session):
         db.rollback()
         print(f"Error deleting all detectors: {e}")
         return 0
+    
+# set anomaly detector active/inactive
+def set_detector_status(detector_id: int, status: str, db: Session):
+    try:
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if detector:
+            detector.status = status
+            db.add(detector)
+            db.commit()
+            db.refresh(detector)
+        return detector
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating detector status: {e}")
+        return None 
+    
 
 # Format HH:MM:SS
 def format_seconds(seconds: float) -> str:
