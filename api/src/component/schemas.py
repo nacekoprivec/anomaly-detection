@@ -27,6 +27,7 @@ class DetectorCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     config_name: Optional[str] = None
+    config : Optional[str] = None
     anomaly_detection_alg: Optional[list] = None
     anomaly_detection_conf: Optional[list] = None
 

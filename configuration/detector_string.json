@@ -1,0 +1,8 @@
+{
+  "anomaly_detection_alg": [
+    "string"
+  ],
+  "anomaly_detection_conf": [
+    "string"
+  ]
+}

@@ -234,7 +234,7 @@ export default function DashSales() {
 
 
   function DetectorCard({ detector }) {
-    const [selectedMethod, setSelectedMethod] = useState(detector.config_name || 'border_check.json');
+    const [selectedMethod, setSelectedMethod] = useState(detector.config_name);
     const [config, setConfig] = useState(null);
     const [overrides, setOverrides] = useState({});
     const [response, setResponse] = useState('');
@@ -242,7 +242,6 @@ export default function DashSales() {
     const [timestamp, setTimestamp] = useState('');
     const [ftrVector, setFtrVector] = useState('');
 
-    // Fetch config when method changes
     useEffect(() => {
       async function fetchConfig() {
         try {
@@ -306,7 +305,7 @@ export default function DashSales() {
             <Accordion.Body> 
               {/* Display detector info */}
               {Object.entries(detector).map(([key, value]) => (
-                key !== 'name' && key !== 'status' && (
+                key !== 'name' && key !== 'status' && key !== 'config' && (
                   <div className="mb-2" key={key}>
                     <strong>{key}:</strong> {JSON.stringify(value)}
                   </div>

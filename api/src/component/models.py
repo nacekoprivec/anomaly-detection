@@ -14,15 +14,14 @@ class AnomalyDetector(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     status = Column(String, nullable=True, default="inactive") # e.g., active, inactive, error
 
-    # 1 - n relationship
-    logs = relationship("Log", back_populates="detector")
+    config = Column(Text, nullable=True) 
+    config_name = Column(String, nullable=True, index=True)
 
 
 class Log(Base):
     __tablename__ = "logs"  
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    detector_id = Column(Integer, ForeignKey("anomaly_detectors.id"), nullable=False)
 
     start_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     end_at = Column(DateTime, index=True)
@@ -30,7 +29,5 @@ class Log(Base):
     config_name = Column(String, nullable=True, index=True)
 
     duration_seconds = Column(Integer, nullable=True, index=True)
-    # n - 1 relationship
-    detector = relationship("AnomalyDetector", back_populates="logs")
 
 Base.metadata.create_all(bind=engine)

@@ -67,9 +67,9 @@ async def detect_with_custom_config(config_name: str, request: Request):
 
 @router.get("/detectors/{detector_id}/parameters")
 async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db)):
-    log = db.query(Log).filter(Log.detector_id == detector_id).order_by(Log.start_at.desc()).first()
-    config = json.loads(log.config) if log and log.config else {}
-    if not log:
+    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    config = json.loads(detector.config) if detector and detector.config else {}
+    if not detector:
         raise HTTPException(status_code=404, detail="config not found")
     return config["anomaly_detection_conf"]
 
@@ -89,17 +89,15 @@ async def is_anomaly(
         if detector.status != "active":
             raise HTTPException(status_code=400, detail="Detector is not active")
         
-        log = db.query(Log).filter(Log.detector_id == detector_id).order_by(Log.start_at.desc()).first()
-
         if not detector:
             raise HTTPException(status_code=404, detail="Detector not found")
         data = {
                     "timestamp": float(timestamp),
                     "ftr_vector": [ftr_vector]  
         }
-        print(log.config_name)
+        print(detector.config_name)
         args = argparse.Namespace(
-                            config=log.config_name,
+                            config=detector.config_name,
                             data_file=False,
                             data_both=False,
                             watchdog=False,
@@ -124,7 +122,6 @@ async def is_anomaly(
 @router.post("/detectors/")
 def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get_db)):
     detector = create_anomaly_detector(request, db)
-
     return {
         "detector": detector
     }
@@ -139,7 +136,9 @@ def get_detectors(db: Session = Depends(get_db)):
             "description": detector.description,
             "created_at": detector.created_at,
             "updated_at": detector.updated_at,
-            "status": detector.status
+            "status": detector.status,
+            "config_name": detector.config_name,
+            "config" : detector.config
         }
         for detector in detectors
     ]
@@ -154,9 +153,11 @@ def get_detector(detector_id: int, db: Session = Depends(get_db)):
         "name": detector.name,
         "description": detector.description,
         "created_at": detector.created_at,
-        "updated_at": detector.updated_at,
-        "status": detector.status
-    }
+            "updated_at": detector.updated_at,
+            "status": detector.status,
+            "config_name": detector.config_name,
+            "config" : detector.config
+        }
 
 # detector set status
 @router.put("/detectors/{detector_id}/{status}")
@@ -195,8 +196,17 @@ def update_anomaly_detector_db(detector_id: int, request: DetectorUpdateRequest,
 
 @router.delete("/detectors/{detector_id}")
 def delete_detector_db(detector_id: int, db: Session = Depends(get_db)):
-    res = delete_anomaly_detector(detector_id, db)
-    return JSONResponse(content={"status": res})
+    detector = delete_anomaly_detector(detector_id, db)
+    return {
+            "id": detector.id,
+            "name": detector.name,
+            "description": detector.description,
+            "created_at": detector.created_at,
+            "updated_at": detector.updated_at,
+            "status": detector.status,
+            "config_name": detector.config_name,
+            "config" : detector.config
+        }
 
 @router.delete("/detectors")
 def delete_all_detectors_db(db: Session = Depends(get_db)):
@@ -227,53 +237,6 @@ def delete_log_db(log_id: int, db: Session = Depends(get_db)):
 def delete_logs_db(db: Session = Depends(get_db)):
     delete_all_logs(db)
     return JSONResponse(content={"status": "OK"})
-
-# deprecated
-@router.post("/run/{name}")
-async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
-    tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
-    data_file_path = os.path.join(DATA_DIR, "tmp.csv")
-
-    try:
-        # Pick which config to use
-        if os.path.exists(tmp_file_path):
-            config_to_use = os.path.basename(tmp_file_path)
-        else:
-            config_to_use = name
-
-        # Build args (as if from argparse)
-        args = argparse.Namespace(
-            config=config_to_use,
-            data_file=False,
-            data_both=False,
-            watchdog=False,
-            test=True,
-            param_tunning=False,
-            id=100
-        )
-
-        test_instance = main.start_consumer(args)
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": str(e)}
-        )
-
-    finally:
-        if os.path.exists(tmp_file_path):
-            os.remove(tmp_file_path)
-        if os.path.exists(data_file_path):
-            os.remove(data_file_path)
-    return JSONResponse(content={
-    "name": config_to_use,
-    "result": "TP: {}, TN: {},FP: {}, FN: {},Precision: {}, Recall: {}, F1 Score: {}".format(
-                test_instance.tp, test_instance.tn, test_instance.fp, test_instance.fn,
-                test_instance.precision, test_instance.recall, test_instance.f1
-            )
-        })
-
-
 
 @router.get("/available_configs")
 async def get_available_configs():

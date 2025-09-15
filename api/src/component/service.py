@@ -103,47 +103,42 @@ def create_json_config(body: dict, name: str) -> str:
 # CREATE anomaly detectors/logs/datapoints
 def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> AnomalyDetector:
     try:
-        if request.config_name is not None:
+        if request.config_name:
             config_data = load_config(request.config_name)
         else:
+            if not request.anomaly_detection_alg or not request.anomaly_detection_conf:
+                raise ValueError("Either config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
             config_data = {
                 "anomaly_detection_alg": request.anomaly_detection_alg,
                 "anomaly_detection_conf": request.anomaly_detection_conf
             }
             request.config_name = create_json_config(config_data, request.name)
-            print(f"Created config file at {request.config_name}")
-        
+
         detector = AnomalyDetector(
             name=request.name,
             description=request.description,
             updated_at=datetime.now(timezone.utc),
-            status="inactive"
+            status="inactive",
+            config_name=request.config_name,
+            config=json.dumps(config_data)
         )
         db.add(detector)
-        db.flush() 
-
-        log_entry = Log(
-            detector_id=detector.id,
-            config=json.dumps(config_data),
-            config_name=request.config_name,
-        )
-        db.add(log_entry)
-        db.commit()
+        db.commit()        
         db.refresh(detector)
-
+  
         return detector
 
     except FileNotFoundError:
         db.rollback()
         raise HTTPException(
             status_code=404,
-            detail=f"Config file '{config_name.value}' not found."
+            detail=f"Config file not found."
         )
     except json.JSONDecodeError:
         db.rollback()
         raise HTTPException(
             status_code=400,
-            detail=f"Config file '{config_name.value}' contains invalid JSON."
+            detail=f"Config file contains invalid JSON."
         )
     except Exception as e:
         db.rollback()
@@ -185,7 +180,7 @@ def update_anomaly_detector(
     detector_id: int,
     name: Optional[str] = None,
     description: Optional[str] = None,
-):
+) -> Optional[AnomalyDetector]:
     detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
     if not detector:
         return None
@@ -204,13 +199,8 @@ def update_anomaly_detector(
 def delete_anomaly_detector(detector_id: int, db: Session):
     try:
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-        log = db.query(Log).filter(Log.detector_id == detector_id).first()
         if detector:
-            log.end_at = datetime.now(timezone.utc)
-            log.duration_seconds = int((log.end_at - log.start_at).total_seconds())
-            db.add(log)
-            detector.status = "inactive"
-            db.add(detector)
+            db.delete(detector)
             db.commit()
         return detector
     except Exception as e:
