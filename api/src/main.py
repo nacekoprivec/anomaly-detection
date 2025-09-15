@@ -10,7 +10,6 @@ import asyncio
 import pandas as pd
 from sqlalchemy.orm import Session
 from datetime import *
-from .component.service import confusion_matrix as calculate_confusion_matrix
 import traceback
 
 app = FastAPI()

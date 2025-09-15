@@ -26,11 +26,13 @@ class ConfigNameModel(BaseModel):
 class DetectorCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
-    config_name: str
+    config_name: Optional[str] = None
+    anomaly_detection_alg: Optional[list] = None
+    anomaly_detection_conf: Optional[list] = None
 
 class DetectorUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    
+
 class StatusUpdate(BaseModel):
     status: str

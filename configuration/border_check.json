@@ -1,5 +1,4 @@
 {
-    "file_name": "data/ads-2.csv",
     "anomaly_detection_alg": ["BorderCheck()"],
     
     "anomaly_detection_conf": [

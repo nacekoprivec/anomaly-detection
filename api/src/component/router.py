@@ -122,44 +122,11 @@ async def is_anomaly(
         )
     
 @router.post("/detectors/")
-def create_detector(request: DetectorCreateRequest, db: Session = Depends(get_db)):
-    # Create the detector
-    detector = AnomalyDetector(
-        name=request.name,
-        description=request.description,
-        updated_at=datetime.now(timezone.utc)
-    )
-    db.add(detector)
-    db.commit()
-    db.refresh(detector)
+def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get_db)):
+    detector = create_anomaly_detector(request, db)
 
-    # Load config and create log
-    config_dict = load_config(request.config_name)
-    log = Log(
-        detector_id=detector.id,
-        start_at=datetime.now(timezone.utc),
-        config=json.dumps(config_dict),
-        config_name=request.config_name
-    )
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-
-    # Return combined info
     return {
-        "detector": {
-            "id": detector.id,
-            "name": detector.name,
-            "description": detector.description,
-            "created_at": detector.created_at,
-            "updated_at": detector.updated_at,
-            "status": detector.status
-        },
-        "log": {
-            "id": log.id,
-            "start_at": log.start_at,
-            "config": config_dict
-        }
+        "detector": detector
     }
 
 @router.get("/detectors")
@@ -261,6 +228,7 @@ def delete_logs_db(db: Session = Depends(get_db)):
     delete_all_logs(db)
     return JSONResponse(content={"status": "OK"})
 
+# deprecated
 @router.post("/run/{name}")
 async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
     tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
@@ -309,6 +277,7 @@ async def run(name: str = "border_check.json", db: Session = Depends(get_db)):
 
 @router.get("/available_configs")
 async def get_available_configs():
+    AvailableConfigs = create_available_configs_enum()
     return [
         {"name": config.name, "value": config.value}
         for config in AvailableConfigs

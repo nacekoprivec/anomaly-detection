@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from api.src.component.schemas import AvailableConfigs
+from api.src.component.schemas import AvailableConfigs, DetectorCreateRequest
 import main
 
 import argparse
@@ -18,6 +18,7 @@ from typing import Optional
 import pandas as pd
 import time
 from typing import Dict, Any, Optional
+from enum import Enum
 
 # depracated later
 CONFIG_DIR = os.path.abspath("configuration")
@@ -65,37 +66,58 @@ def scrape_data(n: int):
         })
     return datapoints
 
-# Calculate confusion matrix
 
-def confusion_matrix(tp, fp, fn, tn) -> None:
-        """Confusion matrix for anomaly detection"""
-        if (tp + fp) > 0:
-            precision = tp / (tp + fp)
-        else:
-            precision = 0.0
+def create_available_configs_enum():
+    files = [
+        f for f in os.listdir(CONFIG_DIR)
+        if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
+    ]
 
-        if (tp + fn) > 0:
-            recall = tp / (tp + fn)
-        else:
-            recall = 0.0
+    # Format enum member names: remove extension, replace spaces with underscore, capitalize
+    enum_members = {}
+    for f in files:
+        name = os.path.splitext(f)[0]  # remove .json
+        name = "".join(word.capitalize() for word in name.split("_"))  # CamelCase
+        enum_members[name] = f
 
-        if (precision + recall) > 0:
-            f1 = 2 * (precision * recall) / (precision + recall)
-        else:
-            f1 = 0.0
+    return Enum("AvailableConfigs", enum_members)
 
-        return [precision, recall, f1]
+# Create json config
+def create_json_config(body: dict, name: str) -> str:
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    config_name = f"detector_{name}.json"
+    config_path = os.path.join(CONFIG_DIR, config_name)
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            existing_config = json.load(f)
+        existing_config.update(body)
+        body = existing_config
+    except FileNotFoundError:
+        pass
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(body, f, ensure_ascii=False, indent=2)
+
+    return config_name
 
 # CREATE anomaly detectors/logs/datapoints
-def create_anomaly_detector(db: Session, name: str, description: str = None, config_name: str = "border_check.json") -> AnomalyDetector:
+def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> AnomalyDetector:
     try:
-        config_data = load_config(config_name)
-
+        if request.config_name is not None:
+            config_data = load_config(request.config_name)
+        else:
+            config_data = {
+                "anomaly_detection_alg": request.anomaly_detection_alg,
+                "anomaly_detection_conf": request.anomaly_detection_conf
+            }
+            request.config_name = create_json_config(config_data, request.name)
+            print(f"Created config file at {request.config_name}")
+        
         detector = AnomalyDetector(
-            name=name,
-            description=description,
+            name=request.name,
+            description=request.description,
             updated_at=datetime.now(timezone.utc),
-            status="active"
+            status="inactive"
         )
         db.add(detector)
         db.flush() 
@@ -103,7 +125,7 @@ def create_anomaly_detector(db: Session, name: str, description: str = None, con
         log_entry = Log(
             detector_id=detector.id,
             config=json.dumps(config_data),
-            config_name=config_name,
+            config_name=request.config_name,
         )
         db.add(log_entry)
         db.commit()
