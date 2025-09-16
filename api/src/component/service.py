@@ -82,21 +82,20 @@ def create_available_configs_enum():
 
     return Enum("AvailableConfigs", enum_members)
 
-# Create json config
 def create_json_config(body: dict, name: str) -> str:
+    # Save the configuration to a file named detector_{name}.json 
+    # return the filename
     os.makedirs(CONFIG_DIR, exist_ok=True)
     config_name = f"detector_{name}.json"
     config_path = os.path.join(CONFIG_DIR, config_name)
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            existing_config = json.load(f)
-        existing_config.update(body)
-        body = existing_config
-    except FileNotFoundError:
-        pass
 
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(body, f, ensure_ascii=False, indent=2)
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(body, f, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        print(f"Error creating config file {config_path}: {e}")
+        raise
 
     return config_name
 
@@ -112,14 +111,14 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
                 "anomaly_detection_alg": request.anomaly_detection_alg,
                 "anomaly_detection_conf": request.anomaly_detection_conf
             }
-            request.config_name = create_json_config(config_data, request.name)
+        detector_conf_name = create_json_config(config_data, request.name)
 
         detector = AnomalyDetector(
             name=request.name,
             description=request.description,
             updated_at=datetime.now(timezone.utc),
             status="inactive",
-            config_name=request.config_name,
+            config_name=detector_conf_name,
             config=json.dumps(config_data)
         )
         db.add(detector)
@@ -200,6 +199,10 @@ def delete_anomaly_detector(detector_id: int, db: Session):
     try:
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
         if detector:
+            if detector.config_name and detector.config_name.startswith("detector_"):
+                config_path = os.path.join(CONFIG_DIR, detector.config_name)
+                if os.path.exists(config_path):
+                    os.remove(config_path)
             db.delete(detector)
             db.commit()
         return detector
@@ -232,9 +235,15 @@ def delete_all_logs(db: Session):
 
 def delete_all_detectors(db: Session):
     try:
-        num_deleted = db.query(AnomalyDetector).delete()
+        detectors = db.query(AnomalyDetector).all()
+        for detector in detectors:
+            if detector.config_name and detector.config_name.startswith("detector_"):
+                config_path = os.path.join(CONFIG_DIR, detector.config_name)
+                if os.path.exists(config_path):
+                    os.remove(config_path)
+            db.delete(detector)
         db.commit()
-        return num_deleted
+        return len(detectors)
     except Exception as e:
         db.rollback()
         print(f"Error deleting all detectors: {e}")

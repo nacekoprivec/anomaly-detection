@@ -43,8 +43,10 @@ async def detect_with_custom_config(config_name: str):
         )
 
 @router.post("/configuration/{config_name}")
-async def detect_with_custom_config(config_name: str, request: Request):
-    tmp_file_path = os.path.join(CONFIG_DIR, "tmp.json")
+async def detect_with_custom_config(config_name: str, request: Request, db: Session = Depends(get_db)):
+    detector_id = request.detector_id 
+    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    file_path = os.path.join(CONFIG_DIR, f"detector_{detector_id}.json")
     overrides = {}
     try:
         default_config = load_config(config_name)
@@ -52,8 +54,8 @@ async def detect_with_custom_config(config_name: str, request: Request):
         merged_config = {**default_config, **overrides}
 
         os.makedirs(CONFIG_DIR, exist_ok=True)
-        with open(tmp_file_path, "w") as tmp_file:
-            json.dump(merged_config, tmp_file)
+        with open(file_path, "w") as detector_config_file:
+            json.dump(merged_config, detector_config_file)
 
         return JSONResponse(content={"status": "OK", "used_config": config_name})
 

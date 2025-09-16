@@ -1,5 +1,4 @@
 {
-    "file_name": "data/ads-1.csv",
     "anomaly_detection_alg": ["Cumulative()"],
     "anomaly_detection_conf": [
         {

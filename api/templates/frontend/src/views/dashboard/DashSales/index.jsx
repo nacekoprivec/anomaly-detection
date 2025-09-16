@@ -25,6 +25,13 @@ import { Spinner, Accordion } from "react-bootstrap";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Button from '@mui/material/Button';
+import AddIcon from '@mui/icons-material/Add';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import { json } from 'react-router-dom';
 
 
 //-----------------------|| DASHBOARD SALES ||-----------------------//
@@ -261,7 +268,7 @@ export default function DashSales() {
 
     const handleSaveConfig = async () => {
       try {
-        const res = await api.post(`/configuration/${selectedMethod}`, overrides);
+        const res = await api.post(`/configuration/${selectedMethod}`, overrides, detector.id);
         setResponse(res.data);
       } catch (error) {
         setResponse('Error: ' + error.message);
@@ -271,14 +278,17 @@ export default function DashSales() {
     const handleRun = async () => {
       setLoading(true);
       try {
-        const res = await api.post(`/detectors/${detector.id}/${timestamp}&${ftrVector}`, {
-        });
+        const res = await api.post(
+      `/detectors/${detector.id}/${encodeURIComponent(timestamp)}&${encodeURIComponent(ftrVector)}`
+    );
         setResponse(res.data);
       } catch (error) {
         setResponse('Error: ' + error.message);
       }
       setLoading(false);
     };
+
+
 
     return (
       <Card className="mb-3">
@@ -378,6 +388,7 @@ export default function DashSales() {
                   try {
                     if (confirm("Are you sure you want to delete this detector?")) {
                       await api.delete(`/detectors/${detector.id}`);
+                      fetchDetectors();
                     }
                   } catch (error) {
                     console.error("Error deleting detector:", error);
@@ -397,11 +408,11 @@ export default function DashSales() {
                 )}
               </div>
 
-              {response && (
+              {response || response === 0 ? (
                 <div className="mt-2">
                   <strong>API Response:</strong> {JSON.stringify(response)}
                 </div>
-              )}
+              ) : null}
             </Accordion.Body>
           </Accordion>
         </Card.Body>
@@ -409,6 +420,64 @@ export default function DashSales() {
     );
   }
 
+function JsonPopupButton({ onSave }) {
+  const [open, setOpen] = useState(false);
+  const [jsonText, setJsonText] = useState('{}');
+  const [error, setError] = useState('');
+
+  const handleOpen = () => {
+    setOpen(true);
+    setJsonText('{"name":"a","config_name":"border_check.json"}');
+  };
+  const handleClose = () => {
+    setOpen(false);
+    setError('');
+  };
+
+  const handleSave = async () => {
+    try {
+      const parsed = JSON.parse(jsonText); // convert string to object
+      onSave(parsed); // optional: update parent
+      const res = await api.post(`/detectors/`, parsed); // send as object
+      setOpen(false);
+      fetchDetectors();
+    } catch (e) {
+      setError('Invalid JSON', jsonText);
+    }
+  };
+
+  return (
+    <>
+      {/* + Button */}
+      <IconButton color="primary" onClick={handleOpen}>
+        <AddIcon />
+      </IconButton>
+
+      {/* JSON Editor Dialog */}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Enter JSON</DialogTitle>
+        <DialogContent>
+          <TextField
+            multiline
+            rows={10}
+            fullWidth
+            variant="outlined"
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            error={!!error}
+            helperText={error || 'Enter valid JSON here'}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleSave}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
   return (
     <Row>
@@ -416,6 +485,7 @@ export default function DashSales() {
         <Card className="flat-card">
           <div className="row-table">
             <Card.Body className="col-sm-12 br">
+            <JsonPopupButton onSave={(json) => console.log('Saved JSON:', json)} />
               {detectors.map(det => (
                 <DetectorCard key={det.id} detector={det} />
               ))}
