@@ -20,54 +20,27 @@ import time
 from typing import Dict, Any, Optional
 from enum import Enum
 
-# depracated later
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
 def load_config(conf_name: str) -> Dict[str, Any]:
     config_file = os.path.join(CONFIG_DIR, conf_name)
-    with open(config_file, "r") as f:
-        return json.load(f)
-
-def handle_configuration(body: dict) -> str:
-    with open("C:\\Users\\nacek\\OneDrive\\Desktop\\siht\\DataPoint-detection\\configuration", "r") as f:
-        required_config = json.load(f)
-
-    for key, default_value in required_config.items():
-        body.setdefault(key, default_value)
-
-    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix=".json") as tmp:
-        json.dump(body, tmp)
-        config_path = tmp.name
-
-    args = argparse.Namespace(**body)
-    args.config = config_path
-
-    main.start_consumer(args)
-
-    return config_path
-
-def scrape_data(n: int):
-    url = "http://hmljn.arso.gov.si/vode/podatki/stanje_voda_samodejne.html"
-    tables = pd.read_html(url)
-
-    df = tables[2]
-
-    vodostaj = df["Vodostaj", "cm"].head(n)  
-
-    timestamp = float(time.time())
-
-    datapoints = []
-    for idx, value in enumerate(vodostaj):
-        datapoints.append({
-            "place_id": n-idx,     
-            "timestamp": timestamp,
-            "vodostaj": float(value) if pd.notna(value) else None
-        })
-    return datapoints
-
+    try:
+        with open(config_file, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Config file '{conf_name}' not found."
+        )
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Config file '{conf_name}' contains invalid JSON."
+        )
 
 def create_available_configs_enum():
+    """Returns config names as Enum"""
     files = [
         f for f in os.listdir(CONFIG_DIR)
         if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
@@ -107,10 +80,12 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
         else:
             if not request.anomaly_detection_alg or not request.anomaly_detection_conf:
                 raise ValueError("Either config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
+            
             config_data = {
                 "anomaly_detection_alg": request.anomaly_detection_alg,
                 "anomaly_detection_conf": request.anomaly_detection_conf
             }
+    
         detector_conf_name = create_json_config(config_data, request.name)
 
         detector = AnomalyDetector(
@@ -146,25 +121,8 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
             detail=f"Unexpected error: {e}"
         )
 
-# deprecated
-def create_log(db: Session, config):
-    log_entry = Log(
-        config=json.dumps(config),
-    )
 
-    db.add(log_entry)
-    db.commit()
-    db.refresh(log_entry)
-
-    return log_entry
-
-# READ logs/datapoints/anomaly detectors
-
-def get_logs(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(Log).offset(skip).limit(limit).all()
-
-def get_log(db: Session, log_id: int):
-    return db.query(Log).filter(Log.id == log_id).first()
+# READ datapoints/anomaly detectors
 
 def get_anomaly_detector(db: Session, detector_id: int):
     return db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
@@ -211,28 +169,6 @@ def delete_anomaly_detector(detector_id: int, db: Session):
         print(f"Error stopping anomaly detector: {e}")
         return None
 
-def delete_log(log_id: int, db: Session):
-    try:
-        log = db.query(Log).filter(Log.id == log_id).first()
-        if log:
-            db.delete(log)
-            db.commit()
-        return log
-    except Exception as e:
-        db.rollback()
-        print(f"Error deleting log: {e}")
-        return None
-    
-def delete_all_logs(db: Session):
-    try:
-        num_deleted = db.query(Log).delete()
-        db.commit()
-        return num_deleted
-    except Exception as e:
-        db.rollback()
-        print(f"Error deleting all logs: {e}")
-        return 0
-
 def delete_all_detectors(db: Session):
     try:
         detectors = db.query(AnomalyDetector).all()
@@ -272,19 +208,31 @@ def format_seconds(seconds: float) -> str:
     seconds = round(seconds)
     return seconds
 
-# Print Statements
+#deprecated
+# def delete_all_logs(db: Session):
+#     try:
+#         num_deleted = db.query(Log).delete()
+#         db.commit()
+#         return num_deleted
+#     except Exception as e:
+#         db.rollback()
+#         print(f"Error deleting all logs: {e}")
+#         return 0
 
-def detect_datapoints():
-    print("Detecting datapoints...")
+# def delete_log(log_id: int, db: Session):
+#     try:
+#         log = db.query(Log).filter(Log.id == log_id).first()
+#         if log:
+#             db.delete(log)
+#             db.commit()
+#         return log
+#     except Exception as e:
+#         db.rollback()
+#         print(f"Error deleting log: {e}")
+#         return None
+    
+# def get_logs(db: Session, skip: int = 0, limit: int = 10):
+#     return db.query(Log).offset(skip).limit(limit).all()
 
-    return 0
-
-def configuration():
-    print("Configuring...")
-
-    return 0
-
-def create_config():
-    print("Creating configuration...")
-
-    return 0
+# def get_log(db: Session, log_id: int):
+#     return db.query(Log).filter(Log.id == log_id).first()

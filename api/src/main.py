@@ -4,7 +4,6 @@ from .component.router import router
 from fastapi.middleware.cors import CORSMiddleware
 from .database import *
 from .component.models import AnomalyDetector, Log
-from .component.service import scrape_data
 import main
 import asyncio
 import pandas as pd

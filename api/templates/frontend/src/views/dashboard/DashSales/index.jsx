@@ -100,7 +100,6 @@ export default function DashSales() {
     fetchDetectors();
   }, []);
 
-
   function ConfigDropdown({ selectedMethod, setSelectedMethod }) {
     const [availableConfigs, setAvailableConfigs] = useState([]);
 
@@ -134,6 +133,11 @@ export default function DashSales() {
       </select>
     );
   }
+
+  function getNestedValue(obj, path, fallback) {
+  return path.split('.').reduce((acc, k) => (acc ? acc[k] : undefined), obj) ?? fallback;
+}
+
   function ConfigEditor({ data, overrides, setOverrides, parentKey = "" }) {
     const handleChange = (key, value) => {
       setOverrides(prev => {
@@ -163,7 +167,7 @@ export default function DashSales() {
                 <input
                   type="text"
                   className="form-control"
-                  value={overrides?.[key] ?? value}
+            value={getNestedValue(overrides, path, value)}
                   onChange={e => handleChange(key, e.target.value)}
                 />
               </div>
@@ -485,10 +489,23 @@ function JsonPopupButton({ onSave }) {
         <Card className="flat-card">
           <div className="row-table">
             <Card.Body className="col-sm-12 br">
+            <h1 className="card-title">Anomaly Detectors</h1>
             <JsonPopupButton onSave={(json) => console.log('Saved JSON:', json)} />
+            <Button startIcon={<DeleteIcon />} color="error" onClick={async () => {
+                try {
+                  if (confirm("Are you sure you want to delete all detectors?")) {
+                    await api.delete(`/detectors`);
+                    fetchDetectors();
+                  }
+                } catch (error) {
+                  console.error("Error deleting detector:", error);
+                }
+              }}>
+              </Button>
               {detectors.map(det => (
                 <DetectorCard key={det.id} detector={det} />
               ))}
+              
             </Card.Body>
           </div>
         </Card>

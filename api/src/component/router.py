@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import tempfile
@@ -12,7 +13,6 @@ from sqlalchemy import Float
 import main
 from .service import *
 
-import Test
 
 import pandas as pd
 
@@ -25,6 +25,7 @@ from ..database import get_db
 
 from .schemas import *
 from .exceptions import *
+
 
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
@@ -76,14 +77,9 @@ async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db
     return config["anomaly_detection_conf"]
 
 @router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
-async def is_anomaly(
-    detector_id: int,
-    timestamp: str,
-    ftr_vector: float,
-    db: Session = Depends(get_db)
-):
+async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Session = Depends(get_db)):
     """
-    Check if the given vodostaj is an anomaly.
+    Check if the given ftr_vector is an anomaly.
     Data comes both from the URL and JSON body.
     """
     try:
@@ -97,7 +93,7 @@ async def is_anomaly(
                     "timestamp": float(timestamp),
                     "ftr_vector": [ftr_vector]  
         }
-        print(detector.config_name)
+
         args = argparse.Namespace(
                             config=detector.config_name,
                             data_file=False,
@@ -108,7 +104,19 @@ async def is_anomaly(
                             data=data
                         )
 
-        test_instance = main.start_consumer(args)
+        try:
+            loop = asyncio.get_running_loop() 
+            test_instance = await loop.run_in_executor(None, lambda: main.start_consumer(args))
+        except Exception as e:
+            print("Exception inside start_consumer:", traceback.format_exc())
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": str(e),
+                    "type": e.__class__.__name__,
+                    "traceback": traceback.format_exc()
+                }
+            )
         return test_instance.pred_is_anomaly
 
     except Exception as e:
@@ -215,35 +223,35 @@ def delete_all_detectors_db(db: Session = Depends(get_db)):
     delete_all_detectors(db)
     return JSONResponse(content={"status": "OK"})
 
-### Logs Crud operations
-@router.get("/logs")
-async def get_logs_db(db: Session = Depends(get_db)):
-    logs = db.query(Log).all()
-    return [
-        {
-            "id": log.id,
-            "start_at": log.start_at,
-            "end_at": log.end_at,
-            "config": json.loads(log.config),
-            "duration_formated": format_seconds(log.duration_seconds)
-        }
-        for log in logs
-    ]
-
-@router.delete("/logs/{log_id}")
-def delete_log_db(log_id: int, db: Session = Depends(get_db)):
-    delete_log(log_id, db)
-    return JSONResponse(content={"status": "OK"})
-
-@router.delete("/logs")
-def delete_logs_db(db: Session = Depends(get_db)):
-    delete_all_logs(db)
-    return JSONResponse(content={"status": "OK"})
-
 @router.get("/available_configs")
 async def get_available_configs():
-    AvailableConfigs = create_available_configs_enum()
+    available_configs = create_available_configs_enum()
     return [
-        {"name": config.name, "value": config.value}
+        {"name": config.name, "filename": config.value}
         for config in AvailableConfigs
     ]
+
+### Logs Crud operations deprecateed
+# @router.get("/logs")
+# async def get_logs_db(db: Session = Depends(get_db)):
+#     logs = db.query(Log).all()
+#     return [
+#         {
+#             "id": log.id,
+#             "start_at": log.start_at,
+#             "end_at": log.end_at,
+#             "config": json.loads(log.config),
+#             "duration_formated": format_seconds(log.duration_seconds)
+#         }
+#         for log in logs
+#     ]
+
+# @router.delete("/logs/{log_id}")
+# def delete_log_db(log_id: int, db: Session = Depends(get_db)):
+#     delete_log(log_id, db)
+#     return JSONResponse(content={"status": "OK"})
+
+# @router.delete("/logs")
+# def delete_logs_db(db: Session = Depends(get_db)):
+#     delete_all_logs(db)
+#     return JSONResponse(content={"status": "OK"})
