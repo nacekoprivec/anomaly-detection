@@ -380,12 +380,15 @@ export default function DashSales() {
                           d.id === detector.id ? { ...d, status: newStatus } : d
                         )
                       );
+                      fetchDetectors();
+
                     } catch (error) {
                       console.error("Error toggling detector status:", error);
                     }
                   }}
                 >
                   {detector.status === "inactive" ? "Activate" : "Deactivate"}
+                  
                 </button>
 
                 <Button startIcon={<DeleteIcon />} color="error" onClick={async () => {

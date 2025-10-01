@@ -26,7 +26,6 @@ from ..database import get_db
 from .schemas import *
 from .exceptions import *
 
-
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
@@ -78,56 +77,36 @@ async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db
 
 @router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
 async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Session = Depends(get_db)):
-    """
-    Check if the given ftr_vector is an anomaly.
-    Data comes both from the URL and JSON body.
-    """
+    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    
+    if not detector:
+        raise DetectorNotFoundException(detector_id)  
+    if detector.status != "active":
+        raise DetectorNotActiveException(detector_id)
+
+    data = {
+        "timestamp": float(timestamp),
+        "ftr_vector": [ftr_vector]
+    }
+
+    args = argparse.Namespace(
+        config=detector.config_name,
+        data_file=False,
+        data_both=False,
+        watchdog=False,
+        test=True,
+        param_tunning=False,
+        data=data
+    )
+
     try:
-        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-        if detector.status != "active":
-            raise HTTPException(status_code=400, detail="Detector is not active")
-        
-        if not detector:
-            raise HTTPException(status_code=404, detail="Detector not found")
-        data = {
-                    "timestamp": float(timestamp),
-                    "ftr_vector": [ftr_vector]  
-        }
-
-        args = argparse.Namespace(
-                            config=detector.config_name,
-                            data_file=False,
-                            data_both=False,
-                            watchdog=False,
-                            test=True,
-                            param_tunning=False,
-                            data=data
-                        )
-
-        try:
-            loop = asyncio.get_running_loop() 
-            test_instance = await loop.run_in_executor(None, lambda: main.start_consumer(args))
-        except Exception as e:
-            print("Exception inside start_consumer:", traceback.format_exc())
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error": str(e),
-                    "type": e.__class__.__name__,
-                    "traceback": traceback.format_exc()
-                }
-            )
-        return test_instance.pred_is_anomaly
-
+        loop = asyncio.get_running_loop()
+        test_instance = await loop.run_in_executor(None, lambda: main.start_consumer(args))
     except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": str(e),
-                "type": e.__class__.__name__,
-                "traceback": traceback.format_exc()
-            }
-        )
+        print("Exception inside start_consumer:", traceback.format_exc())
+        raise ProcessingException(f"An error occurred in start_consumer: {e}")
+
+    return test_instance.pred_is_anomaly
     
 @router.post("/detectors/")
 def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get_db)):
@@ -157,7 +136,7 @@ def get_detectors(db: Session = Depends(get_db)):
 def get_detector(detector_id: int, db: Session = Depends(get_db)):
     detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
     if not detector:
-        raise HTTPException(status_code=404, detail="Detector not found")
+        raise DetectorNotFoundException
     return {
         "id": detector.id,
         "name": detector.name,
@@ -175,7 +154,7 @@ def set_detector_status_db(detector_id: int, status: str, db: Session = Depends(
     print("Setting status to:", status)
     detector = set_detector_status(detector_id, status, db)
     if not detector:
-        raise HTTPException(status_code=404, detail="Detector not found")
+        raise DetectorNotFoundException
     return {
         "id": detector.id,
         "name": detector.name,
@@ -194,7 +173,7 @@ def update_anomaly_detector_db(detector_id: int, request: DetectorUpdateRequest,
         description=request.description
     )
     if not detector:
-        raise HTTPException(status_code=404, detail="Detector not found")
+        raise DetectorNotFoundException
     return {
         "id": detector.id,
         "name": detector.name,

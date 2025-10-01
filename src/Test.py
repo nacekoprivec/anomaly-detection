@@ -184,64 +184,6 @@ class Test(ConsumerAbstract):
         if predicted_anomaly == "Error":
             self.pred_is_anomaly = 1
     
-
-    # def calculate_confusion_matrix(self) -> None:
-    #     """Calculates confusion matrix for anomaly detection"""
-    #     data = self.data_buffer[-1]
-    #     is_anomaly = data[0][2] == "True"
-    #     if data[0] is None or data[1] is None:
-    #         print("Prediction data is missing or malformed.", data)
-    #         return 
-        
-    #     predicted_anomaly = data[1][0].split(":")[0]
-
-    #     timestamp = float(data[0][0])
-    #     ftr_vector = float(data[0][1])
-
-    #     if is_anomaly:
-    #         if predicted_anomaly == "Error":
-    #             self.tp += 1
-    #             self.anomaly_counter.append(1)
-    #             self.is_anomaly = 1
-
-    #         else:
-    #             self.fn += 1
-    #             self.anomaly_counter.append(0)
-            
-    #         self.y_true.append(1)
-
-    #     else:
-    #         if predicted_anomaly == "Error":
-    #             self.fp += 1
-    #             self.anomaly_counter.append(1)
-    #             self.is_anomaly = 1
-    #         else:
-    #             self.tn += 1
-    #             self.anomaly_counter.append(0)
-
-    #         self.y_true.append(0)
-
-
-    # def confusion_matrix(self) -> None:
-    #     """Confusion matrix for anomaly detection"""
-    #     if (self.tp + self.fp) > 0:
-    #         self.precision = self.tp / (self.tp + self.fp)
-    #     else:
-    #         self.precision = 0.0
-
-    #     if (self.tp + self.fn) > 0:
-    #         self.recall = self.tp / (self.tp + self.fn)
-    #     else:
-    #         self.recall = 0.0
-
-    #     if (self.precision + self.recall) > 0:
-    #         self.f1 = 2 * (self.precision * self.recall) / (self.precision + self.recall)
-    #     else:
-    #         self.f1 = 0.0
-
-    
-
-
     def filter_by_time(self, message, target_time, tolerance):
         #convert to timedelta objects
 

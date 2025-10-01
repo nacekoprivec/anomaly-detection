@@ -30,6 +30,18 @@ class JSONDecodeException(HTTPException):
         detail = f"Config '{conf_name}' {error}"
         super().__init__(status_code=400, detail=detail)
 
+class ProcessingException(HTTPException):
+    def __init__(self, detail: str = "An error occurred during anomaly detection."):
+        super().__init__(status_code=500, detail=detail)
+
+class DetectorNotActiveException(HTTPException):
+    def __init__(self, detector_id: int):
+        super().__init__(status_code=400, detail=f"Anomaly detector {detector_id} is not active.")
+
+class DetectorNotFoundException(HTTPException):
+    def __init__(self, detector_id: int):
+        super().__init__(status_code=404, detail=f"Anomaly detector with ID {detector_id} not found.")
+
 
 # Register detailed exception handlers
 def create_exception_handlers(app: FastAPI):
