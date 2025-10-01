@@ -13,12 +13,13 @@ from .models import *
 from ..database import get_db
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import time, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 import pandas as pd
 import time
 from typing import Dict, Any, Optional
 from enum import Enum
+from .exceptions import *
 
 CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
@@ -28,44 +29,50 @@ def load_config(conf_name: str) -> Dict[str, Any]:
     try:
         with open(config_file, "r") as f:
             return json.load(f)
+        
     except FileNotFoundError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Config file '{conf_name}' not found."
-        )
+        raise NotFoundException("Config file", conf_name)
     except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Config file '{conf_name}' contains invalid JSON."
-        )
+        raise ConfigFileException(conf_name, "contains invalid JSON.")
+    except Exception as e:
+        raise InternalServerException(f"Unexpected error loading config: {e}")
 
 def create_available_configs_enum():
-    """Returns config names as Enum"""
-    files = [
-        f for f in os.listdir(CONFIG_DIR)
-        if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
-    ]
+    """Returns config names from CONFIG_DIR as Enum"""
 
-    # Format enum member names: remove extension, replace spaces with underscore, capitalize
-    enum_members = {}
-    for f in files:
-        name = os.path.splitext(f)[0]  # remove .json
-        name = "".join(word.capitalize() for word in name.split("_"))  # CamelCase
-        enum_members[name] = f
+    try: 
+        files = [
+            f for f in os.listdir(CONFIG_DIR)
+            if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
+        ]
 
-    return Enum("AvailableConfigs", enum_members)
+        # Format enum member names: remove extension, replace spaces with underscore, capitalize
+        enum_members = {}
+        for f in files:
+            name = os.path.splitext(f)[0]  # remove .json
+            name = "".join(word.capitalize() for word in name.split("_"))  
+            enum_members[name] = f
+
+        return Enum("AvailableConfigs", enum_members)
+    
+    except NotFoundException:
+        raise
+    except ConfigFileException:
+        raise
+    except Exception as e:
+        raise InternalServerException(f"Failed to create config enum: {e}")
 
 def create_json_config(body: dict, name: str) -> str:
-    # Save the configuration to a file named detector_{name}.json 
-    # return the filename
+    """Saves the configuration to a file named detector_{name}.json """
     os.makedirs(CONFIG_DIR, exist_ok=True)
     config_name = f"detector_{name}.json"
     config_path = os.path.join(CONFIG_DIR, config_name)
-
     try:
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(body, f, ensure_ascii=False, indent=2)
 
+    except NotFoundException:
+        raise 
     except Exception as e:
         print(f"Error creating config file {config_path}: {e}")
         raise
@@ -74,6 +81,7 @@ def create_json_config(body: dict, name: str) -> str:
 
 # CREATE anomaly detectors/logs/datapoints
 def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> AnomalyDetector:
+    """Creates and sets anomaly detector status to inactive"""
     try:
         if request.config_name:
             config_data = load_config(request.config_name)
@@ -91,7 +99,7 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
         detector = AnomalyDetector(
             name=request.name,
             description=request.description,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.datetime.now(datetime.timezone.utc),
             status="inactive",
             config_name=detector_conf_name,
             config=json.dumps(config_data)
@@ -102,54 +110,51 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
   
         return detector
 
-    except FileNotFoundError:
+    except NotFoundException:
         db.rollback()
-        raise HTTPException(
-            status_code=404,
-            detail=f"Config file not found."
-        )
-    except json.JSONDecodeError:
+        raise 
+    except JSONDecodeException:
         db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Config file contains invalid JSON."
-        )
+        raise 
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error: {e}"
-        )
-
+        raise
 
 # READ datapoints/anomaly detectors
 
 def get_anomaly_detector(db: Session, detector_id: int):
-    return db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    try:
+        return db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+    except Exception as e:
+        raise InternalServerException(f"Failed to fetch anomaly detector {detector_id}: {e}")
 
 def get_anomaly_detectors(db: Session, skip: int = 0, limit: int = 50):
-    return db.query(AnomalyDetector).offset(skip).limit(limit).all()
+    try:
+        return db.query(AnomalyDetector).offset(skip).limit(limit).all()
+    except Exception as e:
+        raise InternalServerException(f"Failed to fetch anomaly detectors: {e}")
 
 # UPDATE anomaly detector/log
 
-def update_anomaly_detector(
-    db: Session,
-    detector_id: int,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-) -> Optional[AnomalyDetector]:
-    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-    if not detector:
-        return None
-    if name is not None:
-        detector.name = name
-    if description is not None:
-        detector.description = description
-    detector.updated_at = datetime.now(timezone.utc)
+def update_anomaly_detector(db: Session, detector_id: int, name: Optional[str] = None, description: Optional[str] = None,) -> Optional[AnomalyDetector]:
+    try: 
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if not detector:
+            return None
+        if name is not None:
+            detector.name = name
+        if description is not None:
+            detector.description = description
+        detector.updated_at = datetime.now(timezone.utc)
 
-    db.commit()
-    db.refresh(detector)
-    return detector
+        db.commit()
+        db.refresh(detector)
+        return detector
+    except Exception as e:
+        db.rollback() 
+        raise InternalServerException(f"Failed to update anomaly detector: {e}")
+
+        
 
 # Delete logs/datapoints/anomaly detectors
 
@@ -166,8 +171,7 @@ def delete_anomaly_detector(detector_id: int, db: Session):
         return detector
     except Exception as e:
         db.rollback()
-        print(f"Error stopping anomaly detector: {e}")
-        return None
+        raise InternalServerException(f"Failed to update anomaly detector: {e}")
 
 def delete_all_detectors(db: Session):
     try:
@@ -182,9 +186,9 @@ def delete_all_detectors(db: Session):
         return len(detectors)
     except Exception as e:
         db.rollback()
-        print(f"Error deleting all detectors: {e}")
-        return 0
-    
+        raise InternalServerException(f"Failed to delete all anomaly detectors: {e}")
+
+
 # set anomaly detector active/inactive
 def set_detector_status(detector_id: int, status: str, db: Session):
     try:
@@ -197,9 +201,8 @@ def set_detector_status(detector_id: int, status: str, db: Session):
         return detector
     except Exception as e:
         db.rollback()
-        print(f"Error updating detector status: {e}")
-        return None 
-    
+        raise InternalServerException(f"Failed to set detector status: {e}")
+
 
 # Format HH:MM:SS
 def format_seconds(seconds: float) -> str:

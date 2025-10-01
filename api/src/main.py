@@ -10,6 +10,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from datetime import *
 import traceback
+from .component.exceptions import create_exception_handlers
 
 app = FastAPI()
 
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+create_exception_handlers(app)
 
 
 
