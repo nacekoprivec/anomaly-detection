@@ -33,24 +33,43 @@ router = APIRouter()
 
 @router.get("/configuration/{config_name}")
 async def detect_with_custom_config(config_name: str):
+    """
+    Endpoint for loading and returning a configuration by name, for name you provided.
+    """
     try:
+        print("Loading config:", config_name)
         config = load_config(config_name)
+        if not config:
+            raise ConfigFileException(config_name, "Config file is empty or missing required fields.")
         return JSONResponse(content=config)
+    except FileNotFoundError:
+        raise ConfigFileException(config_name, "Config file not found.")
+    except ValueError as ve: 
+        raise JSONDecodeException(config_name, str(ve))
+    except ConfigFileException:
+        raise 
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": str(e)}
-        )
+        raise InternalServerException(str(e))
 
 @router.post("/configuration/{config_name}")
-async def detect_with_custom_config(config_name: str, request: Request, db: Session = Depends(get_db)):
-    detector_id = request.detector_id 
-    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-    file_path = os.path.join(CONFIG_DIR, f"detector_{detector_id}.json")
-    overrides = {}
+async def override_config(config_name: str, request: Request, db: Session = Depends(get_db)):
+    """
+    Endpoint for loading a configuration by name, merging it with overrides from the request body,
+    and saving it as detector_{detector_id}.json for the specified detector.
+    """
     try:
+        detector_id = request.detector_id 
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if not detector:
+            raise DetectorNotFoundException(detector_id)
+        
+        file_path = os.path.join(CONFIG_DIR, f"detector_{detector.name}.json") # Path to the detector config file
+        overrides = {}
+
         default_config = load_config(config_name)
         overrides = await request.json()
+
+    
         merged_config = {**default_config, **overrides}
 
         os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -69,11 +88,24 @@ async def detect_with_custom_config(config_name: str, request: Request, db: Sess
 
 @router.get("/detectors/{detector_id}/parameters")
 async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve the anomaly detection configuration parameters for a specific detector.
+    """
     detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-    config = json.loads(detector.config) if detector and detector.config else {}
     if not detector:
-        raise HTTPException(status_code=404, detail="config not found")
-    return config["anomaly_detection_conf"]
+        raise DetectorNotFoundException(detector_id)
+
+    try:
+        if detector.config is None:
+            raise ConfigFileException(str(detector_id), "Detector config is empty.")
+        config = json.loads(detector.config)
+    except json.JSONDecodeError as e:
+        raise JSONDecodeException(str(detector_id), f"Invalid JSON in detector config: {e}")
+
+    if "anomaly_detection_conf" not in config:
+        raise ConfigFileException(str(detector_id), "Missing 'anomaly_detection_conf' section.")
+
+    return  config["anomaly_detection_conf"]
 
 @router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
 async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Session = Depends(get_db)):
@@ -110,6 +142,15 @@ async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Se
     
 @router.post("/detectors/")
 def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get_db)):
+    """
+    Create a new anomaly detector in the database and set its initial status to 'inactive'.
+    Args:
+        request (DetectorCreateRequest): 
+            The detector creation request containing metadata (name, description) and configuration details. 
+            Must include either:
+                - `config_name`: The name of an existing configuration to load, OR
+                - `anomaly_detection_alg` and `anomaly_detection_conf`: To build a new configuration.
+    """
     detector = create_anomaly_detector(request, db)
     return {
         "detector": detector
@@ -117,7 +158,12 @@ def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get
 
 @router.get("/detectors")
 def get_detectors(db: Session = Depends(get_db)):
-    detectors = db.query(AnomalyDetector).all()
+    try:
+        detectors = db.query(AnomalyDetector).all()
+        if not detectors:
+            raise DetectorNotFoundException
+    except Exception as e:
+        raise InternalServerException(f"Database error while fetching detectors: {e}")
     return [
         {
             "id": detector.id,
@@ -134,9 +180,12 @@ def get_detectors(db: Session = Depends(get_db)):
 
 @router.get("/detectors/{detector_id}")
 def get_detector(detector_id: int, db: Session = Depends(get_db)):
-    detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-    if not detector:
-        raise DetectorNotFoundException
+    try:
+        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+        if not detector:
+            raise DetectorNotFoundException
+    except Exception as e:
+        raise InternalServerException(f"Database error while fetching detectors: {e}")
     return {
         "id": detector.id,
         "name": detector.name,
@@ -148,67 +197,55 @@ def get_detector(detector_id: int, db: Session = Depends(get_db)):
             "config" : detector.config
         }
 
-# detector set status
 @router.put("/detectors/{detector_id}/{status}")
 def set_detector_status_db(detector_id: int, status: str, db: Session = Depends(get_db)):
-    print("Setting status to:", status)
+    """Update the status of a detector (e.g., 'active', 'inactive')."""
     detector = set_detector_status(detector_id, status, db)
     if not detector:
-        raise DetectorNotFoundException
-    return {
-        "id": detector.id,
-        "name": detector.name,
-        "description": detector.description,
-        "created_at": detector.created_at,
-        "updated_at": detector.updated_at,
-        "status": detector.status
-    }
+        raise DetectorNotFoundException(detector_id)
+
+    return detector
 
 @router.put("/detectors/{detector_id}")
 def update_anomaly_detector_db(detector_id: int, request: DetectorUpdateRequest, db: Session = Depends(get_db)):
-    detector = update_anomaly_detector(
-        db,
-        detector_id,
-        name=request.name,
-        description=request.description
-    )
+    """Update the name and/or description of an existing anomaly detector."""
+    detector = update_anomaly_detector(db, detector_id, name=request.name, description=request.description)
     if not detector:
         raise DetectorNotFoundException
-    return {
-        "id": detector.id,
-        "name": detector.name,
-        "description": detector.description,
-        "created_at": detector.created_at,
-        "updated_at": detector.updated_at,
-        "status": detector.status
-    }
+    return detector
 
 @router.delete("/detectors/{detector_id}")
 def delete_detector_db(detector_id: int, db: Session = Depends(get_db)):
+    """Delete a specific anomaly detector and its associated config file."""
     detector = delete_anomaly_detector(detector_id, db)
-    return {
-            "id": detector.id,
-            "name": detector.name,
-            "description": detector.description,
-            "created_at": detector.created_at,
-            "updated_at": detector.updated_at,
-            "status": detector.status,
-            "config_name": detector.config_name,
-            "config" : detector.config
-        }
+    return detector
 
 @router.delete("/detectors")
 def delete_all_detectors_db(db: Session = Depends(get_db)):
-    delete_all_detectors(db)
+    """Delete all anomaly detectors and their associated config files."""
+    try:
+        detectors = db.query(AnomalyDetector).all()
+        if not detectors:
+            raise DetectorNotFoundException
+        delete_all_detectors(db)
+    except Exception as e:
+        raise InternalServerException(f"Database error while deleting detectors: {e}")
     return JSONResponse(content={"status": "OK"})
 
 @router.get("/available_configs")
 async def get_available_configs():
-    available_configs = create_available_configs_enum()
-    return [
-        {"name": config.name, "filename": config.value}
-        for config in AvailableConfigs
-    ]
+    """
+    Returns all available configuration filenames as:
+    [{"name": config.name, "filename": config.value}, ...]
+    Name isn't used for now.
+    """
+    try:
+        AvailableConfigs = create_available_configs_enum()
+        return [{"name": member.name, "filename": member.value} for member in AvailableConfigs]
+    except InternalServerException:
+        raise
+    except Exception as e:
+        raise InternalServerException(f"Failed to list available configs: {e}")
 
 ### Logs Crud operations deprecateed
 # @router.get("/logs")

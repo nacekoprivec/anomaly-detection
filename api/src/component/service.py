@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from api.src.component.schemas import AvailableConfigs, DetectorCreateRequest
+from api.src.component.schemas import DetectorCreateRequest
 import main
 
 import argparse
@@ -14,7 +14,7 @@ from ..database import get_db
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List, Dict
 import pandas as pd
 import time
 from typing import Dict, Any, Optional
@@ -25,11 +25,11 @@ CONFIG_DIR = os.path.abspath("configuration")
 DATA_DIR = os.path.abspath("data")
 
 def load_config(conf_name: str) -> Dict[str, Any]:
+    """Load json config from /configuration folder"""
     config_file = os.path.join(CONFIG_DIR, conf_name)
     try:
         with open(config_file, "r") as f:
             return json.load(f)
-        
     except FileNotFoundError:
         raise NotFoundException("Config file", conf_name)
     except json.JSONDecodeError:
@@ -37,30 +37,36 @@ def load_config(conf_name: str) -> Dict[str, Any]:
     except Exception as e:
         raise InternalServerException(f"Unexpected error loading config: {e}")
 
-def create_available_configs_enum():
-    """Returns config names from CONFIG_DIR as Enum"""
+def create_available_configs_enum() -> Enum:
+    """
+    Returns an Enum containing all JSON config filenames in CONFIG_DIR.
+    """
+    if not os.path.exists(CONFIG_DIR):
+        raise InternalServerException(f"Config directory not found: {CONFIG_DIR}")
 
-    try: 
-        files = [
-            f for f in os.listdir(CONFIG_DIR)
-            if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
-        ]
+    files = [
+        f for f in os.listdir(CONFIG_DIR)
+        if os.path.isfile(os.path.join(CONFIG_DIR, f)) and f.endswith(".json")
+    ]
 
-        # Format enum member names: remove extension, replace spaces with underscore, capitalize
-        enum_members = {}
-        for f in files:
-            name = os.path.splitext(f)[0]  # remove .json
-            name = "".join(word.capitalize() for word in name.split("_"))  
-            enum_members[name] = f
+    if not files:
+        raise InternalServerException("No configuration files found in CONFIG_DIR.")
 
-        return Enum("AvailableConfigs", enum_members)
+    enum_members = format_enum_members(files)
+    return Enum("AvailableConfigs", enum_members)
     
-    except NotFoundException:
-        raise
-    except ConfigFileException:
-        raise
-    except Exception as e:
-        raise InternalServerException(f"Failed to create config enum: {e}")
+def format_enum_members(files):
+    """
+    Converts filenames to valid Enum member dictionary.
+    Example: "detector_config.json" -> {"DETECTOR_CONFIG": "detector_config.json"}
+    """
+    enum_dict = {}
+    for f in files:
+        name = os.path.splitext(f)[0].upper().replace(" ", "_")
+        if not name.isidentifier():
+            raise InternalServerException(f"Invalid config name '{name}' for Enum")
+        enum_dict[name] = f
+    return enum_dict
 
 def create_json_config(body: dict, name: str) -> str:
     """Saves the configuration to a file named detector_{name}.json """
@@ -70,7 +76,6 @@ def create_json_config(body: dict, name: str) -> str:
     try:
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(body, f, ensure_ascii=False, indent=2)
-
     except NotFoundException:
         raise 
     except Exception as e:
@@ -86,14 +91,13 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
         if request.config_name:
             config_data = load_config(request.config_name)
         else:
-            if not request.anomaly_detection_alg or not request.anomaly_detection_conf:
-                raise ValueError("Either config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
+            if has_custom_config():
+                raise ValueError("config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
             
             config_data = {
                 "anomaly_detection_alg": request.anomaly_detection_alg,
                 "anomaly_detection_conf": request.anomaly_detection_conf
             }
-    
         detector_conf_name = create_json_config(config_data, request.name)
 
         detector = AnomalyDetector(
@@ -120,7 +124,13 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
         db.rollback()
         raise
 
-# READ datapoints/anomaly detectors
+def has_custom_config(request: DetectorCreateRequest) -> bool:
+    """
+    Returns True if both anomaly_detection_alg and anomaly_detection_conf are provided.
+    """
+    return bool(request.anomaly_detection_alg) and bool(request.anomaly_detection_conf)
+
+# READ anomaly detectors
 
 def get_anomaly_detector(db: Session, detector_id: int):
     try:
@@ -134,14 +144,14 @@ def get_anomaly_detectors(db: Session, skip: int = 0, limit: int = 50):
     except Exception as e:
         raise InternalServerException(f"Failed to fetch anomaly detectors: {e}")
 
-# UPDATE anomaly detector/log
+# UPDATE anomaly detectors
 
 def update_anomaly_detector(db: Session, detector_id: int, name: Optional[str] = None, description: Optional[str] = None,) -> Optional[AnomalyDetector]:
     try: 
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
         if not detector:
             return None
-        if name is not None:
+        if name: # "" not allowed 
             detector.name = name
         if description is not None:
             detector.description = description
@@ -154,26 +164,29 @@ def update_anomaly_detector(db: Session, detector_id: int, name: Optional[str] =
         db.rollback() 
         raise InternalServerException(f"Failed to update anomaly detector: {e}")
 
-        
 
-# Delete logs/datapoints/anomaly detectors
+# Delete anomaly detectors
 
 def delete_anomaly_detector(detector_id: int, db: Session):
+    """Deletes specific detector and removes its detector_{name}.json file"""
     try:
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-        if detector:
-            if detector.config_name and detector.config_name.startswith("detector_"):
-                config_path = os.path.join(CONFIG_DIR, detector.config_name)
-                if os.path.exists(config_path):
-                    os.remove(config_path)
-            db.delete(detector)
-            db.commit()
+        if not detector:
+            raise DetectorNotFoundException
+
+        if detector.config_name.startswith("detector_"):
+            config_path = os.path.join(CONFIG_DIR, detector.config_name)
+            if os.path.exists(config_path):
+                os.remove(config_path)
+        db.delete(detector)
+        db.commit()
         return detector
     except Exception as e:
         db.rollback()
         raise InternalServerException(f"Failed to update anomaly detector: {e}")
 
 def delete_all_detectors(db: Session):
+    """Deletes all detectors and removes their config files"""
     try:
         detectors = db.query(AnomalyDetector).all()
         for detector in detectors:

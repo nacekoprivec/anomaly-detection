@@ -126,8 +126,8 @@ export default function DashSales() {
         className="form-control mb-2"
       >
         {availableConfigs.map((ac) => (
-          <option key={ac.value} value={ac.value}>
-            {ac.name}
+          <option key={ac.filename} value={ac.filename}>
+            {ac.filename}
           </option>
         ))}
       </select>

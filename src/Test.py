@@ -58,14 +58,6 @@ class Test(ConsumerAbstract):
         self.y_true = []
         self.X = []
         self.y = []
-        #Confusion matrix
-        self.tp : int = 0
-        self.fp : int = 0
-        self.tn : int = 0
-        self.fn : int = 0
-        self.precision : float = 0.0
-        self.recall : float = 0.0
-        self.f1 : float = 0.0
         
         self.pred_is_anomaly = 0
         
