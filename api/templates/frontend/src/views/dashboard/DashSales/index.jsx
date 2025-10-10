@@ -1,29 +1,7 @@
-// react-bootstrap
-import { Row, Col, Card } from 'react-bootstrap';
-
-// third party
-import Chart from 'react-apexcharts';
-
-// project imports
-import FlatCard from 'components/Widgets/Statistic/FlatCard';
-import ProductCard from 'components/Widgets/Statistic/ProductCard';
-import FeedTable from 'components/Widgets/FeedTable';
-import ProductTable from 'components/Widgets/ProductTable';
-import { SalesCustomerSatisfactionChartData } from './chart/sales-customer-satisfication-chart';
-import { SalesAccountChartData } from './chart/sales-account-chart';
-import { SalesSupportChartData } from './chart/sales-support-chart';
-import { SalesSupportChartData1 } from './chart/sales-support-chart1';
-import feedData from 'data/feedData';
-import productData from 'data/productTableData';
-
-import React, { useState } from 'react';
-import api from '../../../api';
-import { useEffect } from 'react';
-
-import { Spinner, Accordion } from "react-bootstrap";
-
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card, Spinner, Accordion } from 'react-bootstrap';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
 import Dialog from '@mui/material/Dialog';
@@ -31,8 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import { json } from 'react-router-dom';
-
+import api from '../../../api';
 
 //-----------------------|| DASHBOARD SALES ||-----------------------//
 export default function DashSales() {
@@ -43,86 +20,40 @@ export default function DashSales() {
   const [loading, setLoading] = useState(false);
   const [detectors, setDetectors] = useState([]);
 
-  // Fetch config when method changes
-  useEffect(() => {
-    async function fetchConfig() {
-      try {
-        const res = await api.get(`/configuration/${selectedMethod}`);
-        setConfig(res.data);
-        setOverrides(res.data);
-      } catch (error) {
-        setConfig(null);
-      }
-    }
-    fetchConfig();
-  }, [selectedMethod]);
-
-  // Handle dropdown change
-  const handleSelectChange = (e) => setSelectedMethod(e.target.value);
-
-  // Handle config field change
-  const handleConfigChange = (key, value) => {
-    setOverrides(prev => ({ ...prev, [key]: value }));
-  };
-
-  // Send modified config
-  const handleSaveConfig = async () => {
+  // Fetch detectors on mount
+  const fetchDetectors = async () => {
     try {
-      const res = await api.post(`/configuration/${selectedMethod}`, overrides);
-      setResponse(res.data);
-    } catch (error) {
-      setResponse('Error: ' + error.message);
-    }
-  };
-
-  const handleRun = async () => {
-    setLoading(true);
-    try {
-      const res = await api.post(`/run/${selectedMethod}`);
-      setResponse(res.data);
-    } catch (error) {
-      setResponse('Error: ' + error.message);
-    }
-    setLoading(false);
-  };
-
-  async function fetchDetectors() {
-    try {
-      const res = await api.get("/detectors");
+      const res = await api.get('/detectors');
       setDetectors(res.data);
-    } catch (error) {
+    } catch {
       setDetectors([]);
     }
-  }
+  };
 
-  // run once on mount
   useEffect(() => {
     fetchDetectors();
   }, []);
 
+  // Config dropdown component
   function ConfigDropdown({ selectedMethod, setSelectedMethod }) {
     const [availableConfigs, setAvailableConfigs] = useState([]);
 
     useEffect(() => {
       async function fetchAvailableConfigs() {
         try {
-          const res = await api.get("/available_configs");
+          const res = await api.get('/available_configs');
           setAvailableConfigs(res.data);
-        } catch (error) {
+        } catch {
           setAvailableConfigs([]);
         }
       }
       fetchAvailableConfigs();
     }, []);
 
-    const handleSelectChange = (e) => {
-      setSelectedMethod(e.target.value);
-    };
-
     return (
       <select
         value={selectedMethod}
-        onChange={handleSelectChange}
+        onChange={(e) => setSelectedMethod(e.target.value)}
         className="form-control mb-2"
       >
         {availableConfigs.map((ac) => (
@@ -135,49 +66,45 @@ export default function DashSales() {
   }
 
   function getNestedValue(obj, path, fallback) {
-  return path.split('.').reduce((acc, k) => (acc ? acc[k] : undefined), obj) ?? fallback;
-}
+    return path.split('.').reduce((acc, k) => (acc ? acc[k] : undefined), obj) ?? fallback;
+  }
 
-  function ConfigEditor({ data, overrides, setOverrides, parentKey = "" }) {
+  function ConfigEditor({ data, overrides, setOverrides, parentKey = '' }) {
     const handleChange = (key, value) => {
-      setOverrides(prev => {
-        const keys = parentKey ? parentKey.split(".") : [];
+      setOverrides((prev) => {
+        const keys = parentKey ? parentKey.split('.') : [];
         let updated = { ...prev };
-
         let ref = updated;
-        for (let i = 0; i < keys.length; i++) {
-          const k = keys[i];
+        keys.forEach((k) => {
           ref[k] = { ...ref[k] };
           ref = ref[k];
-        }
+        });
         ref[key] = value;
         return updated;
       });
     };
 
     return (
-      <div style={{ paddingLeft: parentKey ? 15 : 0, borderLeft: parentKey ? "1px solid #eee" : "none" }}>
+      <div style={{ paddingLeft: parentKey ? 15 : 0, borderLeft: parentKey ? '1px solid #eee' : 'none' }}>
         {Object.entries(data).map(([key, value]) => {
           const path = parentKey ? `${parentKey}.${key}` : key;
 
-          if (typeof value === "string" || typeof value === "number") {
+          if (typeof value === 'string' || typeof value === 'number') {
             return (
               <div className="mb-2" key={path}>
                 <label>{key}</label>
                 <input
                   type="text"
                   className="form-control"
-            value={getNestedValue(overrides, path, value)}
-                  onChange={e => handleChange(key, e.target.value)}
+                  value={getNestedValue(overrides, path, value)}
+                  onChange={(e) => handleChange(key, e.target.value)}
                 />
               </div>
             );
           }
 
           if (Array.isArray(value)) {
-            const isObjectArray = value.every(v => typeof v === "object" && v !== null);
-
-            if (isObjectArray) {
+            if (value.every((v) => typeof v === 'object' && v !== null)) {
               return (
                 <div key={path} className="mb-2">
                   <label>{key}</label>
@@ -187,17 +114,12 @@ export default function DashSales() {
                       data={item}
                       overrides={overrides?.[key]?.[index] ?? item}
                       setOverrides={(newOverrides) => {
-                        setOverrides(prev => ({
+                        setOverrides((prev) => ({
                           ...prev,
-                          [key]: [
-                            ...(prev?.[key] ?? []).slice(0, index),
-                            newOverrides,
-                            ...(prev?.[key] ?? []).slice(index + 1)
-                          ]
+                          [key]: [...(prev?.[key] ?? []).slice(0, index), newOverrides, ...(prev?.[key] ?? []).slice(index + 1)]
                         }));
                       }}
                       parentKey={`${path}.${index}`}
-
                     />
                   ))}
                 </div>
@@ -209,15 +131,15 @@ export default function DashSales() {
                   <input
                     type="text"
                     className="form-control"
-                    value={overrides?.[key]?.join(",") ?? value.join(",")}
-                    onChange={e => handleChange(key, e.target.value.split(","))}
+                    value={overrides?.[key]?.join(',') ?? value.join(',')}
+                    onChange={(e) => handleChange(key, e.target.value.split(','))}
                   />
                 </div>
               );
             }
           }
 
-          if (typeof value === "object" && value !== null) {
+          if (typeof value === 'object' && value !== null) {
             return (
               <div key={path} className="mb-2">
                 <label>{key}</label>
@@ -225,10 +147,7 @@ export default function DashSales() {
                   data={value}
                   overrides={overrides?.[key] ?? value}
                   setOverrides={(newOverrides) => {
-                    setOverrides(prev => ({
-                      ...prev,
-                      [key]: newOverrides
-                    }));
+                    setOverrides((prev) => ({ ...prev, [key]: newOverrides }));
                   }}
                   parentKey={path}
                 />
@@ -242,9 +161,8 @@ export default function DashSales() {
     );
   }
 
-
-
-  function DetectorCard({ detector }) {
+  // Detector Card Component
+  function DetectorCard({ detector, fetchDetectors }) {
     const [selectedMethod, setSelectedMethod] = useState(detector.config_name);
     const [config, setConfig] = useState(null);
     const [overrides, setOverrides] = useState({});
@@ -266,10 +184,6 @@ export default function DashSales() {
       fetchConfig();
     }, [selectedMethod]);
 
-    const handleConfigChange = (key, value) => {
-      setOverrides(prev => ({ ...prev, [key]: value }));
-    };
-
     const handleSaveConfig = async () => {
       try {
         const res = await api.post(`/configuration/${selectedMethod}`, overrides, detector.id);
@@ -283,8 +197,8 @@ export default function DashSales() {
       setLoading(true);
       try {
         const res = await api.post(
-      `/detectors/${detector.id}/${encodeURIComponent(timestamp)}&${encodeURIComponent(ftrVector)}`
-    );
+          `/detectors/${detector.id}/detect_anomaly/?timestamp=${encodeURIComponent(timestamp)}&ftr_vector=${encodeURIComponent(ftrVector)}`
+        );
         setResponse(res.data);
       } catch (error) {
         setResponse('Error: ' + error.message);
@@ -292,225 +206,200 @@ export default function DashSales() {
       setLoading(false);
     };
 
-
-
     return (
       <Card className="mb-3">
         <Card.Body>
-          <Accordion alwaysOpen>
-            <Accordion.Header>
-              <div className="d-flex justify-content-between align-items-center w-100">
-                <span>
-                  <strong>{detector.name}</strong> Detector
-                </span>
-                <span
-                  className={`badge ${detector.status === "active"
-                      ? "bg-success"
-                      : detector.status === "error"
-                        ? "bg-danger"
-                        : "bg-secondary"
+          <Accordion flush>
+            <Accordion.Item eventKey="0">
+              <Accordion.Header>
+                <div className="d-flex justify-content-between align-items-center w-100">
+                  <span>
+                    <strong>{detector.name}</strong> Detector
+                  </span>
+                  <span
+                    className={`badge ${
+                      detector.status === 'active'
+                        ? 'bg-success'
+                        : detector.status === 'error'
+                        ? 'bg-danger'
+                        : 'bg-secondary'
                     }`}
-                >
-                  {detector.status}
-                </span>
-
-              </div>
-            </Accordion.Header>
-            <Accordion.Body> 
-              {/* Display detector info */}
-              {Object.entries(detector).map(([key, value]) => (
-                key !== 'name' && key !== 'status' && key !== 'config' && (
-                  <div className="mb-2" key={key}>
-                    <strong>{key}:</strong> {JSON.stringify(value)}
-                  </div>
-                )
-              ))}
-
-              {/* Config dropdown */}
-              <ConfigDropdown
-                selectedMethod={selectedMethod}
-                setSelectedMethod={setSelectedMethod}
-              />
-
-              {/* Timestamp + feature vector inputs */}
-              <div className="mb-2">
-                <label>Timestamp</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder='e.g. "123.456"'
-                  value={timestamp}
-                  onChange={e => setTimestamp(e.target.value)}
-                />
-              </div>
-              <div className="mb-2">
-                <label>Feature Vector</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. 1,2,3,4"
-                  value={ftrVector}
-                  onChange={e => setFtrVector(e.target.value)}
-                />
-              </div>
-
-              {/* Render config editor */}
-              {config && (
-                <ConfigEditor
-                  data={config}
-                  overrides={overrides}
-                  setOverrides={setOverrides}
-                />
-              )}
-
-              {/* Actions */}
-              <div className="mb-3 d-flex align-items-center">
-                <button className="btn btn-success" onClick={handleSaveConfig}>
-                  Save Config
-                </button>
-
-                <button
-                  className={`ms-2 btn ${detector.status === "inactive" ? "btn-success" : "btn-danger"}`}
-                  onClick={async () => {
-                    try {
-                      const newStatus = detector.status === "inactive" ? "active" : "inactive";
-                      await api.put(`/detectors/${detector.id}/${newStatus}`);
-                      setDetectors(prev =>
-                        prev.map(d =>
-                          d.id === detector.id ? { ...d, status: newStatus } : d
-                        )
-                      );
-                      fetchDetectors();
-
-                    } catch (error) {
-                      console.error("Error toggling detector status:", error);
-                    }
-                  }}
-                >
-                  {detector.status === "inactive" ? "Activate" : "Deactivate"}
-                  
-                </button>
-
-                <Button startIcon={<DeleteIcon />} color="error" onClick={async () => {
-                  try {
-                    if (confirm("Are you sure you want to delete this detector?")) {
-                      await api.delete(`/detectors/${detector.id}`);
-                      fetchDetectors();
-                    }
-                  } catch (error) {
-                    console.error("Error deleting detector:", error);
-                  }
-                }}>
-                </Button>
-                {loading ? (
-                  <Spinner animation="border" style={{ marginLeft: 'auto' }} />
-                ) : (
-                  <button
-                    className="btn btn-success ms-auto"
-                    onClick={handleRun}
-                    style={{ marginLeft: 'auto' }}
                   >
-                    Run
-                  </button>
-                )}
-              </div>
-
-              {response || response === 0 ? (
-                <div className="mt-2">
-                  <strong>API Response:</strong> {JSON.stringify(response)}
+                    {detector.status}
+                  </span>
                 </div>
-              ) : null}
-            </Accordion.Body>
+              </Accordion.Header>
+              <Accordion.Body>
+                <ConfigDropdown selectedMethod={selectedMethod} setSelectedMethod={setSelectedMethod} />
+
+                <div className="mb-2">
+                  <label>Timestamp</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder='e.g. "123.456"'
+                    value={timestamp}
+                    onChange={(e) => setTimestamp(e.target.value)}
+                  />
+                </div>
+                <div className="mb-2">
+                  <label>Feature Vector</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 1,2,3,4"
+                    value={ftrVector}
+                    onChange={(e) => setFtrVector(e.target.value)}
+                  />
+                </div>
+
+                {config && <ConfigEditor data={config} overrides={overrides} setOverrides={setOverrides} />}
+
+                <div className="mb-3 d-flex align-items-center">
+                  <button className="btn btn-success me-2" onClick={handleSaveConfig}>
+                    Save Config
+                  </button>
+
+                  <button
+                    className={`btn ${detector.status === 'inactive' ? 'btn-success' : 'btn-danger'} me-2`}
+                    onClick={async () => {
+                      try {
+                        const newStatus = detector.status === 'inactive' ? 'active' : 'inactive';
+                        await api.put(`/detectors/${detector.id}/${newStatus}`);
+                        fetchDetectors();
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }}
+                  >
+                    {detector.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                  </button>
+
+                  <Button
+                    startIcon={<DeleteIcon />}
+                    color="error"
+                    onClick={async () => {
+                      try {
+                        if (confirm('Are you sure you want to delete this detector?')) {
+                          await api.delete(`/detectors/${detector.id}`);
+                          fetchDetectors();
+                        }
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }}
+                    className="me-2"
+                  ></Button>
+
+                  {loading ? (
+                    <Spinner animation="border" style={{ marginLeft: 'auto' }} />
+                  ) : (
+                    <button className="btn btn-success ms-auto" onClick={handleRun}>
+                      Run
+                    </button>
+                  )}
+                </div>
+
+                {response && (
+                  <div className="mt-2">
+                    <strong>API Response:</strong> {JSON.stringify(response)}
+                  </div>
+                )}
+              </Accordion.Body>
+            </Accordion.Item>
           </Accordion>
         </Card.Body>
       </Card>
     );
   }
 
-function JsonPopupButton({ onSave }) {
-  const [open, setOpen] = useState(false);
-  const [jsonText, setJsonText] = useState('{}');
-  const [error, setError] = useState('');
+  // JSON Popup Button
+  function JsonPopupButton({ onSave, fetchDetectors }) {
+    const [open, setOpen] = useState(false);
+    const [jsonText, setJsonText] = useState('{}');
+    const [error, setError] = useState('');
 
-  const handleOpen = () => {
-    setOpen(true);
-    setJsonText('{"name":"a","config_name":"border_check.json"}');
-  };
-  const handleClose = () => {
-    setOpen(false);
-    setError('');
-  };
-
-  const handleSave = async () => {
-    try {
-      const parsed = JSON.parse(jsonText); // convert string to object
-      onSave(parsed); // optional: update parent
-      const res = await api.post(`/detectors/`, parsed); // send as object
+    const handleOpen = () => {
+      setOpen(true);
+      setJsonText('{"name":"a","config_name":"border_check.json"}');
+    };
+    const handleClose = () => {
       setOpen(false);
-      fetchDetectors();
-    } catch (e) {
-      setError('Invalid JSON', jsonText);
-    }
-  };
+      setError('');
+    };
 
-  return (
-    <>
-      {/* + Button */}
-      <IconButton color="primary" onClick={handleOpen}>
-        <AddIcon />
-      </IconButton>
+    const handleSave = async () => {
+      try {
+        const parsed = JSON.parse(jsonText);
+        onSave(parsed);
+        await api.post('/detectors/', parsed);
+        fetchDetectors();
+        setOpen(false);
+      } catch (e) {
+        setError('Invalid JSON');
+      }
+    };
 
-      {/* JSON Editor Dialog */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Enter JSON</DialogTitle>
-        <DialogContent>
-          <TextField
-            multiline
-            rows={10}
-            fullWidth
-            variant="outlined"
-            value={jsonText}
-            onChange={(e) => setJsonText(e.target.value)}
-            error={!!error}
-            helperText={error || 'Enter valid JSON here'}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button variant="contained" color="primary" onClick={handleSave}>
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-}
+    return (
+      <>
+        <IconButton color="primary" onClick={handleOpen}>
+          <AddIcon />
+        </IconButton>
+
+        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+          <DialogTitle>Enter JSON</DialogTitle>
+          <DialogContent>
+            <TextField
+              multiline
+              rows={10}
+              fullWidth
+              variant="outlined"
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              error={!!error}
+              helperText={error || 'Enter valid JSON here'}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button variant="contained" color="primary" onClick={handleSave}>
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
+    );
+  }
 
   return (
     <Row>
       <Col md={12} xl={6} className="mb-3">
         <Card className="flat-card">
-          <div className="row-table">
-            <Card.Body className="col-sm-12 br">
-            <h1 className="card-title">Anomaly Detectors</h1>
-            <JsonPopupButton onSave={(json) => console.log('Saved JSON:', json)} />
-            <Button startIcon={<DeleteIcon />} color="error" onClick={async () => {
-                try {
-                  if (confirm("Are you sure you want to delete all detectors?")) {
-                    await api.delete(`/detectors`);
-                    fetchDetectors();
+          <Card.Body>
+            <div className="d-flex align-items-center mb-3">
+              <h1 className="card-title me-3">Anomaly Detectors</h1>
+              <JsonPopupButton onSave={(json) => console.log(json)} fetchDetectors={fetchDetectors} />
+              <Button
+                startIcon={<DeleteIcon />}
+                color="error"
+                onClick={async () => {
+                  try {
+                    if (confirm('Are you sure you want to delete all detectors?')) {
+                      await api.delete('/detectors');
+                      fetchDetectors();
+                    }
+                  } catch (error) {
+                    console.error(error);
                   }
-                } catch (error) {
-                  console.error("Error deleting detector:", error);
-                }
-              }}>
-              </Button>
-              {detectors.map(det => (
-                <DetectorCard key={det.id} detector={det} />
-              ))}
-              
-            </Card.Body>
-          </div>
+                }}
+                className="ms-2"
+              />
+            </div>
+
+            {detectors.map((det) => (
+              <DetectorCard key={det.id} detector={det} fetchDetectors={fetchDetectors} />
+            ))}
+          </Card.Body>
         </Card>
       </Col>
     </Row>
