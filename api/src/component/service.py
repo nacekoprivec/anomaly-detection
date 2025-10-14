@@ -84,25 +84,27 @@ def create_json_config(body: dict, name: str) -> str:
 
     return config_name
 
-# CREATE anomaly detectors/logs/datapoints
-def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> AnomalyDetector:
+# CREATE anomaly detector
+def create_anomaly_detector(request: Dict, db: Session):
     """Creates and sets anomaly detector status to inactive"""
+    print("Creating detector with request:", request)
     try:
-        if request.config_name:
-            config_data = load_config(request.config_name)
-        else:
-            if has_custom_config():
-                raise ValueError("config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
-            
+        if has_custom_config(request):
             config_data = {
-                "anomaly_detection_alg": request.anomaly_detection_alg,
-                "anomaly_detection_conf": request.anomaly_detection_conf
+                "anomaly_detection_alg": request["config_data"]["anomaly_detection_alg"],
+                "anomaly_detection_conf": request["config_data"]["anomaly_detection_conf"]
             }
-        detector_conf_name = create_json_config(config_data, request.name)
+            print("Creating detector with custom config", config_data)
+        elif request["config_name"]:
+            config_data = load_config(request["config_name"])
+        else:
+            raise ValueError("config_name or anomaly_detection_alg + anomaly_detection_conf must be provided")
+
+        detector_conf_name = create_json_config(config_data, request["name"])
 
         detector = AnomalyDetector(
-            name=request.name,
-            description=request.description,
+            name=request["name"],
+            description=request["description"],
             updated_at=datetime.datetime.now(datetime.timezone.utc),
             status="inactive",
             config_name=detector_conf_name,
@@ -124,11 +126,11 @@ def create_anomaly_detector(request: DetectorCreateRequest, db: Session) -> Anom
         db.rollback()
         raise
 
-def has_custom_config(request: DetectorCreateRequest) -> bool:
+def has_custom_config(request: Dict) -> bool:
     """
     Returns True if both anomaly_detection_alg and anomaly_detection_conf are provided.
     """
-    return bool(request.anomaly_detection_alg) and bool(request.anomaly_detection_conf)
+    return bool(request["config_data"]["anomaly_detection_alg"]) and bool(request["config_data"]["anomaly_detection_conf"])
 
 # READ anomaly detectors
 

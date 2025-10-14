@@ -6,9 +6,10 @@ import argparse
 from typing import Dict, Any, Optional
 import traceback
 
-from fastapi import APIRouter, Request, UploadFile, File, Form
+from fastapi import APIRouter, Query, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy import Float
+from urllib3 import request
 
 import main
 from .service import *
@@ -51,24 +52,25 @@ async def detect_with_custom_config(config_name: str):
     except Exception as e:
         raise InternalServerException(str(e))
 
-@router.post("/configuration/{config_name}")
+# deprecated
+@router.post("/override_config/{config_name}")
 async def override_config(config_name: str, request: Request, db: Session = Depends(get_db)):
     """
     Endpoint for loading a configuration by name, merging it with overrides from the request body,
     and saving it as detector_{detector_id}.json for the specified detector.
     """
     try:
-        detector_id = request.detector_id 
+        data = await request.json()   
+        detector_id = data.pop('detector_id', None)  
+
         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
         if not detector:
             raise DetectorNotFoundException(detector_id)
         
-        file_path = os.path.join(CONFIG_DIR, f"detector_{detector.name}.json") # Path to the detector config file
-        overrides = {}
+        file_path = os.path.join(CONFIG_DIR, f"detector_{detector.name}.json") 
 
         default_config = load_config(config_name)
-        overrides = await request.json()
-
+        overrides = data
     
         merged_config = {**default_config, **overrides}
 
@@ -81,7 +83,7 @@ async def override_config(config_name: str, request: Request, db: Session = Depe
     except Exception as e:
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "message": f"{e} - {overrides}"}
+            content={"status": "error", "message": f"{e} - {traceback.format_exc()}"}
         )
 
 ### Anomaly Detectors Crud operations
@@ -107,8 +109,13 @@ async def get_detector_parameters(detector_id: int, db: Session = Depends(get_db
 
     return  config["anomaly_detection_conf"]
 
-@router.post("/detectors/{detector_id}/{timestamp}&{ftr_vector}")
-async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Session = Depends(get_db)):
+@router.post("/detectors/{detector_id}/detect_anomaly")
+async def detect_anomaly(
+    detector_id: int,
+    timestamp: str = Query(..., description="Timestamp as float or Unix time"),
+    ftr_vector: float = Query(..., description="Feature value (single float)"),
+    db: Session = Depends(get_db)
+):
     detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
     
     if not detector:
@@ -141,16 +148,17 @@ async def is_anomaly(detector_id: int, timestamp: str, ftr_vector: float, db: Se
     return test_instance.pred_is_anomaly
     
 @router.post("/detectors/")
-def create_detector_db(request: DetectorCreateRequest, db: Session = Depends(get_db)):
+def create_detector_db(request: Dict, db: Session = Depends(get_db)):
     """
     Create a new anomaly detector in the database and set its initial status to 'inactive'.
     Args:
         request (DetectorCreateRequest): 
-            The detector creation request containing metadata (name, description) and configuration details. 
+            The detector creation request containing name, optional description, and configuration details. 
             Must include either:
                 - `config_name`: The name of an existing configuration to load, OR
                 - `anomaly_detection_alg` and `anomaly_detection_conf`: To build a new configuration.
     """
+    print("Creating detector with request:", request)
     detector = create_anomaly_detector(request, db)
     return {
         "detector": detector
@@ -203,7 +211,6 @@ def set_detector_status_db(detector_id: int, status: str, db: Session = Depends(
     detector = set_detector_status(detector_id, status, db)
     if not detector:
         raise DetectorNotFoundException(detector_id)
-
     return detector
 
 @router.put("/detectors/{detector_id}")

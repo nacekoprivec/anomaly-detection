@@ -10,15 +10,16 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import api from '../../../api';
+import DialogContentText from '@mui/material/DialogContentText';
 
 //-----------------------|| DASHBOARD SALES ||-----------------------//
 export default function DashSales() {
   const [selectedMethod, setSelectedMethod] = useState('border_check.json');
-  const [config, setConfig] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [detectors, setDetectors] = useState([]);
+  
 
   // Fetch detectors on mount
   const fetchDetectors = async () => {
@@ -28,42 +29,11 @@ export default function DashSales() {
     } catch {
       setDetectors([]);
     }
-  };
+  }
 
   useEffect(() => {
     fetchDetectors();
   }, []);
-
-  // Config dropdown component
-  function ConfigDropdown({ selectedMethod, setSelectedMethod }) {
-    const [availableConfigs, setAvailableConfigs] = useState([]);
-
-    useEffect(() => {
-      async function fetchAvailableConfigs() {
-        try {
-          const res = await api.get('/available_configs');
-          setAvailableConfigs(res.data);
-        } catch {
-          setAvailableConfigs([]);
-        }
-      }
-      fetchAvailableConfigs();
-    }, []);
-
-    return (
-      <select
-        value={selectedMethod}
-        onChange={(e) => setSelectedMethod(e.target.value)}
-        className="form-control mb-2"
-      >
-        {availableConfigs.map((ac) => (
-          <option key={ac.filename} value={ac.filename}>
-            {ac.filename}
-          </option>
-        ))}
-      </select>
-    );
-  }
 
   function getNestedValue(obj, path, fallback) {
     return path.split('.').reduce((acc, k) => (acc ? acc[k] : undefined), obj) ?? fallback;
@@ -230,8 +200,6 @@ export default function DashSales() {
                 </div>
               </Accordion.Header>
               <Accordion.Body>
-                <ConfigDropdown selectedMethod={selectedMethod} setSelectedMethod={setSelectedMethod} />
-
                 <div className="mb-2">
                   <label>Timestamp</label>
                   <input
@@ -252,7 +220,6 @@ export default function DashSales() {
                     onChange={(e) => setFtrVector(e.target.value)}
                   />
                 </div>
-
                 {config && <ConfigEditor data={config} overrides={overrides} setOverrides={setOverrides} />}
 
                 <div className="mb-3 d-flex align-items-center">
@@ -300,7 +267,7 @@ export default function DashSales() {
                   )}
                 </div>
 
-                {response && (
+                {response !== '' && (
                   <div className="mt-2">
                     <strong>API Response:</strong> {JSON.stringify(response)}
                   </div>
@@ -313,63 +280,176 @@ export default function DashSales() {
     );
   }
 
-  // JSON Popup Button
-  function JsonPopupButton({ onSave, fetchDetectors }) {
-    const [open, setOpen] = useState(false);
-    const [jsonText, setJsonText] = useState('{}');
-    const [error, setError] = useState('');
+function JsonPopupButton({ onSave, fetchDetectors }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('');
+  const [jsonText, setJsonText] = useState('');
 
-    const handleOpen = () => {
-      setOpen(true);
-      setJsonText('{"name":"a","config_name":"border_check.json"}');
-    };
-    const handleClose = () => {
+  const handleOpen = () => {
+    setOpen(true);
+    setJsonText('');
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setError('');
+  };
+
+  const handleSave = async () => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      parsed.config_name = selectedMethod; // include config in posted data
+      parsed.name = name;
+      parsed.description = description;
+      
+      console.log('Saving detector:', parsed);
+      onSave(parsed);
+      await api.post('/detectors/', parsed);
       setOpen(false);
-      setError('');
-    };
+      fetchDetectors();
+    } catch (e) {
+      setError('Invalid JSON');
+    }
+  };
 
-    const handleSave = async () => {
-      try {
-        const parsed = JSON.parse(jsonText);
-        onSave(parsed);
-        await api.post('/detectors/', parsed);
-        fetchDetectors();
-        setOpen(false);
-      } catch (e) {
-        setError('Invalid JSON');
+  const RetrieveConfig = async (configName) => {
+    try {
+      const res = await api.get(`/configuration/${configName}`);
+      return res.data;
+    } catch {
+      return null;  
+    }
+  };
+
+  const ConfigDropdown = () => {
+    const [availableConfigs, setAvailableConfigs] = useState([]);
+
+    useEffect(() => {
+      async function fetchAvailableConfigs() {
+        try {
+          const res = await api.get('/available_configs');
+          setAvailableConfigs(res.data);
+        } catch {
+          setAvailableConfigs([]);
+        }
       }
-    };
+      fetchAvailableConfigs();
+    }, []);
+
 
     return (
-      <>
-        <IconButton color="primary" onClick={handleOpen}>
-          <AddIcon />
-        </IconButton>
+      <select
+  value={selectedMethod}
+  onChange={async (e) => {
+    const val = e.target.value;
+    setSelectedMethod(val);
 
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-          <DialogTitle>Enter JSON</DialogTitle>
-          <DialogContent>
-            <TextField
-              multiline
-              rows={10}
-              fullWidth
-              variant="outlined"
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              error={!!error}
-              helperText={error || 'Enter valid JSON here'}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button variant="contained" color="primary" onClick={handleSave}>
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </>
+    const res = await RetrieveConfig(val);
+
+    setJsonText((prev) => {
+      try {
+        const parsed = prev ? JSON.parse(prev) : {};
+        return JSON.stringify(
+          { ...parsed, anomaly_detection_alg: [val], config_data: res },
+          null,
+          2
+        );
+      } catch {
+        return JSON.stringify(
+          { anomaly_detection_alg: [val], config_data: res },
+          null,
+          2
+        );
+      }
+    });
+  }}
+  className="form-control mb-3"
+>
+  <option value="">Select configuration...</option>
+  {availableConfigs.map((ac) => (
+    <option key={ac.name} value={ac.filename}>
+      {ac.filename}
+    </option>
+  ))}
+</select>
     );
-  }
+  };
+
+  return (
+    <>
+      <IconButton color="primary" onClick={handleOpen}>
+        <AddIcon />
+      </IconButton>
+
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Create New Detector</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            variant="outlined"
+            size="small"
+            className="mt-4 mb-4"
+            required
+            error={!!error}
+            helperText={error ? 'Name is required' : ''}
+          />
+
+          <TextField
+            label="Description"
+            multiline
+            rows={3}
+            fullWidth
+            variant="outlined"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            error={!!error}
+            className="mb-4"
+          />
+
+          <DialogContentText>Select Configuration</DialogContentText>
+          <ConfigDropdown />
+
+          <TextField
+            multiline
+            rows={10}
+            fullWidth
+            variant="outlined"
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            required
+            error={!!error}
+            className="mb-4"
+            placeholder={`{
+  "anomaly_detection_alg": ["BorderCheck()"],
+  "anomaly_detection_conf": [
+    {
+      "input_vector_size": 1,
+      "warning_stages": [2.5, 0.0],
+      "UL": 3.0,
+      "LL": -0.4,
+      "output": ["TerminalOutput()"],
+      "output_conf": [{}]
+    }
+  ]
+}`}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleSave}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
   return (
     <Row>
@@ -395,7 +475,6 @@ export default function DashSales() {
                 className="ms-2"
               />
             </div>
-
             {detectors.map((det) => (
               <DetectorCard key={det.id} detector={det} fetchDetectors={fetchDetectors} />
             ))}
