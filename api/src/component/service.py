@@ -89,7 +89,7 @@ def create_anomaly_detector(request: Dict, db: Session):
     """Creates and sets anomaly detector status to inactive"""
     print("Creating detector with request:", request)
     try:
-        if has_custom_config(request):
+        if has_custom_config(request): 
             config_data = {
                 "anomaly_detection_alg": request["config_data"]["anomaly_detection_alg"],
                 "anomaly_detection_conf": request["config_data"]["anomaly_detection_conf"]
@@ -130,7 +130,10 @@ def has_custom_config(request: Dict) -> bool:
     """
     Returns True if both anomaly_detection_alg and anomaly_detection_conf are provided.
     """
-    return bool(request["config_data"]["anomaly_detection_alg"]) and bool(request["config_data"]["anomaly_detection_conf"])
+    cfg = request.get("config_data")
+    if isinstance(cfg, dict):
+        return bool(cfg.get("anomaly_detection_alg")) and bool(cfg.get("anomaly_detection_conf"))
+    return False
 
 # READ anomaly detectors
 

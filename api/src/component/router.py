@@ -52,40 +52,6 @@ async def detect_with_custom_config(config_name: str):
     except Exception as e:
         raise InternalServerException(str(e))
 
-# deprecated
-@router.post("/override_config/{config_name}")
-async def override_config(config_name: str, request: Request, db: Session = Depends(get_db)):
-    """
-    Endpoint for loading a configuration by name, merging it with overrides from the request body,
-    and saving it as detector_{detector_id}.json for the specified detector.
-    """
-    try:
-        data = await request.json()   
-        detector_id = data.pop('detector_id', None)  
-
-        detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
-        if not detector:
-            raise DetectorNotFoundException(detector_id)
-        
-        file_path = os.path.join(CONFIG_DIR, f"detector_{detector.name}.json") 
-
-        default_config = load_config(config_name)
-        overrides = data
-    
-        merged_config = {**default_config, **overrides}
-
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        with open(file_path, "w") as detector_config_file:
-            json.dump(merged_config, detector_config_file)
-
-        return JSONResponse(content={"status": "OK", "used_config": config_name})
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": f"{e} - {traceback.format_exc()}"}
-        )
-
 ### Anomaly Detectors Crud operations
 
 @router.get("/detectors/{detector_id}/parameters")
@@ -147,7 +113,7 @@ async def detect_anomaly(
 
     return test_instance.pred_is_anomaly
     
-@router.post("/detectors/")
+@router.post("/detectors/create")
 def create_detector_db(request: Dict, db: Session = Depends(get_db)):
     """
     Create a new anomaly detector in the database and set its initial status to 'inactive'.
@@ -278,3 +244,38 @@ async def get_available_configs():
 # def delete_logs_db(db: Session = Depends(get_db)):
 #     delete_all_logs(db)
 #     return JSONResponse(content={"status": "OK"})
+
+
+# deprecated
+# @router.post("/override_config/{config_name}")
+# async def override_config(config_name: str, request: Request, db: Session = Depends(get_db)):
+#     """
+#     Endpoint for loading a configuration by name, merging it with overrides from the request body,
+#     and saving it as detector_{detector_id}.json for the specified detector.
+#     """
+#     try:
+#         data = await request.json()   
+#         detector_id = data.pop('detector_id', None)  
+
+#         detector = db.query(AnomalyDetector).filter(AnomalyDetector.id == detector_id).first()
+#         if not detector:
+#             raise DetectorNotFoundException(detector_id)
+        
+#         file_path = os.path.join(CONFIG_DIR, f"detector_{detector.name}.json") 
+
+#         default_config = load_config(config_name)
+#         overrides = data
+    
+#         merged_config = {**default_config, **overrides}
+
+#         os.makedirs(CONFIG_DIR, exist_ok=True)
+#         with open(file_path, "w") as detector_config_file:
+#             json.dump(merged_config, detector_config_file)
+
+#         return JSONResponse(content={"status": "OK", "used_config": config_name})
+
+#     except Exception as e:
+#         return JSONResponse(
+#             status_code=500,
+#             content={"status": "error", "message": f"{e} - {traceback.format_exc()}"}
+#         )

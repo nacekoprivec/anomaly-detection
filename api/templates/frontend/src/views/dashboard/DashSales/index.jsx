@@ -21,7 +21,6 @@ export default function DashSales() {
   const [detectors, setDetectors] = useState([]);
   
 
-  // Fetch detectors on mount
   const fetchDetectors = async () => {
     try {
       const res = await api.get('/detectors');
@@ -154,14 +153,14 @@ export default function DashSales() {
       fetchConfig();
     }, [selectedMethod]);
 
-    const handleSaveConfig = async () => {
-      try {
-        const res = await api.post(`/configuration/${selectedMethod}`, overrides, detector.id);
-        setResponse(res.data);
-      } catch (error) {
-        setResponse('Error: ' + error.message);
-      }
-    };
+    // const handleSaveConfig = async () => {
+    //   try {
+    //     const res = await api.post(`/configuration/${selectedMethod}`, overrides, detector.id);
+    //     setResponse(res.data);
+    //   } catch (error) {
+    //     setResponse('Error: ' + error.message);
+    //   }
+    // };
 
     const handleRun = async () => {
       setLoading(true);
@@ -223,9 +222,9 @@ export default function DashSales() {
                 {config && <ConfigEditor data={config} overrides={overrides} setOverrides={setOverrides} />}
 
                 <div className="mb-3 d-flex align-items-center">
-                  <button className="btn btn-success me-2" onClick={handleSaveConfig}>
+                  {/* <button className="btn btn-success me-2" onClick={handleSaveConfig}>
                     Save Config
-                  </button>
+                  </button> */}
 
                   <button
                     className={`btn ${detector.status === 'inactive' ? 'btn-success' : 'btn-danger'} me-2`}
@@ -307,7 +306,7 @@ function JsonPopupButton({ onSave, fetchDetectors }) {
       
       console.log('Saving detector:', parsed);
       onSave(parsed);
-      await api.post('/detectors/', parsed);
+      await api.post('/detectors/create', parsed);
       setOpen(false);
       fetchDetectors();
     } catch (e) {
